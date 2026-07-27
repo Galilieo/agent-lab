@@ -21,6 +21,37 @@
 
 当前阶段不使用 LangChain、LangGraph、向量数据库、Redis、Docker、前端框架、用户系统、多 Agent 或复杂架构。
 
+## 项目结构
+
+```text
+agent-lab/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   └── schemas.py
+├── playground/
+│   ├── 01_basic_syntax.py
+│   ├── 02_json_file.py
+│   ├── calculator.py
+│   ├── home.py
+│   ├── message.json
+│   └── use_calculator.py
+├── tests/
+│   ├── __init__.py
+│   └── test_health.py
+├── notes/
+│   └── README.md
+├── .env.example
+├── .gitignore
+├── LICENSE
+├── pyproject.toml
+├── uv.lock
+└── README.md
+```
+
+`app/` 保存可运行的 FastAPI 应用，`tests/` 保存自动化测试，`playground/` 保存独立的 Python 学习示例，`notes/` 用于记录实验过程和结论。
+
 ## 本地运行
 
 先安装 [uv](https://docs.astral.sh/uv/)，然后在仓库根目录执行：
