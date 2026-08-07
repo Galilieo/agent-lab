@@ -3,6 +3,8 @@
 用于学习和验证大模型调用、多轮对话、Tool Calling、记忆、RAG、SSE 流式输出等 AI 应用开发能力。
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
+>
+> 当前进度：阶段 2“读懂现有 agent-lab”和阶段 3“FastAPI 请求链”已完成第一轮，阶段 4“真实 LLM 调用”正在进行。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
 
 ## 为什么创建这个仓库
 
@@ -29,7 +31,10 @@ agent-lab/
 │   ├── __init__.py
 │   ├── main.py
 │   ├── config.py
-│   └── schemas.py
+│   ├── schemas.py
+│   └── services/
+│       ├── __init__.py
+│       └── llm.py
 ├── playground/
 │   ├── 01_basic_syntax.py
 │   ├── 02_json_file.py
@@ -41,7 +46,11 @@ agent-lab/
 │   ├── __init__.py
 │   └── test_health.py
 ├── notes/
-│   └── README.md
+│   ├── README.md
+│   └── agent-lab总体学习路线.md
+├── .vscode/
+│   └── settings.json
+├── .editorconfig
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
