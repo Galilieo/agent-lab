@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-08-07。
+> 最近核验：2026-08-10。
 
 ## 1. 项目定位
 
@@ -52,12 +52,12 @@ Python 工程
 
 已经存在：
 
-- `app/main.py`：FastAPI 应用、`GET /health`、模拟 `POST /chat`。
+- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`，并将 LLM 读取超时映射为 `504`。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
-- `app/services/llm.py`：异步 LLM service 边界，当前仍返回占位结果。
-- `tests/test_health.py`：TestClient 基础测试。
-- `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置。
+- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接和上游状态异常。
+- `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败和上游状态错误映射测试。
+- `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
 
 2026-07-26 实际验证：
@@ -90,9 +90,25 @@ pytest 8.4.2
 - 已建立 `app/services/llm.py`，由异步 `/chat` 路由通过 `await` 调用，路由不再直接生成占位回答。
 - `uv run pytest -q` 实际验证为 `6 passed`，`git diff --check -- app/main.py tests/test_health.py` 通过。
 
+2026-08-09 学习验收：
+
+- 已将 `httpx` 明确为运行依赖，理解第三方安装项目时运行依赖必须随项目声明。
+- 已配置 DeepSeek OpenAI 兼容服务的 Base URL、API Key 和 `deepseek-v4-flash` 模型；真实 Key 只保存在被 Git 忽略的 `.env` 中。
+- 已能解释 `httpx.AsyncClient` 在请求链中的位置，并确认真正的异步网络等待发生在 `await client.post(...)`。
+- 已在 LLM service 中组装 `Authorization: Bearer ...`、`Content-Type`、`model`、`messages` 和非流式请求体。
+- 已完成一次真实异步单轮调用，`POST /chat` 实际返回“连接成功”。
+- 已完成 DeepSeek 兼容响应的 JSON 解析，并将 `choices[0].message.content` 映射为 `ChatResponse.answer`。
+- 已将 HTTPX 客户端超时显式延长为 `60.0` 秒，理解默认读取超时不能直接代表模型调用失败。
+- 已用 fake HTTP client 复现 `httpx.ReadTimeout`，由 service 转换为 `LLMTimeoutError`，再由路由映射为 HTTP `504`。
+- 已用 fake HTTP client 复现 `httpx.ConnectError`，由 service 转换为 `LLMConnectionError`，再由路由映射为 HTTP `503`。
+- 已通过 `response.raise_for_status()` 识别上游 `4xx / 5xx`，将 `httpx.HTTPStatusError` 转换为 `LLMUpstreamError`，再由路由映射为 HTTP `502`。
+- 正常路由测试仍通过 fake service 隔离真实模型调用；超时测试也不会访问 DeepSeek 或产生费用。
+- `.venv\\Scripts\\python.exe -m pytest -q` 实际验证为 `10 passed`，`git diff --check` 通过。
+
 尚未存在：
 
-- 真实模型请求、响应解析、超时和上游错误处理。
+- 异常 JSON 和缺少 `choices / message.content` 的返回结构处理。
+- 模型、耗时、Token、状态和错误日志。
 - SQLite。
 - 多轮会话。
 - Tool Calling。
@@ -362,10 +378,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 2 源码走读和阶段 3 FastAPI 请求链均已完成第一轮，当前进入阶段 4：
+阶段 2 源码走读和阶段 3 FastAPI 请求链均已完成第一轮，当前继续阶段 4：
 
 ```text
-下一小主题：为 LLM service 准备原生异步 HTTP 调用
+下一小主题：处理 LLM service 收到的异常响应结构
 ```
 
-具体范围：先把 `httpx` 明确为运行依赖，再在现有 service 边界内组装 Base URL、认证请求头、模型名和 `messages`；继续保持 Key 不进入源码和 Git，不提前学习 SQLite、Tool Calling、RAG 或框架。
+具体范围：在超时、连接失败和上游 HTTP 状态错误已经标准化的基础上，分别用 fake HTTP client 复现无法解析的 JSON、缺少 `choices` 和缺少 `message.content`；在 LLM service 边界将异常返回结构转换为稳定错误，不调用真实 DeepSeek。完成后再进入模型、耗时、Token、状态和错误日志，继续保持 Key 不进入源码和 Git，不提前学习 SQLite、Tool Calling、RAG 或框架。

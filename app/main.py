@@ -2,7 +2,12 @@ from fastapi import FastAPI, HTTPException
 
 from app.config import settings
 from app.schemas import ChatRequest, ChatResponse, HealthResponse
-from app.services.llm import generate_reply
+from app.services.llm import (
+    LLMConnectionError,
+    LLMTimeoutError,
+    LLMUpstreamError,
+    generate_reply,
+)
 
 
 app = FastAPI(title=settings.app_name)
@@ -21,7 +26,24 @@ async def chat(request: ChatRequest) -> ChatResponse:
             detail="Conversation is closed.",
         )
 
-    answer = await generate_reply(request.message)
+    try:
+        answer = await generate_reply(request.message)
+    except LLMTimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail=str(exc),
+        ) from exc
+    except LLMConnectionError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+    except LLMUpstreamError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
     return ChatResponse(
         conversation_id=request.conversation_id,
         answer=answer,
