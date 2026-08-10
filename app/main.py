@@ -6,6 +6,7 @@ from app.services.llm import (
     LLMConnectionError,
     LLMTimeoutError,
     LLMUpstreamError,
+    LLMResponseError,
     generate_reply,
 )
 
@@ -39,6 +40,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
             detail=str(exc),
         ) from exc
     except LLMUpstreamError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+    except LLMResponseError as exc:
         raise HTTPException(
             status_code=502,
             detail=str(exc),

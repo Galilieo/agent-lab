@@ -39,8 +39,8 @@ Python 工程
 | 1. Python 必要基础 | **已完成第一轮** | JSON、推导式、uv、异步、pytest 已做基础练习 |
 | 2. 读懂现有 agent-lab | **已完成第一轮** | 能解释核心文件和当前请求链 |
 | 3. FastAPI 请求链 | **已完成第一轮** | 完成请求、校验、响应、异常和测试 |
-| 4. 真实 LLM 调用 | **当前进行中** | 完成异步单轮调用和日志 |
-| 5. SQLite 与多轮对话 | 待开始 | 会话可持久化、恢复和隔离 |
+| 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
+| 5. SQLite 与多轮对话 | **当前进行中** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | 待开始 | 不依赖框架完成工具闭环 |
 | 7. 轻量记忆与原生最小 RAG | 待开始 | 记忆与检索来源可追踪 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
@@ -55,8 +55,8 @@ Python 工程
 - `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`，并将 LLM 读取超时映射为 `504`。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
-- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接和上游状态异常。
-- `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败和上游状态错误映射测试。
+- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接、上游状态和非法 JSON 异常。
+- `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
 
@@ -105,10 +105,25 @@ pytest 8.4.2
 - 正常路由测试仍通过 fake service 隔离真实模型调用；超时测试也不会访问 DeepSeek 或产生费用。
 - `.venv\\Scripts\\python.exe -m pytest -q` 实际验证为 `10 passed`，`git diff --check` 通过。
 
+2026-08-10 学习验收：
+
+- 已理解 HTTP `200` 只表示状态码成功，不保证响应正文是合法 JSON 或符合模型成功响应结构。
+- 已实际确认 `response.json()` 解析非法正文时抛出 `json.JSONDecodeError`，并与 `response.raise_for_status()` 抛出的 `httpx.HTTPStatusError` 区分。
+- 已由 service 将 `json.JSONDecodeError` 转换为 `LLMResponseError`，再由路由映射为 HTTP `502`。
+- 已确认合法 JSON 缺少 `choices` 或 `message.content` 时会在字段提取处抛出 `KeyError`，它与 `json.JSONDecodeError` 属于不同异常。
+- 已将字段提取放入响应解析的 `try`，由 service 将 `json.JSONDecodeError` 和 `KeyError` 统一转换为 `LLMResponseError`，复用路由已有的 HTTP `502` 映射。
+- 已用 `time.perf_counter()` 覆盖异步网络等待和响应提取过程，并在成功调用后通过 `app.services.llm` logger 记录 `model`、上游 HTTP `status` 和 `latency_ms`。
+- 已用 `caplog` 验证成功调用日志存在且包含预期字段；日志不记录 API Key、Authorization Header、完整用户问题或模型回答。
+- 已为 timeout、connection error、上游 HTTP 状态错误和无效响应统一记录 `WARNING` 失败日志；没有上游 Response 时记录 `status=unavailable`，有 Response 时保留真实上游状态，并使用稳定的 `error` 分类。
+- 已用 `caplog` 验证四类失败日志均包含 `model`、可用 `status`、`latency_ms` 和 `error`，且原有 `504 / 503 / 502` 路由映射保持不变。
+- 已根据 DeepSeek 官方 Chat Completion 响应结构确认并提取 `prompt_tokens`、`completion_tokens` 和 `total_tokens`，在成功日志中记录三项 Token usage。
+- 已验证成功响应缺少 `usage` 时仍返回有效 answer，并将三项 Token 日志记录为 `unavailable`，不因可观测元数据缺失返回 `502`。
+- 三个响应异常目标测试实际验证为 `3 passed`，成功日志目标测试实际验证为 `1 passed`，四类失败日志目标测试实际验证为 `4 passed`，Token usage 目标测试实际验证为 `2 passed`，全量 `.venv\\Scripts\\python.exe -m pytest -q` 实际验证为 `15 passed`，`git diff --check` 通过。
+- 已通过阶段 4 综合验收，能解释完整异步请求链、`504 / 503 / 502` 错误映射、核心 answer 与可观测 usage 的边界，以及允许和禁止记录的日志内容。
+- 最终安全核验确认 `.env` 被 `.gitignore` 忽略且未被 Git 跟踪，仓库只跟踪 Key 为空的 `.env.example`；阶段 4 标记为完成第一轮。
+
 尚未存在：
 
-- 异常 JSON 和缺少 `choices / message.content` 的返回结构处理。
-- 模型、耗时、Token、状态和错误日志。
 - SQLite。
 - 多轮会话。
 - Tool Calling。
@@ -184,7 +199,7 @@ pytest 8.4.2
 - 能写一个最小路由、模型和测试。
 - 发生失败时能区分路由、校验、业务和测试四层。
 
-## 6. 阶段 4：真实 LLM 调用
+## 6. 阶段 4：真实 LLM 调用（已完成第一轮）
 
 学习：
 
@@ -212,7 +227,7 @@ POST /chat
 - 正常、超时和上游失败都有测试或可复现验证。
 - 路由不直接堆满模型调用细节。
 
-## 7. 阶段 5：SQLite 与多轮对话
+## 7. 阶段 5：SQLite 与多轮对话（当前进行中）
 
 学习：
 
@@ -378,10 +393,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 2 源码走读和阶段 3 FastAPI 请求链均已完成第一轮，当前继续阶段 4：
+阶段 4 真实 LLM 调用已完成第一轮，当前进入阶段 5 SQLite 与多轮对话：
 
 ```text
-下一小主题：处理 LLM service 收到的异常响应结构
+下一小主题：设计 SQLite 多轮会话的最小数据模型
 ```
 
-具体范围：在超时、连接失败和上游 HTTP 状态错误已经标准化的基础上，分别用 fake HTTP client 复现无法解析的 JSON、缺少 `choices` 和缺少 `message.content`；在 LLM service 边界将异常返回结构转换为稳定错误，不调用真实 DeepSeek。完成后再进入模型、耗时、Token、状态和错误日志，继续保持 Key 不进入源码和 Git，不提前学习 SQLite、Tool Calling、RAG 或框架。
+具体范围：先把多轮会话放回 `POST /chat` 链路，对照当前只有 `conversation_id` 但尚未持久化的真实源码，设计 `conversation`、`message`、`model_call` 三类数据各自保存什么以及它们之间的关系；先完成最小数据模型和边界练习，不立即接入数据库、不引入 ORM、不编写完整 CRUD，也不提前进入 Tool Calling、RAG 或框架。

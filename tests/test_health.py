@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 
 from fastapi.testclient import TestClient
@@ -150,7 +152,12 @@ def test_chat_configures_extended_llm_timeout(monkeypatch) -> None:
     assert observed["timeout"] == 60.0
 
 
-def test_chat_returns_gateway_timeout_when_llm_times_out(monkeypatch) -> None:
+def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
+    monkeypatch,
+    caplog,
+) -> None:
+    observed = {}
+
     class TimeoutAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
@@ -162,6 +169,7 @@ def test_chat_returns_gateway_timeout_when_llm_times_out(monkeypatch) -> None:
             return None
 
         async def post(self, url, *, headers, json):
+            observed["model"] = json["model"]
             raise httpx.ReadTimeout("DeepSeek response timed out.")
 
     monkeypatch.setattr(
@@ -174,18 +182,36 @@ def test_chat_returns_gateway_timeout_when_llm_times_out(monkeypatch) -> None:
         raise_server_exceptions=False,
     )
 
-    response = error_client.post(
-        "/chat",
-        json={"conversation_id": "test-001", "message": "你好"},
-    )
+    with caplog.at_level(logging.WARNING, logger="app.services.llm"):
+        response = error_client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
 
     assert response.status_code == 504
     assert response.json() == {
         "detail": "LLM request timed out.",
     }
 
+    assert len(log_messages) == 1
+    assert f"model={observed['model']}" in log_messages[0]
+    assert "status=unavailable" in log_messages[0]
+    assert "latency_ms=" in log_messages[0]
+    assert "error=timeout" in log_messages[0]
 
-def test_chat_returns_service_unavailable_when_llm_connection_fails(monkeypatch) -> None:
+
+def test_chat_returns_service_unavailable_when_llm_connection_fails(
+    monkeypatch,
+    caplog,
+) -> None:
+    observed = {}
+
     class ConnectionFailingAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
@@ -197,6 +223,7 @@ def test_chat_returns_service_unavailable_when_llm_connection_fails(monkeypatch)
             return None
 
         async def post(self, url, *, headers, json):
+            observed["model"] = json["model"]
             raise httpx.ConnectError("Unable to connect to DeepSeek.")
 
     monkeypatch.setattr(
@@ -209,18 +236,36 @@ def test_chat_returns_service_unavailable_when_llm_connection_fails(monkeypatch)
         raise_server_exceptions=False,
     )
 
-    response = error_client.post(
-        "/chat",
-        json={"conversation_id": "test-001", "message": "你好"},
-    )
+    with caplog.at_level(logging.WARNING, logger="app.services.llm"):
+        response = error_client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
 
     assert response.status_code == 503
     assert response.json() == {
         "detail": "LLM service unavailable.",
     }
 
+    assert len(log_messages) == 1
+    assert f"model={observed['model']}" in log_messages[0]
+    assert "status=unavailable" in log_messages[0]
+    assert "latency_ms=" in log_messages[0]
+    assert "error=connection" in log_messages[0]
 
-def test_chat_returns_bad_gateway_when_llm_returns_error_status(monkeypatch) -> None:
+
+def test_chat_returns_bad_gateway_when_llm_returns_error_status(
+    monkeypatch,
+    caplog,
+) -> None:
+    observed = {}
+
     class UpstreamErrorAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
@@ -232,6 +277,7 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(monkeypatch) -> 
             return None
 
         async def post(self, url, *, headers, json):
+            observed["model"] = json["model"]
             return httpx.Response(
                 401,
                 request=httpx.Request("POST", url),
@@ -252,6 +298,122 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(monkeypatch) -> 
         raise_server_exceptions=False,
     )
 
+    with caplog.at_level(logging.WARNING, logger="app.services.llm"):
+        response = error_client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "LLM upstream request failed.",
+    }
+
+    assert len(log_messages) == 1
+    assert f"model={observed['model']}" in log_messages[0]
+    assert "status=401" in log_messages[0]
+    assert "latency_ms=" in log_messages[0]
+    assert "error=upstream_status" in log_messages[0]
+
+
+def test_chat_returns_bad_gateway_when_llm_returns_invalid_json(
+    monkeypatch,
+    caplog,
+) -> None:
+    observed = {}
+
+    class InvalidJsonAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            observed["model"] = json["model"]
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                content=b"this is not json",
+                headers={"Content-Type": "application/json"},
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        InvalidJsonAsyncClient,
+    )
+
+    error_client = TestClient(
+        app,
+        raise_server_exceptions=False,
+    )
+
+    with caplog.at_level(logging.WARNING, logger="app.services.llm"):
+        response = error_client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "LLM returned an invalid response.",
+    }
+
+    assert len(log_messages) == 1
+    assert f"model={observed['model']}" in log_messages[0]
+    assert "status=200" in log_messages[0]
+    assert "latency_ms=" in log_messages[0]
+    assert "error=invalid_response" in log_messages[0]
+
+
+def test_chat_returns_bad_gateway_when_llm_response_has_no_choices(
+    monkeypatch,
+) -> None:
+    class MissingChoicesAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={
+                    "id": "test-completion",
+                    "object": "chat.completion",
+                },
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        MissingChoicesAsyncClient,
+    )
+
+    error_client = TestClient(
+        app,
+        raise_server_exceptions=False,
+    )
+
     response = error_client.post(
         "/chat",
         json={"conversation_id": "test-001", "message": "你好"},
@@ -259,5 +421,172 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(monkeypatch) -> 
 
     assert response.status_code == 502
     assert response.json() == {
-        "detail": "LLM upstream request failed.",
+        "detail": "LLM returned an invalid response.",
     }
+
+
+def test_chat_returns_bad_gateway_when_llm_response_has_no_content(
+    monkeypatch,
+) -> None:
+    class MissingContentAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={
+                    "id": "test-completion",
+                    "object": "chat.completion",
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                            }
+                        }
+                    ],
+                },
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        MissingContentAsyncClient,
+    )
+
+    error_client = TestClient(
+        app,
+        raise_server_exceptions=False,
+    )
+
+    response = error_client.post(
+        "/chat",
+        json={"conversation_id": "test-001", "message": "你好"},
+    )
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "LLM returned an invalid response.",
+    }
+
+
+def test_chat_logs_unavailable_token_usage_when_usage_is_missing(
+    monkeypatch,
+    caplog,
+) -> None:
+    observed = {}
+
+    class SuccessfulAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            observed["model"] = json["model"]
+
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "模拟模型回答",
+                            }
+                        }
+                    ],
+                },
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        SuccessfulAsyncClient,
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.services.llm"):
+        response = client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_message = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
+
+    assert response.status_code == 200
+    assert len(log_message) == 1
+    assert f"model={observed['model']}" in log_message[0]
+    assert "status=200" in log_message[0]
+    assert "latency_ms=" in log_message[0]
+    assert "prompt_tokens=unavailable" in log_message[0]
+    assert "completion_tokens=unavailable" in log_message[0]
+    assert "total_tokens=unavailable" in log_message[0]
+
+
+def test_chat_logs_token_usage_for_successful_llm_call(monkeypatch, caplog) -> None:
+    class SuccessfulAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "模拟模型回答",
+                            }
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 8,
+                        "completion_tokens": 4,
+                        "total_tokens": 12,
+                    },
+                },
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        SuccessfulAsyncClient,
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.services.llm"):
+        response = client.post(
+            "/chat",
+            json={"conversation_id": "test-001", "message": "你好"},
+        )
+
+    log_messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "app.services.llm"
+    ]
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "模拟模型回答"
+    assert len(log_messages) == 1
+    assert "prompt_tokens=8" in log_messages[0]
+    assert "completion_tokens=4" in log_messages[0]
+    assert "total_tokens=12" in log_messages[0]
