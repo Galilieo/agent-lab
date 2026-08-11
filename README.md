@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度：阶段 2“读懂现有 agent-lab”和阶段 3“FastAPI 请求链”已完成第一轮，阶段 4“真实 LLM 调用”正在进行。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
+> 当前进度：阶段 4“真实 LLM 调用”已完成第一轮，阶段 5“SQLite 与多轮对话”正在进行。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
 
 ## 为什么创建这个仓库
 
@@ -19,7 +19,7 @@
 - pytest
 - uv
 - Git 与 GitHub
-- SQLite（后续接入）
+- SQLite（阶段 5 进行中）
 
 当前阶段不使用 LangChain、LangGraph、向量数据库、Redis、Docker、前端框架、用户系统、多 Agent 或复杂架构。
 
@@ -31,6 +31,7 @@ agent-lab/
 │   ├── __init__.py
 │   ├── main.py
 │   ├── config.py
+│   ├── database.py
 │   ├── schemas.py
 │   └── services/
 │       ├── __init__.py
@@ -44,10 +45,13 @@ agent-lab/
 │   └── use_calculator.py
 ├── tests/
 │   ├── __init__.py
+│   ├── test_database.py
 │   └── test_health.py
 ├── notes/
 │   ├── README.md
-│   └── agent-lab总体学习路线.md
+│   ├── agent-lab总体学习路线.md
+│   ├── Codex学习导师提示词.md
+│   └── sqlite多轮会话数据模型草案.md
 ├── .vscode/
 │   └── settings.json
 ├── .editorconfig
@@ -97,12 +101,13 @@ uv run pytest
 
 - [x] FastAPI 项目基础骨架
 - [x] `GET /health` 健康检查接口
-- [x] `POST /chat` 占位接口
+- [x] `POST /chat` 真实异步 LLM 调用
 - [x] Pydantic 请求与响应模型
 - [x] 基础接口测试
 - [x] 环境变量示例与 Git 忽略规则
-- [ ] 真实大模型调用
-- [ ] SQLite 数据持久化
+- [x] 真实大模型调用
+- [x] SQLite 连接与会话/消息最小表结构
+- [ ] SQLite 多轮对话持久化接线
 
 ## 后续学习路线
 

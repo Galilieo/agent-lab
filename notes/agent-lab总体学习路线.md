@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-08-10。
+> 最近核验：2026-08-11。
 
 ## 1. 项目定位
 
@@ -55,7 +55,9 @@ Python 工程
 - `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`，并将 LLM 读取超时映射为 `504`。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
+- `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation` / `message` 最小表结构。
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接、上游状态和非法 JSON 异常。
+- `tests/test_database.py`：使用内存 SQLite 验证连接外键、合法消息写入和孤儿消息拒绝。
 - `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
@@ -122,10 +124,17 @@ pytest 8.4.2
 - 已通过阶段 4 综合验收，能解释完整异步请求链、`504 / 503 / 502` 错误映射、核心 answer 与可观测 usage 的边界，以及允许和禁止记录的日志内容。
 - 最终安全核验确认 `.env` 被 `.gitignore` 忽略且未被 Git 跟踪，仓库只跟踪 Key 为空的 `.env.example`；阶段 4 标记为完成第一轮。
 
+2026-08-11 学习验收：
+
+- 已完成 `conversation`、`message` 和 `model_call` 的最小逻辑数据模型与关系草案。
+- 已实现 SQLite 内存连接，并确认外键需要按连接开启。
+- 已实现 `conversation` / `message` 最小表结构，验证合法消息可写入、孤儿消息被外键拒绝。
+- `uv run pytest -q` 实际验证为 `18 passed`。
+
 尚未存在：
 
-- SQLite。
-- 多轮会话。
+- SQLite 文件持久化与 `POST /chat` 接线。
+- 多轮会话历史读取与回放。
 - Tool Calling。
 - 记忆与 RAG。
 - LangChain / LangGraph。
@@ -393,10 +402,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 4 真实 LLM 调用已完成第一轮，当前进入阶段 5 SQLite 与多轮对话：
+阶段 5 已完成逻辑数据模型、SQLite 连接与 `conversation` / `message` 最小表结构：
 
 ```text
-下一小主题：设计 SQLite 多轮会话的最小数据模型
+下一小主题：实现 `model_call` 最小表结构与重试关系
 ```
 
-具体范围：先把多轮会话放回 `POST /chat` 链路，对照当前只有 `conversation_id` 但尚未持久化的真实源码，设计 `conversation`、`message`、`model_call` 三类数据各自保存什么以及它们之间的关系；先完成最小数据模型和边界练习，不立即接入数据库、不引入 ORM、不编写完整 CRUD，也不提前进入 Tool Calling、RAG 或框架。
+具体范围：先为 `model_call` 定义主键、会话外键、请求/响应消息外键、模型、结果、上游状态、耗时和 Token 字段；用内存 SQLite 验证同一条 user message 可关联多次调用、失败调用允许没有 response message。不引入 ORM、不编写完整 CRUD，不接入 `POST /chat`。
