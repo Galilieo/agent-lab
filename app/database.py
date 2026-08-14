@@ -27,8 +27,33 @@ def initialize_schema(
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             created_at TEXT NOT NULL,
+            UNIQUE (conversation_id, message_id),
             FOREIGN KEY (conversation_id)
                 REFERENCES conversation (conversation_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_message_history
+        ON message (conversation_id, created_at, message_id);
+
+        CREATE TABLE IF NOT EXISTS model_call (
+            model_call_id INTEGER PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            request_message_id INTEGER NOT NULL,
+            response_message_id INTEGER,
+            model TEXT NOT NULL,
+            outcome TEXT NOT NULL,
+            upstream_status INTEGER,
+            latency_ms REAL NOT NULL,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            total_tokens INTEGER,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (conversation_id)
+                REFERENCES conversation (conversation_id),
+            FOREIGN KEY (conversation_id, request_message_id)
+                REFERENCES message (conversation_id, message_id),
+            FOREIGN KEY (conversation_id, response_message_id)
+                REFERENCES message (conversation_id, message_id)
         );
         """
     )
