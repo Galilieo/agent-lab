@@ -106,14 +106,14 @@ uv run pytest
 - [x] 基础接口测试
 - [x] 环境变量示例与 Git 忽略规则
 - [x] 真实大模型调用
-- [x] SQLite 连接与会话/消息最小表结构
-- [ ] SQLite 多轮对话持久化接线
+- [x] SQLite 连接、三表结构、模型调用重试、跨会话外键隔离、稳定历史查询与文件持久化验证
+- [ ] SQLite 多轮对话 API 接线
 
 ## 后续学习路线
 
 - V0.1 基础模型调用与调用日志
 - V0.2 多轮对话与上下文管理
-- V0.3 Tool Calling
+- V0.3 Tool Calling、Structured Output 与 MCP 小补充
 - V0.4 轻量记忆
 - V0.5 RAG
 - V0.6 SSE 流式输出

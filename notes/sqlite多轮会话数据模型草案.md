@@ -1,6 +1,6 @@
 # SQLite 多轮会话数据模型草案
 
-> 文档角色：记录 agent-lab 阶段 5 的最小逻辑数据模型。当前只设计字段、关系和边界，不编写 SQL、ORM 或 CRUD。
+> 文档角色：记录 agent-lab 阶段 5 的最小逻辑数据模型，以及已经落地验证的表关系和当前实现边界。
 
 ## 1. `conversation`
 
@@ -95,7 +95,11 @@ model_call 1 ── 0..1 assistant message
 
 ## 6. 当前边界
 
-- 已在 `app/database.py` 中实现 SQLite 连接、外键开启以及 `conversation` / `message` 最小表结构。
-- `model_call` 表和消息历史组合索引尚未实现。
+- 已在 `app/database.py` 中实现 SQLite 连接、按连接开启外键以及 `conversation` / `message` / `model_call` 三表结构。
+- 已验证同一条 user message 可关联多次调用，失败调用允许没有 response message。
+- 已验证普通无效外键和跨会话 request message 引用会被拒绝；同样的组合外键也应用于 response message。
+- 跨会话隔离由 `(conversation_id, message_id)` 父键唯一组合和 `model_call` 组合外键保证。
+- 已实现消息历史组合索引 `(conversation_id, created_at, message_id)`，并验证查询只返回目标会话且按 `created_at`、`message_id` 稳定排序。
+- 已使用 pytest 临时文件验证提交后的会话消息可在重新连接后恢复，未提交写入会在连接关闭时回滚。
 - 尚未引入 ORM、数据访问层或 CRUD。
 - 不保存 API Key、Authorization Header、完整模型请求、完整原始响应或其他敏感内容。
