@@ -71,9 +71,9 @@ Python 工程
 - `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`，并将 LLM 读取超时映射为 `504`。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
-- `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，消息历史组合索引支持按会话稳定读取。
+- `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序。
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接、上游状态和非法 JSON 异常。
-- `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序，以及提交和未提交数据在重新连接后的差异。
+- `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
 - `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
@@ -163,7 +163,10 @@ pytest 8.4.2
 - 已通过 `EXPLAIN QUERY PLAN` 确认 SQLite 对目标查询使用 `idx_message_history` 索引。
 - 已使用 pytest 的 `tmp_path` 创建临时 SQLite 文件，验证第一个连接提交并关闭后，第二个连接仍能恢复同一会话消息。
 - 已验证写入后不调用 `commit()`，关闭连接会回滚未提交事务，第二个连接查询不到该会话。
-- `tests/test_database.py` 实际验证为 `10 passed`，全量 `uv run pytest -q` 为 `25 passed`；`py_compile` 和 `git diff --check` 通过。
+- 已使用内层 `created_at DESC, message_id DESC` 取得最近 N 条消息，再由外层按 `created_at, message_id` 恢复模型上下文的正序。
+- 最近消息窗口只使用一条代表性 RED → GREEN，同时覆盖最近 N 条选取和同一创建时间下的稳定顺序。
+- 已将最近消息窗口 SQL 抽取为 `load_recent_messages(connection, conversation_id, limit)`，返回后续 LLM 上下文需要的 `role` / `content` 字典列表，并由原代表性测试直接验证函数行为。
+- `tests/test_database.py` 实际验证为 `11 passed`，全量 `uv run pytest -q` 为 `26 passed`；`py_compile` 和 `git diff --check` 通过。
 
 尚未存在：
 
@@ -458,10 +461,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史查询，以及文件持久化与重新连接恢复：
+阶段 5 已完成逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、最小历史读取函数，以及文件持久化与重新连接恢复：
 
 ```text
-下一小主题：实现最近消息窗口查询
+下一小主题：让 LLM service 接受消息历史
 ```
 
-具体范围：在现有会话隔离和稳定排序查询上增加窗口大小，只取目标会话最近的 N 条消息，并按 `created_at`、`message_id` 正序交给后续模型上下文。只使用当前一条代表性 RED 同时验证最近 N 条和同一创建时间下的稳定顺序，复用已有测试保护会话隔离；不再分别为消息不足 N 条、空会话等情况新增测试。本轮不做摘要，不配置生产数据库固定路径，不引入 ORM，也不接入 `POST /chat`。
+具体范围：以当前 `generate_reply(message: str)` 和固定 `messages` payload 为锚点，为 service 增加接收既有 `role` / `content` 消息历史的最小参数边界，并保证 system message、历史消息和当前 user message 的顺序正确。只改造一条现有 fake HTTP client 测试观察上游 payload，不新增生产级测试矩阵；本轮不配置 SQLite 固定文件路径，不在 `POST /chat` 中写入消息，也不实现完整 CRUD。完成后再把 `load_recent_messages()` 接入路由的数据读取链。

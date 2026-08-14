@@ -100,6 +100,7 @@ model_call 1 ── 0..1 assistant message
 - 已验证普通无效外键和跨会话 request message 引用会被拒绝；同样的组合外键也应用于 response message。
 - 跨会话隔离由 `(conversation_id, message_id)` 父键唯一组合和 `model_call` 组合外键保证。
 - 已实现消息历史组合索引 `(conversation_id, created_at, message_id)`，并验证查询只返回目标会话且按 `created_at`、`message_id` 稳定排序。
+- 已将最近消息窗口抽取为 `load_recent_messages(connection, conversation_id, limit)`，先倒序取得最近 N 条，再恢复为 `created_at`、`message_id` 正序，并返回模型上下文需要的 `role` / `content`。
 - 已使用 pytest 临时文件验证提交后的会话消息可在重新连接后恢复，未提交写入会在连接关闭时回滚。
 - 尚未引入 ORM、数据访问层或 CRUD。
 - 不保存 API Key、Authorization Header、完整模型请求、完整原始响应或其他敏感内容。
