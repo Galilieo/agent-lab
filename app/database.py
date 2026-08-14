@@ -57,3 +57,32 @@ def initialize_schema(
         );
         """
     )
+
+
+def load_recent_messages(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    limit: int,
+) -> list[dict[str, str]]:
+    rows = connection.execute(
+        """
+        SELECT role, content
+        FROM (
+            SELECT role, content, created_at, message_id
+            FROM message
+            WHERE conversation_id = ?
+            ORDER BY created_at DESC, message_id DESC
+            LIMIT ?
+        )
+        ORDER BY created_at, message_id
+        """,
+        (conversation_id, limit),
+    ).fetchall()
+
+    return [
+        {
+            "role": role,
+            "content": content,
+        }
+        for role, content in rows
+    ]

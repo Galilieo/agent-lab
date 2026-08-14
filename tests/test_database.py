@@ -2,7 +2,11 @@ import sqlite3
 
 import pytest
 
-from app.database import create_connection, initialize_schema
+from app.database import (
+    create_connection,
+    initialize_schema,
+    load_recent_messages,
+)
 
 
 def test_create_connection_enables_foreign_keys() -> None:
@@ -511,6 +515,78 @@ def test_message_history_query_filters_conversation_and_orders_stably() -> None:
             (1, "assistant", "第二条", "2026-08-14T10:00:02"),
             (4, "user", "同时消息一", "2026-08-14T10:00:03"),
             (5, "assistant", "同时消息二", "2026-08-14T10:00:03"),
+        ]
+    finally:
+        connection.close()
+
+
+def test_recent_message_window_returns_latest_messages_in_chronological_order() -> None:
+    connection = create_connection()
+
+    try:
+        initialize_schema(connection)
+
+        connection.executemany(
+            """
+            INSERT INTO conversation (
+                conversation_id,
+                status,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            [
+                (
+                    "conversation-a",
+                    "active",
+                    "2026-08-14T10:00:00",
+                    "2026-08-14T10:00:00",
+                ),
+                (
+                    "conversation-b",
+                    "active",
+                    "2026-08-14T10:00:00",
+                    "2026-08-14T10:00:00",
+                ),
+            ],
+        )
+
+        connection.executemany(
+            """
+            INSERT INTO message (
+                message_id,
+                conversation_id,
+                role,
+                content,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                (1, "conversation-a", "assistant", "第二条", "2026-08-14T10:00:02"),
+                (2, "conversation-b", "user", "其他会话", "2026-08-14T10:00:00"),
+                (3, "conversation-a", "user", "第一条", "2026-08-14T10:00:01"),
+                (5, "conversation-a", "assistant", "同时消息二", "2026-08-14T10:00:03"),
+                (4, "conversation-a", "user", "同时消息一", "2026-08-14T10:00:03"),
+            ],
+        )
+
+        results = load_recent_messages(
+            connection,
+            "conversation-a",
+            2,
+        )
+
+        assert results == [
+            {
+                "role": "user",
+                "content": "同时消息一",
+            },
+            {
+                "role": "assistant",
+                "content": "同时消息二",
+            },
         ]
     finally:
         connection.close()
