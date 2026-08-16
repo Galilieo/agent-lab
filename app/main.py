@@ -1,6 +1,16 @@
+from datetime import datetime, timezone
+
 from fastapi import FastAPI, HTTPException
 
 from app.config import settings
+from app.database import (
+    create_connection,
+    initialize_schema,
+    insert_user_message,
+    insert_assistant_message,
+    load_recent_messages,
+    upsert_conversation,
+)
 from app.schemas import ChatRequest, ChatResponse, HealthResponse
 from app.services.llm import (
     LLMConnectionError,
@@ -26,9 +36,37 @@ async def chat(request: ChatRequest) -> ChatResponse:
             status_code=409,
             detail="Conversation is closed.",
         )
+    connection = create_connection(settings.database_path)
 
     try:
-        answer = await generate_reply(request.message)
+        initialize_schema(connection)
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        upsert_conversation(
+            connection=connection,
+            conversation_id=request.conversation_id,
+            timestamp=timestamp,
+        )
+        history = load_recent_messages(
+            connection=connection,
+            conversation_id=request.conversation_id,
+            limit=10,
+        )
+        insert_user_message(
+            connection=connection,
+            conversation_id=request.conversation_id,
+            content=request.message,
+            created_at=timestamp,
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    try:
+        result = await generate_reply(
+            message=request.message,
+            history=history,
+        )
     except LLMTimeoutError as exc:
         raise HTTPException(
             status_code=504,
@@ -50,7 +88,21 @@ async def chat(request: ChatRequest) -> ChatResponse:
             detail=str(exc),
         ) from exc
 
+    response_timestamp = datetime.now(timezone.utc).isoformat()
+    connection = create_connection(settings.database_path)
+
+    try:
+        insert_assistant_message(
+            connection=connection,
+            conversation_id=request.conversation_id,
+            content=result.answer,
+            created_at=response_timestamp,
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
     return ChatResponse(
         conversation_id=request.conversation_id,
-        answer=answer,
+        answer=result.answer,
     )

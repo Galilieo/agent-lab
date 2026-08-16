@@ -59,6 +59,79 @@ def initialize_schema(
     )
 
 
+def upsert_conversation(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    timestamp: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO conversation (
+            conversation_id,
+            status,
+            created_at,
+            updated_at
+        )
+        VALUES (?, 'active', ?, ?)
+        ON CONFLICT(conversation_id) DO UPDATE SET
+            updated_at = excluded.updated_at
+        """,
+        (
+            conversation_id,
+            timestamp,
+            timestamp,
+        ),
+    )
+
+
+def insert_user_message(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    content: str,
+    created_at: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO message (
+            conversation_id,
+            role,
+            content,
+            created_at
+        )
+        VALUES (?, 'user', ?, ?)
+        """,
+        (
+            conversation_id,
+            content,
+            created_at,
+        ),
+    )
+
+
+def insert_assistant_message(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    content: str,
+    created_at: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO message (
+            conversation_id,
+            role,
+            content,
+            created_at
+        )
+        VALUES (?, 'assistant', ?, ?)
+        """,
+        (
+            conversation_id,
+            content,
+            created_at,
+        ),
+    )
+
+
 def load_recent_messages(
     connection: sqlite3.Connection,
     conversation_id: str,

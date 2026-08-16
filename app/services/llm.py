@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import logging
 import time
@@ -7,6 +8,17 @@ import httpx
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class LLMResult:
+    answer: str
+    model: str
+    upstream_status: int
+    latency_ms: float
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    total_tokens: int | None
 
 
 class LLMTimeoutError(Exception):
@@ -25,7 +37,13 @@ class LLMResponseError(Exception):
     pass
 
 
-async def generate_reply(message: str) -> str:
+async def generate_reply(
+    message: str,
+    history: list[dict[str, str]] | None = None,
+) -> LLMResult:
+    if history is None:
+        history = []
+
     url = f"{settings.openai_base_url.rstrip('/')}/chat/completions"
 
     headers = {
@@ -40,6 +58,7 @@ async def generate_reply(message: str) -> str:
                 "role": "system",
                 "content": "You are a helpful assistant.",
             },
+            *history,
             {
                 "role": "user",
                 "content": message,
@@ -113,9 +132,9 @@ async def generate_reply(message: str) -> str:
 
     usage = response_data.get("usage") or {}
 
-    prompt_tokens = usage.get("prompt_tokens", "unavailable")
-    completion_tokens = usage.get("completion_tokens", "unavailable")
-    total_tokens = usage.get("total_tokens", "unavailable")
+    prompt_tokens = usage.get("prompt_tokens")
+    completion_tokens = usage.get("completion_tokens")
+    total_tokens = usage.get("total_tokens")
 
     latency_ms = (time.perf_counter() - started_at) * 1000
 
@@ -125,9 +144,17 @@ async def generate_reply(message: str) -> str:
         settings.openai_model,
         response.status_code,
         latency_ms,
-        prompt_tokens,
-        completion_tokens,
-        total_tokens,
+        prompt_tokens if prompt_tokens is not None else "unavailable",
+        completion_tokens if completion_tokens is not None else "unavailable",
+        total_tokens if total_tokens is not None else "unavailable",
     )
 
-    return answer
+    return LLMResult(
+        answer=answer,
+        model=settings.openai_model,
+        upstream_status=response.status_code,
+        latency_ms=latency_ms,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+    )

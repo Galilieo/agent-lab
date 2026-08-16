@@ -1,13 +1,25 @@
+import asyncio
 import logging
+from types import SimpleNamespace
 
 import httpx
+import pytest
 
 from fastapi.testclient import TestClient
 
+from app.database import create_connection
 from app.main import app
-
+from app.services.llm import LLMResult, generate_reply
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def use_temporary_database(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(
+        "app.main.settings.database_path",
+        str(tmp_path / "agent-lab-test.db"),
+    )
 
 
 def test_health_returns_ok() -> None:
@@ -17,26 +29,141 @@ def test_health_returns_ok() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_chat_returns_llm_service_answer(monkeypatch) -> None:
-    async def fake_generate_reply(message: str) -> str:
-        assert message == "你好"
-        return "模拟模型回答"
+def test_chat_persists_assistant_message_after_successful_llm_call(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    database_path = tmp_path / "chat-history.db"
+    observed_calls = []
 
+    async def fake_generate_reply(
+        message: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> LLMResult:
+        connection = create_connection(str(database_path))
+
+        try:
+            persisted_messages = connection.execute(
+                """
+                SELECT role, content
+                FROM message
+                WHERE conversation_id = ?
+                ORDER BY message_id
+                """,
+                ("conversation-c",),
+            ).fetchall()
+        finally:
+            connection.close()
+
+        observed_calls.append(
+            {
+                "message": message,
+                "history": history,
+                "persisted_messages": persisted_messages,
+            }
+        )
+        return LLMResult(
+            answer="模拟模型回答",
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=10.0,
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
+        )
+
+    monkeypatch.setattr(
+        "app.main.settings",
+        SimpleNamespace(database_path=str(database_path)),
+    )
     monkeypatch.setattr(
         "app.main.generate_reply",
         fake_generate_reply,
     )
 
-    response = client.post(
+    first_response = client.post(
         "/chat",
-        json={"conversation_id": "test-001", "message": "你好"},
+        json={
+            "conversation_id": "conversation-c",
+            "message": "我叫小宇",
+        },
+    )
+    second_response = client.post(
+        "/chat",
+        json={
+            "conversation_id": "conversation-c",
+            "message": "我叫什么？",
+        },
     )
 
-    assert response.status_code == 200
-    assert response.json() == {
-        "conversation_id": "test-001",
+    assert first_response.status_code == 200
+    assert first_response.json() == {
+        "conversation_id": "conversation-c",
         "answer": "模拟模型回答",
     }
+    assert second_response.status_code == 200
+    assert second_response.json() == {
+        "conversation_id": "conversation-c",
+        "answer": "模拟模型回答",
+    }
+    assert observed_calls == [
+        {
+            "message": "我叫小宇",
+            "history": [],
+            "persisted_messages": [
+                ("user", "我叫小宇"),
+            ],
+        },
+        {
+            "message": "我叫什么？",
+            "history": [
+                {
+                    "role": "user",
+                    "content": "我叫小宇",
+                },
+                {
+                    "role": "assistant",
+                    "content": "模拟模型回答",
+                },
+            ],
+            "persisted_messages": [
+                ("user", "我叫小宇"),
+                ("assistant", "模拟模型回答"),
+                ("user", "我叫什么？"),
+            ],
+        },
+    ]
+
+    connection = create_connection(str(database_path))
+
+    try:
+        conversation = connection.execute(
+            """
+            SELECT conversation_id, status
+            FROM conversation
+            WHERE conversation_id = ?
+            """,
+            ("conversation-c",),
+        ).fetchone()
+        messages = connection.execute(
+            """
+            SELECT role, content
+            FROM message
+            WHERE conversation_id = ?
+            ORDER BY message_id
+            """,
+            ("conversation-c",),
+        ).fetchall()
+    finally:
+        connection.close()
+
+    assert conversation == ("conversation-c", "active")
+    assert messages == [
+        ("user", "我叫小宇"),
+        ("assistant", "模拟模型回答"),
+        ("user", "我叫什么？"),
+        ("assistant", "模拟模型回答"),
+    ]
 
 
 def test_chat_rejects_empty_message() -> None:
@@ -88,7 +215,9 @@ def test_chat_rejects_closed_conversation() -> None:
     assert response.json() == {"detail": "Conversation is closed."}
 
 
-def test_chat_configures_extended_llm_timeout(monkeypatch) -> None:
+def test_generate_reply_returns_structured_result_and_includes_history(
+    monkeypatch,
+) -> None:
     observed = {}
 
     class FakeAsyncClient:
@@ -102,6 +231,8 @@ def test_chat_configures_extended_llm_timeout(monkeypatch) -> None:
             return None
 
         async def post(self, url, *, headers, json):
+            observed["messages"] = json["messages"]
+
             return httpx.Response(
                 200,
                 request=httpx.Request("POST", url),
@@ -141,14 +272,46 @@ def test_chat_configures_extended_llm_timeout(monkeypatch) -> None:
         "app.services.llm.httpx.AsyncClient",
         FakeAsyncClient,
     )
-
-    response = client.post(
-        "/chat",
-        json={"conversation_id": "test-001", "message": "你好"},
+    monkeypatch.setattr(
+        "app.services.llm.settings.openai_model",
+        "deepseek-v4-flash",
     )
 
-    assert response.status_code == 200
-    assert response.json()["answer"] == "模拟模型回答"
+    result = asyncio.run(
+        generate_reply(
+            message="我叫什么？",
+            history=[
+                {"role": "user", "content": "我叫小宇"},
+                {"role": "assistant", "content": "记住了"},
+            ],
+        )
+    )
+
+    assert result.answer == "模拟模型回答"
+    assert result.model == "deepseek-v4-flash"
+    assert result.upstream_status == 200
+    assert result.latency_ms >= 0
+    assert result.prompt_tokens == 8
+    assert result.completion_tokens == 4
+    assert result.total_tokens == 12
+    assert observed["messages"] == [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant.",
+        },
+        {
+            "role": "user",
+            "content": "我叫小宇",
+        },
+        {
+            "role": "assistant",
+            "content": "记住了",
+        },
+        {
+            "role": "user",
+            "content": "我叫什么？",
+        },
+    ]
     assert observed["timeout"] == 60.0
 
 
@@ -476,7 +639,7 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_content(
     }
 
 
-def test_chat_logs_unavailable_token_usage_when_usage_is_missing(
+def test_generate_reply_returns_none_and_logs_unavailable_when_usage_is_missing(
     monkeypatch,
     caplog,
 ) -> None:
@@ -515,9 +678,8 @@ def test_chat_logs_unavailable_token_usage_when_usage_is_missing(
     )
 
     with caplog.at_level(logging.INFO, logger="app.services.llm"):
-        response = client.post(
-            "/chat",
-            json={"conversation_id": "test-001", "message": "你好"},
+        result = asyncio.run(
+            generate_reply(message="你好")
         )
 
     log_message = [
@@ -526,7 +688,10 @@ def test_chat_logs_unavailable_token_usage_when_usage_is_missing(
         if record.name == "app.services.llm"
     ]
 
-    assert response.status_code == 200
+    assert result.answer == "模拟模型回答"
+    assert result.prompt_tokens is None
+    assert result.completion_tokens is None
+    assert result.total_tokens is None
     assert len(log_message) == 1
     assert f"model={observed['model']}" in log_message[0]
     assert "status=200" in log_message[0]

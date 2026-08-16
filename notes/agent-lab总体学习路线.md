@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-08-14。
+> 最近核验：2026-08-16。
 
 ## 1. 项目定位
 
@@ -168,10 +168,35 @@ pytest 8.4.2
 - 已将最近消息窗口 SQL 抽取为 `load_recent_messages(connection, conversation_id, limit)`，返回后续 LLM 上下文需要的 `role` / `content` 字典列表，并由原代表性测试直接验证函数行为。
 - `tests/test_database.py` 实际验证为 `11 passed`，全量 `uv run pytest -q` 为 `26 passed`；`py_compile` 和 `git diff --check` 通过。
 
+2026-08-16 学习验收：
+
+- 已为 `generate_reply()` 增加可选历史消息参数，并保持原有单轮调用兼容。
+- 已按 `system → 历史消息 → 当前 user` 的顺序组装模型请求；历史消息通过列表解包进入 `messages`，不会形成嵌套列表。
+- 已能解释 `None` 默认值与可变默认列表的区别，以及 Python 默认参数对象可能被多次调用共享的风险。
+- 已改造一条现有 fake HTTP client 测试直接观察上游 `messages` payload，没有扩张测试矩阵，也没有访问真实模型。
+- 目标测试实际验证为 `1 passed, 14 deselected`，全量 `uv run pytest -q` 为 `26 passed`；`git diff --check` 通过。
+- 已增加 `DATABASE_PATH` 配置边界：应用缺省使用文件数据库 `agent-lab.db`，路由测试通过 autouse fixture 为每条测试注入独立的临时 SQLite 文件，并继续由 `.gitignore` 排除数据库文件。
+- 已让 `POST /chat` 打开目标 SQLite、确保表结构存在、按 `conversation_id` 读取最近 10 条消息，并在关闭连接后把当前问题和历史传给 LLM service。
+- 已能解释数据库查询异常时 `finally` 会关闭连接、原异常继续向外传播且后续模型调用不会执行，以及为什么外部模型等待不应占用数据库连接或事务。
+- 已改造一条现有路由测试，使用真实临时 SQLite 验证会话 A/B 隔离和历史传递，只 fake 外部 LLM；目标测试为 `1 passed, 14 deselected`，全量测试为 `26 passed`，`git diff --check` 通过。
+- 已为数据库层增加 `upsert_conversation()` 和 `insert_user_message()`：新会话以 `active` 状态创建，已有会话保留 `created_at` 并更新 `updated_at`，当前 user message 与会话更新由路由统一提交。
+- 已将路由写入顺序固定为“创建或复用会话 → 读取旧历史 → 插入当前 user message → commit → 关闭连接 → 调用 LLM”，避免当前问题同时出现在 history 和 message 中。
+- 已能解释数据库函数不自行提交的原因、同一事务的原子性，以及写入失败时 `finally` 关闭连接会回滚尚未提交的会话和消息数据。
+- 已用同一条临时数据库路由测试连续请求新会话两次，验证第一次创建、第二次复用、当前 user message 在 fake LLM 调用前已提交，且第二次 history 只包含此前消息；目标测试为 `1 passed, 14 deselected`，全量测试为 `26 passed`，`git diff --check` 通过。
+- 已为数据库层增加 `insert_assistant_message()`；路由只在 `generate_reply()` 成功返回后重新打开 SQLite，将 assistant message 提交并关闭连接，再返回 `ChatResponse`。
+- 已保持模型调用位于两个短数据库事务之外：第一次事务保存当前 user message，模型成功后第二次事务保存 assistant message；模型失败时不会生成或保存不存在的 assistant message。
+- 已用同一条两轮临时数据库测试验证第一轮 assistant message 会进入第二轮 history，第二轮当前 user message 不会重复进入 history，最终四条 user / assistant 消息顺序正确。
+- 已能解释 SQLite `:memory:` 数据库与连接绑定：第一个连接中的提交不能被第二个 `:memory:` 连接读取；应用默认改用文件数据库，路由测试则用独立临时文件保证跨连接与测试隔离。
+- assistant 持久化目标测试实际验证为 `1 passed, 14 deselected`，全量 `uv run pytest -q` 为 `26 passed`；`git diff --check` 通过。
+- 已为 LLM service 增加内部 `LLMResult` dataclass，统一返回 `answer`、模型、上游状态、耗时和三项可选 Token usage；路由仍只将 `result.answer` 映射为原有 `ChatResponse`，没有扩大 HTTP 响应契约。
+- 已将缺失 Token 在结构化结果中表示为 `None`，为 SQLite 可空整数列保留正确数据类型，同时在安全日志中继续显示 `unavailable`。
+- 已复用现有成功与 usage 缺失测试完成 RED → GREEN，并让路由 fake service 返回完整 `LLMResult`；结构化结果目标测试为 `2 passed, 13 deselected`，全量 `uv run pytest -q` 为 `26 passed`。
+- 已能解释 `@dataclass` 根据字段生成初始化方法等样板代码，以及普通类型标注本身不会让类接受字段构造参数。
+
 尚未存在：
 
-- SQLite 固定文件路径配置与 `POST /chat` 接线。
-- 消息历史尚未接入 `POST /chat` 和模型上下文。
+- `POST /chat` 尚未保存 `model_call`；模型失败时也尚未记录失败调用。
+- SQLite 表结构当前仍在请求读取链中按 `IF NOT EXISTS` 初始化，尚未迁移到应用启动生命周期。
 - Tool Calling。
 - 记忆与 RAG。
 - LangChain / LangGraph。
@@ -461,10 +486,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、最小历史读取函数，以及文件持久化与重新连接恢复：
+阶段 5 已完成逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、最小历史读取函数、文件持久化与重新连接恢复、LLM service 的历史参数和结构化成功结果边界，以及 `POST /chat` 的历史读取、当前 user message 与成功 assistant message 持久化链：
 
 ```text
-下一小主题：让 LLM service 接受消息历史
+下一小主题：保存成功 model_call 并关联请求与回复消息
 ```
 
-具体范围：以当前 `generate_reply(message: str)` 和固定 `messages` payload 为锚点，为 service 增加接收既有 `role` / `content` 消息历史的最小参数边界，并保证 system message、历史消息和当前 user message 的顺序正确。只改造一条现有 fake HTTP client 测试观察上游 payload，不新增生产级测试矩阵；本轮不配置 SQLite 固定文件路径，不在 `POST /chat` 中写入消息，也不实现完整 CRUD。完成后再把 `load_recent_messages()` 接入路由的数据读取链。
+具体范围：让 user / assistant message 插入函数返回各自的 `message_id`，为数据库层增加最小成功 `model_call` 插入操作；路由保留第一次短事务得到 `request_message_id`，在模型成功后的第二次短事务中保存 assistant、取得 `response_message_id`，再用 `LLMResult` 的模型、状态、耗时和可选 Token 写入与两条消息关联的 `model_call`，统一提交。复用现有两轮临时数据库测试验证两条成功调用记录及其消息归属。本轮不记录失败 `model_call`，不实现重试，也不迁移 schema 初始化生命周期。
