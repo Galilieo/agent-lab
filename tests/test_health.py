@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -11,18 +10,66 @@ from app.database import create_connection
 from app.main import app
 from app.services.llm import LLMResult, generate_reply
 
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def use_temporary_database(monkeypatch, tmp_path) -> None:
+@pytest.fixture
+def database_path(monkeypatch, tmp_path):
+    path = tmp_path / "agent-lab-test.db"
     monkeypatch.setattr(
         "app.main.settings.database_path",
-        str(tmp_path / "agent-lab-test.db"),
+        str(path),
     )
+    return path
 
 
-def test_health_returns_ok() -> None:
+@pytest.fixture
+def client(database_path):
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def error_client(database_path):
+    with TestClient(
+        app,
+        raise_server_exceptions=False,
+    ) as test_client:
+        yield test_client
+
+
+def test_app_startup_initializes_database_schema_without_chat_request(
+    database_path,
+) -> None:
+    with TestClient(app):
+        pass
+
+    connection = create_connection(str(database_path))
+
+    try:
+        table_names = {
+            row[0]
+            for row in connection.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                    AND name IN (
+                        'conversation',
+                        'message',
+                        'model_call'
+                    )
+                """
+            ).fetchall()
+        }
+    finally:
+        connection.close()
+
+    assert table_names == {
+        "conversation",
+        "message",
+        "model_call",
+    }
+
+
+def test_health_returns_ok(client) -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
@@ -31,9 +78,9 @@ def test_health_returns_ok() -> None:
 
 def test_chat_persists_assistant_message_after_successful_llm_call(
     monkeypatch,
-    tmp_path,
+    database_path,
+    client,
 ) -> None:
-    database_path = tmp_path / "chat-history.db"
     observed_calls = []
 
     async def fake_generate_reply(
@@ -72,10 +119,6 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
             total_tokens=None,
         )
 
-    monkeypatch.setattr(
-        "app.main.settings",
-        SimpleNamespace(database_path=str(database_path)),
-    )
     monkeypatch.setattr(
         "app.main.generate_reply",
         fake_generate_reply,
@@ -154,6 +197,32 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
             """,
             ("conversation-c",),
         ).fetchall()
+        model_calls = connection.execute(
+            """
+            SELECT
+                request_message.role,
+                request_message.content,
+                response_message.role,
+                response_message.content,
+                model_call.model,
+                model_call.outcome,
+                model_call.upstream_status,
+                model_call.latency_ms,
+                model_call.prompt_tokens,
+                model_call.completion_tokens,
+                model_call.total_tokens
+            FROM model_call
+            JOIN message AS request_message
+                ON request_message.conversation_id = model_call.conversation_id
+                AND request_message.message_id = model_call.request_message_id
+            JOIN message AS response_message
+                ON response_message.conversation_id = model_call.conversation_id
+                AND response_message.message_id = model_call.response_message_id
+            WHERE model_call.conversation_id = ?
+            ORDER BY model_call.model_call_id
+            """,
+            ("conversation-c",),
+        ).fetchall()
     finally:
         connection.close()
 
@@ -164,9 +233,37 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
         ("user", "我叫什么？"),
         ("assistant", "模拟模型回答"),
     ]
+    assert model_calls == [
+        (
+            "user",
+            "我叫小宇",
+            "assistant",
+            "模拟模型回答",
+            "fake-model",
+            "succeeded",
+            200,
+            10.0,
+            None,
+            None,
+            None,
+        ),
+        (
+            "user",
+            "我叫什么？",
+            "assistant",
+            "模拟模型回答",
+            "fake-model",
+            "succeeded",
+            200,
+            10.0,
+            None,
+            None,
+            None,
+        ),
+    ]
 
 
-def test_chat_rejects_empty_message() -> None:
+def test_chat_rejects_empty_message(client) -> None:
     payload = {
         "conversation_id": "test-001",
         "message": "",
@@ -178,7 +275,7 @@ def test_chat_rejects_empty_message() -> None:
     assert response.json()["detail"][0]["loc"] == ["body", "message"]
 
 
-def test_chat_rejects_missing_message() -> None:
+def test_chat_rejects_missing_message(client) -> None:
     payload = {
         "conversation_id": "test-001",
     }
@@ -189,7 +286,7 @@ def test_chat_rejects_missing_message() -> None:
     assert response.json()["detail"][0]["loc"] == ["body", "message"]
 
 
-def test_chat_rejects_non_string_message() -> None:
+def test_chat_rejects_non_string_message(client) -> None:
     payload = {
         "conversation_id": "test-001",
         "message": 123,
@@ -203,7 +300,7 @@ def test_chat_rejects_non_string_message() -> None:
     assert error["type"] == "string_type"
 
 
-def test_chat_rejects_closed_conversation() -> None:
+def test_chat_rejects_closed_conversation(client) -> None:
     payload = {
         "conversation_id": "closed-001",
         "message": "你好",
@@ -318,6 +415,8 @@ def test_generate_reply_returns_structured_result_and_includes_history(
 def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
     monkeypatch,
     caplog,
+    database_path,
+    error_client,
 ) -> None:
     observed = {}
 
@@ -340,16 +439,39 @@ def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
         TimeoutAsyncClient,
     )
 
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
-    )
-
     with caplog.at_level(logging.WARNING, logger="app.services.llm"):
         response = error_client.post(
             "/chat",
             json={"conversation_id": "test-001", "message": "你好"},
         )
+
+    connection = create_connection(str(database_path))
+
+    try:
+        failed_model_calls = connection.execute(
+            """
+            SELECT
+                request_message.role,
+                request_message.content,
+                model_call.response_message_id,
+                model_call.model,
+                model_call.outcome,
+                model_call.upstream_status,
+                model_call.latency_ms,
+                model_call.prompt_tokens,
+                model_call.completion_tokens,
+                model_call.total_tokens
+            FROM model_call
+            JOIN message AS request_message
+                ON request_message.conversation_id = model_call.conversation_id
+                AND request_message.message_id = model_call.request_message_id
+            WHERE model_call.conversation_id = ?
+            ORDER BY model_call.model_call_id
+            """,
+            ("test-001",),
+        ).fetchall()
+    finally:
+        connection.close()
 
     log_messages = [
         record.getMessage()
@@ -367,11 +489,29 @@ def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
     assert "status=unavailable" in log_messages[0]
     assert "latency_ms=" in log_messages[0]
     assert "error=timeout" in log_messages[0]
+    assert len(failed_model_calls) == 1
+    failed_model_call = failed_model_calls[0]
+
+    assert failed_model_call[:6] == (
+        "user",
+        "你好",
+        None,
+        observed["model"],
+        "timeout",
+        None,
+    )
+    assert failed_model_call[6] >= 0
+    assert failed_model_call[7:] == (
+        None,
+        None,
+        None,
+    )
 
 
 def test_chat_returns_service_unavailable_when_llm_connection_fails(
     monkeypatch,
     caplog,
+    error_client,
 ) -> None:
     observed = {}
 
@@ -392,11 +532,6 @@ def test_chat_returns_service_unavailable_when_llm_connection_fails(
     monkeypatch.setattr(
         "app.services.llm.httpx.AsyncClient",
         ConnectionFailingAsyncClient,
-    )
-
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
     )
 
     with caplog.at_level(logging.WARNING, logger="app.services.llm"):
@@ -426,6 +561,7 @@ def test_chat_returns_service_unavailable_when_llm_connection_fails(
 def test_chat_returns_bad_gateway_when_llm_returns_error_status(
     monkeypatch,
     caplog,
+    error_client,
 ) -> None:
     observed = {}
 
@@ -456,11 +592,6 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(
         UpstreamErrorAsyncClient,
     )
 
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
-    )
-
     with caplog.at_level(logging.WARNING, logger="app.services.llm"):
         response = error_client.post(
             "/chat",
@@ -488,6 +619,7 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(
 def test_chat_returns_bad_gateway_when_llm_returns_invalid_json(
     monkeypatch,
     caplog,
+    error_client,
 ) -> None:
     observed = {}
 
@@ -513,11 +645,6 @@ def test_chat_returns_bad_gateway_when_llm_returns_invalid_json(
     monkeypatch.setattr(
         "app.services.llm.httpx.AsyncClient",
         InvalidJsonAsyncClient,
-    )
-
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
     )
 
     with caplog.at_level(logging.WARNING, logger="app.services.llm"):
@@ -546,6 +673,7 @@ def test_chat_returns_bad_gateway_when_llm_returns_invalid_json(
 
 def test_chat_returns_bad_gateway_when_llm_response_has_no_choices(
     monkeypatch,
+    error_client,
 ) -> None:
     class MissingChoicesAsyncClient:
         def __init__(self, *, timeout=None) -> None:
@@ -572,11 +700,6 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_choices(
         MissingChoicesAsyncClient,
     )
 
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
-    )
-
     response = error_client.post(
         "/chat",
         json={"conversation_id": "test-001", "message": "你好"},
@@ -590,6 +713,7 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_choices(
 
 def test_chat_returns_bad_gateway_when_llm_response_has_no_content(
     monkeypatch,
+    error_client,
 ) -> None:
     class MissingContentAsyncClient:
         def __init__(self, *, timeout=None) -> None:
@@ -621,11 +745,6 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_content(
     monkeypatch.setattr(
         "app.services.llm.httpx.AsyncClient",
         MissingContentAsyncClient,
-    )
-
-    error_client = TestClient(
-        app,
-        raise_server_exceptions=False,
     )
 
     response = error_client.post(
@@ -701,7 +820,11 @@ def test_generate_reply_returns_none_and_logs_unavailable_when_usage_is_missing(
     assert "total_tokens=unavailable" in log_message[0]
 
 
-def test_chat_logs_token_usage_for_successful_llm_call(monkeypatch, caplog) -> None:
+def test_chat_logs_token_usage_for_successful_llm_call(
+    monkeypatch,
+    caplog,
+    client,
+) -> None:
     class SuccessfulAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
