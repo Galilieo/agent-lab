@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-08-16。
+> 最近核验：2026-08-17。
 
 ## 1. 项目定位
 
@@ -41,7 +41,7 @@ Python 工程
 | 2. 读懂现有 agent-lab | **已完成第一轮** | 能解释核心文件和当前请求链 |
 | 3. FastAPI 请求链 | **已完成第一轮** | 完成请求、校验、响应、异常和测试 |
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
-| 5. SQLite 与多轮对话 | **当前进行中** | 会话可持久化、恢复和隔离 |
+| 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | 待开始 | 不依赖框架完成工具闭环，并理解 Structured Output 与 MCP 的位置 |
 | 7. 轻量记忆与原生最小 RAG | 待开始 | 记忆与检索来源可追踪 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
@@ -61,6 +61,7 @@ Python 工程
 - `conversation → message` 外键有效。
 - 聊天历史会话隔离、稳定排序和最近消息窗口正确。
 - 数据 `commit()` 后可在重新连接后恢复。
+- 成功和失败的 `model_call` 均能关联本轮 user message，并保留正确的结果分类和可用调用元数据。
 
 日志精确条数、单个日志字段、缺少 usage 时的具体日志文本、所有异常响应字段组合、跨会话组合外键排列、索引字段顺序和未提交重连等细粒度测试已有部分可以继续保留作为回归保护，但不要求用户全部从零手写，也不再按同样密度新增。重复的 `FakeAsyncClient`、会话/消息插入等样板默认由 Codex 处理；明显影响阅读时再单独抽取 fixture/helper，不让测试重构挤占 Agent 主功能学习。
 
@@ -68,13 +69,13 @@ Python 工程
 
 已经存在：
 
-- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`，并将 LLM 读取超时映射为 `504`。
+- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`；通过 lifespan 在应用启动时初始化 SQLite schema，按两个短事务保存当前 user message、成功 assistant message 和成功/失败 `model_call`，并保持 `504 / 503 / 502` 错误映射。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
-- `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序。
-- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取回答，以及转换超时、连接、上游状态和非法 JSON 异常。
+- `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序，成功/失败调用插入函数负责保存可追踪调用记录。
+- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取结构化成功结果，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
-- `tests/test_health.py`：TestClient 请求校验、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试。
+- `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功和 timeout 调用记录持久化。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
 
@@ -193,10 +194,32 @@ pytest 8.4.2
 - 已复用现有成功与 usage 缺失测试完成 RED → GREEN，并让路由 fake service 返回完整 `LLMResult`；结构化结果目标测试为 `2 passed, 13 deselected`，全量 `uv run pytest -q` 为 `26 passed`。
 - 已能解释 `@dataclass` 根据字段生成初始化方法等样板代码，以及普通类型标注本身不会让类接受字段构造参数。
 
+2026-08-17 学习验收：
+
+- 已让 user / assistant message 插入函数返回 SQLite 自动生成的 `message_id`，并用 `request_message_id` / `response_message_id` 将成功调用关联到本轮请求与回复。
+- 已在第二个短事务中统一保存 assistant message 和成功 `model_call`，避免只留下其中一条的半套成功数据；模型等待继续位于两个数据库事务之外。
+- 已增加 `LLMRequestError` 结构化失败边界，四类异常保留 `model`、具体 `outcome`、可用 `upstream_status` 和 `latency_ms`，同时保持原有错误文本与 `504 / 503 / 502` HTTP 映射。
+- 已在 LLM 失败后保留事务一提交的 user message，不生成 assistant message，并保存 `response_message_id=NULL`、Token 字段为空的失败 `model_call`。
+- 已用原有两轮路由测试验证两条成功调用及消息归属，并用 timeout 路由测试完成一条代表性失败持久化 RED → GREEN；其他三类失败复用现有测试完成回归。
+- 成功与 timeout 目标测试均为 `1 passed`，`tests/test_health.py` 为 `15 passed`，全量 `uv run pytest -q` 为 `26 passed`；`py_compile` 和 `git diff --check` 通过。
+- 截至这一自动化测试步骤，验证使用 TestClient、真实临时 SQLite 和 fake LLM/HTTP client，尚未重新执行真实 Uvicorn 网络请求或真实 DeepSeek 多轮调用。
+- 已新增一条不调用 `/chat` 的代表性启动测试，先确认当前应用启动后临时 SQLite 中没有三张业务表，形成正确 RED。
+- 已使用 FastAPI lifespan 在应用启动时打开目标 SQLite、执行 `initialize_schema()` 并关闭初始化连接，同时从 `/chat` 请求链移除 schema 初始化。
+- 已将模块级 TestClient 和各失败测试中的临时客户端整理为 pytest `yield` fixtures，确保临时数据库路径先注入、lifespan 后启动，并在测试结束后退出应用生命周期。
+- schema 启动目标测试为 `1 passed`，`tests/test_health.py` 为 `16 passed`，全量 `uv run pytest -q` 为 `27 passed`；`py_compile` 和 `git diff --check` 通过。
+- 已使用全新的临时文件数据库、本地 fake OpenAI 兼容上游和真实 Uvicorn 进程完成两轮 HTTP 验收；`GET /health` 与两次 `POST /chat` 均返回 `200`，没有访问真实 DeepSeek 或产生费用。
+- 已在 fake 上游实际观察第二轮 `messages` 为 `system → 第一轮 user → 第一轮 assistant → 第二轮 user`，确认真实 HTTP 请求链正确注入上一轮历史。
+- 两轮结束后真实 SQLite 数据为 `conversation=1`、`message=4`、`model_call=2`；两条成功调用分别关联请求/回复消息 `1→2` 和 `3→4`，模型、上游状态和 Token usage 均已保存。
+- 用户明确授权联网和少量费用后，已使用 `uvicorn --env-file .env` 加载本地配置但不读取或输出其内容，并通过独立临时数据库完成两次真实 DeepSeek 请求；`GET /health` 与两次 `POST /chat` 均返回 `200`。
+- 第一轮合成消息要求记住测试代号“蓝鲸42”，模型回答“已记住。”；第二轮询问测试代号，模型正确回答“蓝鲸42”，实际证明当前 DeepSeek 请求链能够接收数据库恢复的上一轮历史。
+- 两次真实调用均由当前配置模型 `deepseek-v4-flash` 返回，上游状态为 `200`，耗时约为 `2136.33ms / 2002.82ms`；Token usage 分别为 `106 / 11 / 117` 和 `122 / 78 / 200`，并正确保存为两条 `succeeded` 调用记录。
+- 真实联调后的 SQLite 数据仍为 `conversation=1`、`message=4`、`model_call=2`，请求/回复消息分别关联为 `1→2` 和 `3→4`；临时数据库已在验证后删除。
+- 阶段 5 已完成第一轮；本次真实联调证明了当前时点的外网连接、API Key、配置模型和两轮历史链路，但单次验收不代表长期模型质量、稳定性、限流或所有错误场景。
+
 尚未存在：
 
-- `POST /chat` 尚未保存 `model_call`；模型失败时也尚未记录失败调用。
-- SQLite 表结构当前仍在请求读取链中按 `IF NOT EXISTS` 初始化，尚未迁移到应用启动生命周期。
+- 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
+- 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
 - Tool Calling。
 - 记忆与 RAG。
 - LangChain / LangGraph。
@@ -298,15 +321,17 @@ POST /chat
 - 正常、超时和上游失败都有测试或可复现验证。
 - 路由不直接堆满模型调用细节。
 
-## 7. 阶段 5：SQLite 与多轮对话（当前进行中）
+## 7. 阶段 5：SQLite 与多轮对话（已完成第一轮）
 
 学习：
 
 - `conversation`、`message`、`model_call` 表。
 - 主键、外键、索引和事务基础。
 - 根据 `conversation_id` 读取历史。
-- 上下文裁剪、最近消息窗口和摘要。
+- 上下文裁剪和最近消息窗口；理解历史摘要的收益与额外调用、持久化和评测成本。
 - 数据访问层与 API 层边界。
+
+本阶段只要求数据模型支持同一 user message 关联多次调用并完整记录每次尝试，不实现自动重试策略；自动重试归阶段 10。最近消息窗口作为当前最小上下文裁剪方案，历史摘要不阻塞阶段 5 完成，后续根据记忆和评测结果决定是否实现。
 
 完成标准：
 
@@ -486,10 +511,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、最小历史读取函数、文件持久化与重新连接恢复、LLM service 的历史参数和结构化成功结果边界，以及 `POST /chat` 的历史读取、当前 user message 与成功 assistant message 持久化链：
+阶段 5 已完成第一轮：逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、文件持久化与重新连接恢复、LLM service 的历史参数和结构化成功/失败边界、FastAPI lifespan schema 初始化、`POST /chat` 的历史读取与成功/失败持久化链、真实 Uvicorn + 本地 fake 上游验收，以及用户授权后的真实 DeepSeek 两轮联调均已闭环。
 
 ```text
-下一小主题：保存成功 model_call 并关联请求与回复消息
+下一小主题：阶段 6 起点——探索 Tool Calling 真实协议并确定本项目最小工具契约
 ```
 
-具体范围：让 user / assistant message 插入函数返回各自的 `message_id`，为数据库层增加最小成功 `model_call` 插入操作；路由保留第一次短事务得到 `request_message_id`，在模型成功后的第二次短事务中保存 assistant、取得 `response_message_id`，再用 `LLMResult` 的模型、状态、耗时和可选 Token 写入与两条消息关联的 `model_call`，统一提交。复用现有两轮临时数据库测试验证两条成功调用记录及其消息归属。本轮不记录失败 `model_call`，不实现重试，也不迁移 schema 初始化生命周期。
+具体范围：Tool Calling 是本项目第一次进入的新协议边界，先读取当前 DeepSeek OpenAI 兼容接口与真实响应形状，明确 `tools`、工具名、参数 JSON、`tool_calls`、tool 消息和直接回答分支在请求链中的位置，再确定本项目 calculator / 当前时间 / Markdown 查询工具共用的最小 Python 契约。协议与目标行为明确后再进入代表性 RED → GREEN，不在尚未确认接口时强行编写测试。

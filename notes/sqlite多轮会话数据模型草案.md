@@ -85,6 +85,8 @@ model_call 1 ── 0..1 assistant message
 2. 用户继续询问“我今年多大？”。
 3. 第二次请求的首次模型调用超时，重试后成功回答“18 岁”。
 
+这个场景用于验证数据模型能够保存同一 user message 的多次调用记录，不表示当前 `/chat` 已经实现自动重试。
+
 最终应保存：
 
 | 数据 | 数量 | 原因 |
@@ -102,5 +104,13 @@ model_call 1 ── 0..1 assistant message
 - 已实现消息历史组合索引 `(conversation_id, created_at, message_id)`，并验证查询只返回目标会话且按 `created_at`、`message_id` 稳定排序。
 - 已将最近消息窗口抽取为 `load_recent_messages(connection, conversation_id, limit)`，先倒序取得最近 N 条，再恢复为 `created_at`、`message_id` 正序，并返回模型上下文需要的 `role` / `content`。
 - 已使用 pytest 临时文件验证提交后的会话消息可在重新连接后恢复，未提交写入会在连接关闭时回滚。
+- 已让 user / assistant message 插入函数返回生成的 `message_id`，并在 `/chat` 中用这两个 ID 保存与本轮消息关联的成功 `model_call`。
+- 已让 LLM service 的四类失败异常携带结构化元数据；失败时保留已提交的 user message，不生成 assistant message，并保存 `response_message_id` 和 Token 字段为空的失败 `model_call`。
+- 已用两轮临时数据库路由测试验证成功调用记录及其消息归属，并用 timeout 代表性测试验证失败调用持久化；其他失败类型复用现有 HTTP 和日志测试回归。
+- 当前数据模型允许同一 user message 关联多条调用记录，但 `/chat` 不执行自动重试；重试策略留到阶段 10 的评测与工程化。
+- 最近消息窗口是当前最小上下文裁剪方案；历史摘要会额外引入模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项。
+- SQLite schema 已迁移到 FastAPI lifespan，在应用启动时使用目标数据库路径完成初始化并关闭连接；`/chat` 不再重复执行表结构初始化，TestClient 通过上下文 fixture 触发同一生命周期。
+- 已使用真实 Uvicorn、本地 fake OpenAI 兼容上游和全新临时文件数据库完成两轮 HTTP 验收：第二轮上游请求包含上一轮 user / assistant 历史，最终保存 1 个会话、4 条消息和 2 条成功模型调用记录。
+- 用户明确授权后，已使用本地 `.env` 与 `deepseek-v4-flash` 完成真实两轮联调：第二轮正确回答第一轮提供的合成测试代号，最终仍保存 1 个会话、4 条消息和 2 条关联正确的成功调用；临时数据库已删除，未读取或输出 API Key。
 - 尚未引入 ORM、数据访问层或 CRUD。
 - 不保存 API Key、Authorization Header、完整模型请求、完整原始响应或其他敏感内容。
