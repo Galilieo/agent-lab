@@ -15,8 +15,3 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     conversation_id: str
     answer: str
-
-request = ChatRequest(conversation_id="123", message="hello")
-
-data = request.model_dump()
-print(data)
