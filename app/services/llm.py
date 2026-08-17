@@ -21,20 +21,37 @@ class LLMResult:
     total_tokens: int | None
 
 
-class LLMTimeoutError(Exception):
-    pass
+class LLMRequestError(Exception):
+    outcome: str
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        model: str,
+        upstream_status: int | None,
+        latency_ms: float,
+    ) -> None:
+        super().__init__(message)
+        self.model = model
+        self.upstream_status = upstream_status
+        self.latency_ms = latency_ms
 
 
-class LLMConnectionError(Exception):
-    pass
+class LLMTimeoutError(LLMRequestError):
+    outcome = "timeout"
 
 
-class LLMUpstreamError(Exception):
-    pass
+class LLMConnectionError(LLMRequestError):
+    outcome = "connection_error"
 
 
-class LLMResponseError(Exception):
-    pass
+class LLMUpstreamError(LLMRequestError):
+    outcome = "upstream_error"
+
+
+class LLMResponseError(LLMRequestError):
+    outcome = "invalid_response"
 
 
 async def generate_reply(
@@ -87,7 +104,12 @@ async def generate_reply(
             latency_ms,
         )
 
-        raise LLMTimeoutError("LLM request timed out.") from exc
+        raise LLMTimeoutError(
+            "LLM request timed out.",
+            model=settings.openai_model,
+            upstream_status=None,
+            latency_ms=latency_ms,
+        ) from exc
 
     except httpx.ConnectError as exc:
         latency_ms = (time.perf_counter() - started_at) * 1000
@@ -99,7 +121,12 @@ async def generate_reply(
             latency_ms,
         )
 
-        raise LLMConnectionError("LLM service unavailable.") from exc
+        raise LLMConnectionError(
+            "LLM service unavailable.",
+            model=settings.openai_model,
+            upstream_status=None,
+            latency_ms=latency_ms,
+        ) from exc
 
     except httpx.HTTPStatusError as exc:
         latency_ms = (time.perf_counter() - started_at) * 1000
@@ -112,7 +139,12 @@ async def generate_reply(
             latency_ms,
         )
 
-        raise LLMUpstreamError("LLM upstream request failed.") from exc
+        raise LLMUpstreamError(
+            "LLM upstream request failed.",
+            model=settings.openai_model,
+            upstream_status=response.status_code,
+            latency_ms=latency_ms,
+        ) from exc
 
     try:
         response_data = response.json()
@@ -128,7 +160,12 @@ async def generate_reply(
             latency_ms,
         )
 
-        raise LLMResponseError("LLM returned an invalid response.") from exc
+        raise LLMResponseError(
+            "LLM returned an invalid response.",
+            model=settings.openai_model,
+            upstream_status=response.status_code,
+            latency_ms=latency_ms,
+        ) from exc
 
     usage = response_data.get("usage") or {}
 

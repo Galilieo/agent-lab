@@ -89,8 +89,8 @@ def insert_user_message(
     conversation_id: str,
     content: str,
     created_at: str,
-) -> None:
-    connection.execute(
+) -> int:
+    cursor = connection.execute(
         """
         INSERT INTO message (
             conversation_id,
@@ -107,14 +107,16 @@ def insert_user_message(
         ),
     )
 
+    return cursor.lastrowid
+
 
 def insert_assistant_message(
     connection: sqlite3.Connection,
     conversation_id: str,
     content: str,
     created_at: str,
-) -> None:
-    connection.execute(
+) -> int:
+    cursor = connection.execute(
         """
         INSERT INTO message (
             conversation_id,
@@ -127,6 +129,88 @@ def insert_assistant_message(
         (
             conversation_id,
             content,
+            created_at,
+        ),
+    )
+
+    return cursor.lastrowid
+
+
+def insert_successful_model_call(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    request_message_id: int,
+    response_message_id: int,
+    model: str,
+    upstream_status: int,
+    latency_ms: float,
+    prompt_tokens: int | None,
+    completion_tokens: int | None,
+    total_tokens: int | None,
+    created_at: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO model_call (
+            conversation_id,
+            request_message_id,
+            response_message_id,
+            model,
+            outcome,
+            upstream_status,
+            latency_ms,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, 'succeeded', ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            conversation_id,
+            request_message_id,
+            response_message_id,
+            model,
+            upstream_status,
+            latency_ms,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            created_at,
+        ),
+    )
+
+
+def insert_failed_model_call(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    request_message_id: int,
+    model: str,
+    outcome: str,
+    upstream_status: int | None,
+    latency_ms: float,
+    created_at: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO model_call (
+            conversation_id,
+            request_message_id,
+            model,
+            outcome,
+            upstream_status,
+            latency_ms,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            conversation_id,
+            request_message_id,
+            model,
+            outcome,
+            upstream_status,
+            latency_ms,
             created_at,
         ),
     )
