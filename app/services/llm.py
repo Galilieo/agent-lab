@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import logging
 import time
@@ -11,14 +11,22 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class LLMToolCall:
+    call_id: str
+    name: str
+    arguments: str
+
+
+@dataclass
 class LLMResult:
-    answer: str
+    answer: str | None
     model: str
     upstream_status: int
     latency_ms: float
     prompt_tokens: int | None
     completion_tokens: int | None
     total_tokens: int | None
+    tool_calls: list[LLMToolCall] = field(default_factory=list)
 
 
 class LLMRequestError(Exception):
@@ -57,9 +65,14 @@ class LLMResponseError(LLMRequestError):
 async def generate_reply(
     message: str,
     history: list[dict[str, str]] | None = None,
+    tools: list[dict] | None = None,
+    additional_messages: list[dict] | None = None,
 ) -> LLMResult:
     if history is None:
         history = []
+
+    if additional_messages is None:
+        additional_messages = []
 
     url = f"{settings.openai_base_url.rstrip('/')}/chat/completions"
 
@@ -80,9 +93,14 @@ async def generate_reply(
                 "role": "user",
                 "content": message,
             },
+            *additional_messages,
         ],
         "stream": False,
     }
+
+    if tools is not None:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
 
     started_at = time.perf_counter()
 
@@ -148,7 +166,17 @@ async def generate_reply(
 
     try:
         response_data = response.json()
-        answer = response_data["choices"][0]["message"]["content"]
+        message_data = response_data["choices"][0]["message"]
+        answer = message_data["content"]
+
+        tool_calls = [
+            LLMToolCall(
+                call_id=tool_call["id"],
+                name=tool_call["function"]["name"],
+                arguments=tool_call["function"]["arguments"],
+            )
+            for tool_call in message_data.get("tool_calls") or []
+        ]
     except (json.JSONDecodeError, KeyError) as exc:
         latency_ms = (time.perf_counter() - started_at) * 1000
 
@@ -194,4 +222,5 @@ async def generate_reply(
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         total_tokens=total_tokens,
+        tool_calls=tool_calls,
     )

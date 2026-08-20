@@ -412,6 +412,109 @@ def test_generate_reply_returns_structured_result_and_includes_history(
     assert observed["timeout"] == 60.0
 
 
+def test_generate_reply_returns_tool_call_when_model_requests_calculator(
+    monkeypatch,
+) -> None:
+    observed = {}
+
+    calculator_tool = {
+        "type": "function",
+        "function": {
+            "name": "calculator",
+            "description": "执行两个数字的基础数学计算",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "left": {
+                        "type": "number",
+                    },
+                    "operator": {
+                        "type": "string",
+                        "enum": ["+", "-", "*", "/"],
+                    },
+                    "right": {
+                        "type": "number",
+                    },
+                },
+                "required": [
+                    "left",
+                    "operator",
+                    "right",
+                ],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    class ToolCallingAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            observed["tools"] = json["tools"]
+            observed["tool_choice"] = json["tool_choice"]
+
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={
+                    "choices": [
+                        {
+                            "finish_reason": "tool_calls",
+                            "message": {
+                                "role": "assistant",
+                                "content": None,
+                                "tool_calls": [
+                                    {
+                                        "id": "call_001",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "calculator",
+                                            "arguments": (
+                                                '{"left":2,'
+                                                '"operator":"+",'
+                                                '"right":3}'
+                                            ),
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        ToolCallingAsyncClient,
+    )
+
+    result = asyncio.run(
+        generate_reply(
+            message="计算 2 + 3",
+            tools=[calculator_tool],
+        )
+    )
+
+    assert observed["tools"] == [calculator_tool]
+    assert observed["tool_choice"] == "auto"
+    assert result.answer is None
+    assert len(result.tool_calls) == 1
+
+    tool_call = result.tool_calls[0]
+
+    assert tool_call.call_id == "call_001"
+    assert tool_call.name == "calculator"
+    assert tool_call.arguments == (
+        '{"left":2,"operator":"+","right":3}'
+    )
+
 def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
     monkeypatch,
     caplog,
