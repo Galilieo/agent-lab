@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.database import create_connection
 from app.main import app
 from app.services.llm import LLMResult, generate_reply
+from app.services.agent import AgentResult
 
 @pytest.fixture
 def database_path(monkeypatch, tmp_path):
@@ -83,10 +84,10 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
 ) -> None:
     observed_calls = []
 
-    async def fake_generate_reply(
+    async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
-    ) -> LLMResult:
+    ) -> AgentResult:
         connection = create_connection(str(database_path))
 
         try:
@@ -109,7 +110,18 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
                 "persisted_messages": persisted_messages,
             }
         )
-        return LLMResult(
+
+        tool_selection_call = LLMResult(
+            answer=None,
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=5.0,
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
+        )
+
+        final_model_call = LLMResult(
             answer="模拟模型回答",
             model="fake-model",
             upstream_status=200,
@@ -119,9 +131,17 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
             total_tokens=None,
         )
 
+        return AgentResult(
+            answer=final_model_call.answer,
+            model_calls=[
+                tool_selection_call,
+                final_model_call,
+            ],
+        )
+
     monkeypatch.setattr(
-        "app.main.generate_reply",
-        fake_generate_reply,
+        "app.main.run_agent",
+        fake_run_agent,
     )
 
     first_response = client.post(
@@ -223,6 +243,24 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
             """,
             ("conversation-c",),
         ).fetchall()
+
+        model_call_links = connection.execute(
+            """
+            SELECT
+                request_message.content,
+                response_message.content
+            FROM model_call
+            JOIN message AS request_message
+                ON request_message.conversation_id = model_call.conversation_id
+                AND request_message.message_id = model_call.request_message_id
+            LEFT JOIN message AS response_message
+                ON response_message.conversation_id = model_call.conversation_id
+                AND response_message.message_id = model_call.response_message_id
+            WHERE model_call.conversation_id = ?
+            ORDER BY model_call.model_call_id
+            """,
+            ("conversation-c",),
+        ).fetchall()
     finally:
         connection.close()
 
@@ -260,6 +298,12 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
             None,
             None,
         ),
+    ]
+    assert model_call_links == [
+        ("我叫小宇", None),
+        ("我叫小宇", "模拟模型回答"),
+        ("我叫什么？", None),
+        ("我叫什么？", "模拟模型回答"),
     ]
 
 

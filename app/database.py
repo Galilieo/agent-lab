@@ -140,7 +140,7 @@ def insert_successful_model_call(
     connection: sqlite3.Connection,
     conversation_id: str,
     request_message_id: int,
-    response_message_id: int,
+    response_message_id: int | None,
     model: str,
     upstream_status: int,
     latency_ms: float,

@@ -15,13 +15,13 @@ from app.database import (
     upsert_conversation,
 )
 from app.schemas import ChatRequest, ChatResponse, HealthResponse
+from app.services.agent import run_agent
 from app.services.llm import (
     LLMConnectionError,
     LLMRequestError,
     LLMTimeoutError,
     LLMUpstreamError,
     LLMResponseError,
-    generate_reply,
 )
 
 
@@ -105,7 +105,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         connection.close()
 
     try:
-        result = await generate_reply(
+        result = await run_agent(
             message=request.message,
             history=history,
         )
@@ -161,19 +161,26 @@ async def chat(request: ChatRequest) -> ChatResponse:
             created_at=response_timestamp,
         )
 
-        insert_successful_model_call(
-            connection=connection,
-            conversation_id=request.conversation_id,
-            request_message_id=request_message_id,
-            response_message_id=response_message_id,
-            model=result.model,
-            upstream_status=result.upstream_status,
-            latency_ms=result.latency_ms,
-            prompt_tokens=result.prompt_tokens,
-            completion_tokens=result.completion_tokens,
-            total_tokens=result.total_tokens,
-            created_at=response_timestamp,
-        )
+        last_model_call_index = len(result.model_calls) - 1
+
+        for index, model_call in enumerate(result.model_calls):
+            insert_successful_model_call(
+                connection=connection,
+                conversation_id=request.conversation_id,
+                request_message_id=request_message_id,
+                response_message_id=(
+                    response_message_id
+                    if index == last_model_call_index
+                    else None
+                ),
+                model=model_call.model,
+                upstream_status=model_call.upstream_status,
+                latency_ms=model_call.latency_ms,
+                prompt_tokens=model_call.prompt_tokens,
+                completion_tokens=model_call.completion_tokens,
+                total_tokens=model_call.total_tokens,
+                created_at=response_timestamp,
+            )
 
         connection.commit()
     finally:
