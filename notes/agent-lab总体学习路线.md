@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-08-17。
+> 最近核验：2026-08-21。
 
 ## 1. 项目定位
 
@@ -42,7 +42,7 @@ Python 工程
 | 3. FastAPI 请求链 | **已完成第一轮** | 完成请求、校验、响应、异常和测试 |
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
-| 6. 原生 Tool Calling 与 Agent 循环 | 待开始 | 不依赖框架完成工具闭环，并理解 Structured Output 与 MCP 的位置 |
+| 6. 原生 Tool Calling 与 Agent 循环 | **进行中** | 不依赖框架完成工具闭环，并理解 Structured Output 与 MCP 的位置 |
 | 7. 轻量记忆与原生最小 RAG | 待开始 | 记忆与检索来源可追踪 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
@@ -69,13 +69,17 @@ Python 工程
 
 已经存在：
 
-- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`；通过 lifespan 在应用启动时初始化 SQLite schema，按两个短事务保存当前 user message、成功 assistant message 和成功/失败 `model_call`，并保持 `504 / 503 / 502` 错误映射。
+- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`；通过 lifespan 在应用启动时初始化 SQLite schema，由 `/chat` 调用原生 Agent，按两个短事务保存当前 user message、最终 assistant message 和本轮全部成功 `model_call`，并保持 `504 / 503 / 502` 错误映射。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
 - `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序，成功/失败调用插入函数负责保存可追踪调用记录。
-- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装请求、调用 DeepSeek OpenAI 兼容接口、提取结构化成功结果，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
+- `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装普通或 Tool Calling 请求、调用 DeepSeek OpenAI 兼容接口、解析回答与 `tool_calls`，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
+- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator 单轮工具调用，将工具请求和结果回传模型，并用 `AgentResult` 返回最终回答与本轮全部成功模型调用。
+- `app/tools.py`：calculator 工具定义、Pydantic 参数校验和本地执行边界，拒绝未知工具、额外参数、非法运算符与除零参数。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
-- `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功和 timeout 调用记录持久化。
+- `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链和 timeout 调用记录持久化。
+- `tests/test_agent.py`：使用 fake HTTP client 验证 calculator 工具请求、工具结果消息、第二次模型请求、最终回答和完整成功调用列表。
+- `tests/test_tools.py`：验证 calculator 参数校验、本地执行和除零边界。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
 
@@ -216,11 +220,23 @@ pytest 8.4.2
 - 真实联调后的 SQLite 数据仍为 `conversation=1`、`message=4`、`model_call=2`，请求/回复消息分别关联为 `1→2` 和 `3→4`；临时数据库已在验证后删除。
 - 阶段 5 已完成第一轮；本次真实联调证明了当前时点的外网连接、API Key、配置模型和两轮历史链路，但单次验收不代表长期模型质量、稳定性、限流或所有错误场景。
 
-尚未存在：
+2026-08-21 阶段 6 进行中验收：
+
+- 已为原生 LLM service 增加 `tools`、`tool_choice="auto"`、`tool_calls` 解析和当前轮追加消息边界，并保留工具参数原始 JSON 供执行层校验。
+- 已实现 calculator 工具定义、Pydantic 参数模型和本地执行，覆盖合法计算、额外字段拒绝、非法运算符与除零参数边界。
+- 已实现直接回答或单轮 calculator 调用的原生 Agent 编排：第一次模型决定工具，Python 校验并执行，工具结果通过 `tool_call_id` 回传，第二次模型生成最终回答。
+- 已使用 `AgentResult` 区分最终业务回答与本轮全部成功 `LLMResult`，避免工具链第一次调用元数据在返回最终答案时丢失。
+- 已将 `/chat` 接入 `run_agent()`；成功工具链只保存一条最终 assistant message，同时保存中间和最终两条 `model_call`，中间调用的 `response_message_id=NULL`，最终调用关联 assistant message。
+- Agent 目标测试为 `1 passed`，`tests/test_health.py` 为 `17 passed`，全量为 `31 passed`；`py_compile` 和 `git diff --check` 通过。所有自动化测试均使用 fake Agent 或 fake HTTP client，没有访问真实 DeepSeek。
+
+当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
 - 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
-- Tool Calling。
+- 第二次模型调用失败时，当前只能保存失败调用，尚未携带和持久化第一次已经成功的工具选择调用。
+- 当前 Agent 只支持一次工具执行后生成最终回答，尚未实现可重复的 Agent 循环和最大循环次数。
+- 未知工具、非法 JSON、参数错误和工具执行失败尚未形成统一的 Agent / HTTP 错误边界。
+- 当前时间工具、本地 Markdown 查询工具和最小 MCP 接入尚未实现。
 - 记忆与 RAG。
 - LangChain / LangGraph。
 - SSE 与评测。
@@ -511,10 +527,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成第一轮：逻辑数据模型、SQLite 连接、三表结构、重试关系、跨会话外键隔离、稳定历史与最近消息窗口查询、文件持久化与重新连接恢复、LLM service 的历史参数和结构化成功/失败边界、FastAPI lifespan schema 初始化、`POST /chat` 的历史读取与成功/失败持久化链、真实 Uvicorn + 本地 fake 上游验收，以及用户授权后的真实 DeepSeek 两轮联调均已闭环。
+阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator 参数校验与执行、单轮工具回传闭环、`AgentResult`、`/chat` 接线和成功调用链持久化；阶段 6 仍处于进行中，不能标记完成。
 
 ```text
-下一小主题：阶段 6 起点——探索 Tool Calling 真实协议并确定本项目最小工具契约
+下一小主题：Agent 第二次模型调用失败时保留完整调用记录
 ```
 
-具体范围：Tool Calling 是本项目第一次进入的新协议边界，先读取当前 DeepSeek OpenAI 兼容接口与真实响应形状，明确 `tools`、工具名、参数 JSON、`tool_calls`、tool 消息和直接回答分支在请求链中的位置，再确定本项目 calculator / 当前时间 / Markdown 查询工具共用的最小 Python 契约。协议与目标行为明确后再进入代表性 RED → GREEN，不在尚未确认接口时强行编写测试。
+具体范围：构造“第一次调用成功返回 calculator `tool_calls`、工具执行成功、第二次模型调用 timeout”的代表性失败链，明确 Agent 异常如何携带已完成的成功调用和最终失败元数据，再让 `/chat` 在不生成 assistant message 的前提下保存第一次 `succeeded` 与第二次失败 `model_call`，保持现有 `504 / 503 / 502` HTTP 映射。
