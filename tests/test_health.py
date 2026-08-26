@@ -8,8 +8,13 @@ from fastapi.testclient import TestClient
 
 from app.database import create_connection
 from app.main import app
-from app.services.llm import LLMResult, generate_reply
-from app.services.agent import AgentResult
+from app.services.agent import AgentResult, AgentRunError
+from app.services.llm import (
+    LLMResult,
+    LLMTimeoutError,
+    generate_reply,
+)
+
 
 @pytest.fixture
 def database_path(monkeypatch, tmp_path):
@@ -559,6 +564,7 @@ def test_generate_reply_returns_tool_call_when_model_requests_calculator(
         '{"left":2,"operator":"+","right":3}'
     )
 
+
 def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
     monkeypatch,
     caplog,
@@ -653,6 +659,112 @@ def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
         None,
         None,
     )
+
+
+def test_chat_persists_completed_call_and_timeout_when_agent_final_call_times_out(
+    monkeypatch,
+    database_path,
+    error_client,
+) -> None:
+    async def fake_run_agent(
+        message: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> AgentResult:
+        completed_call = LLMResult(
+            answer=None,
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=5.0,
+            prompt_tokens=10,
+            completion_tokens=2,
+            total_tokens=12,
+        )
+
+        raise AgentRunError(
+            cause=LLMTimeoutError(
+                "LLM request timed out.",
+                model="fake-model",
+                upstream_status=None,
+                latency_ms=60000.0,
+            ),
+            completed_model_calls=[completed_call],
+        )
+
+    monkeypatch.setattr(
+        "app.main.run_agent",
+        fake_run_agent,
+    )
+
+    response = error_client.post(
+        "/chat",
+        json={
+            "conversation_id": "agent-timeout-001",
+            "message": "计算 2 + 3",
+        },
+    )
+
+    connection = create_connection(str(database_path))
+
+    try:
+        messages = connection.execute(
+            """
+            SELECT role, content
+            FROM message
+            WHERE conversation_id = ?
+            ORDER BY message_id
+            """,
+            ("agent-timeout-001",),
+        ).fetchall()
+
+        model_calls = connection.execute(
+            """
+            SELECT
+                response_message_id,
+                model,
+                outcome,
+                upstream_status,
+                latency_ms,
+                prompt_tokens,
+                completion_tokens,
+                total_tokens
+            FROM model_call
+            WHERE conversation_id = ?
+            ORDER BY model_call_id
+            """,
+            ("agent-timeout-001",),
+        ).fetchall()
+    finally:
+        connection.close()
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": "LLM request timed out.",
+    }
+    assert messages == [
+        ("user", "计算 2 + 3"),
+    ]
+    assert model_calls == [
+        (
+            None,
+            "fake-model",
+            "succeeded",
+            200,
+            5.0,
+            10,
+            2,
+            12,
+        ),
+        (
+            None,
+            "fake-model",
+            "timeout",
+            None,
+            60000.0,
+            None,
+            None,
+            None,
+        ),
+    ]
 
 
 def test_chat_returns_service_unavailable_when_llm_connection_fails(
