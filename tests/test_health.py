@@ -8,7 +8,11 @@ from fastapi.testclient import TestClient
 
 from app.database import create_connection
 from app.main import app
-from app.services.agent import AgentResult, AgentRunError
+from app.services.agent import (
+    AgentModelCallLimitError,
+    AgentResult,
+    AgentRunError,
+)
 from app.services.llm import (
     LLMResult,
     LLMTimeoutError,
@@ -765,6 +769,27 @@ def test_chat_persists_completed_call_and_timeout_when_agent_final_call_times_ou
             None,
         ),
     ]
+
+
+def test_chat_persists_completed_calls_when_agent_call_budgeted(
+    monkeypatch,
+    database_path,
+    error_client,
+) -> None:
+    async def fake_run_agent(
+        message: str,
+        histroy: list[dict[str, str]] | None = None,
+    ) -> AgentResult:
+        first_call = LLMResult(
+            answer=None,
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=5.0,
+            prompt_tokens=10,
+            completion_tokens=2,
+            total_tokens=12,
+        )
+        second
 
 
 def test_chat_returns_service_unavailable_when_llm_connection_fails(

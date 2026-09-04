@@ -4,7 +4,11 @@ import httpx
 
 import pytest
 
-from app.services.agent import AgentRunError, run_agent
+from app.services.agent import (
+    AgentModelCallLimitError,
+    AgentRunError,
+    run_agent,
+)
 from app.services.llm import (
     LLMResult,
     LLMTimeoutError,
@@ -273,10 +277,7 @@ def test_run_agent_stops_before_executing_tool_when_call_budget_is_exhausted(
         fake_execute_tool,
     )
 
-    with pytest.raises(
-        RuntimeError,
-        match="Agent reached the maximum number of model calls",
-    ):
+    with pytest.raises(AgentModelCallLimitError) as error_info:
         asyncio.run(
             run_agent(
                 message="一直调用 calculator",
@@ -284,8 +285,13 @@ def test_run_agent_stops_before_executing_tool_when_call_budget_is_exhausted(
             )
         )
 
+    error = error_info.value
     assert model_call_count == 2
     assert executed_tool_call_ids == ["call_001"]
+    assert [
+        model_call.tool_calls[0].call_id
+        for model_call in error.completed_model_calls
+    ] == ["call_001", "call_002"]
 
 
 def test_run_agent_preserves_completed_call_when_final_call_times_out(

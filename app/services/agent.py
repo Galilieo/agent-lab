@@ -28,6 +28,17 @@ class AgentRunError(Exception):
         self.completed_model_calls = completed_model_calls
 
 
+class AgentModelCallLimitError(Exception):
+    def __init__(
+        self,
+        completed_model_calls: list[LLMResult],
+    ) -> None:
+        super().__init__(
+            "Agent reached the maximum number of model calls."
+        )
+        self.completed_model_calls = completed_model_calls
+
+
 async def run_agent(
     message: str,
     history: list[dict[str, str]] | None = None,
@@ -65,8 +76,8 @@ async def run_agent(
             )
 
         if len(model_calls) == max_model_calls:
-            raise RuntimeError(
-                "Agent reached the maximum number of model calls."
+            raise AgentModelCallLimitError(
+                completed_model_calls=model_calls.copy(),
             )
 
         assistant_tool_calls = []
