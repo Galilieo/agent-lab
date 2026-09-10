@@ -771,25 +771,90 @@ def test_chat_persists_completed_call_and_timeout_when_agent_final_call_times_ou
     ]
 
 
-def test_chat_persists_completed_calls_when_agent_call_budgeted(
+def test_chat_persists_completed_calls_when_agent_call_budget_is_exhausted(
     monkeypatch,
     database_path,
     error_client,
 ) -> None:
     async def fake_run_agent(
         message: str,
-        histroy: list[dict[str, str]] | None = None,
+        history: list[dict[str, str]] | None = None,
     ) -> AgentResult:
         first_call = LLMResult(
             answer=None,
             model="fake-model",
             upstream_status=200,
             latency_ms=5.0,
-            prompt_tokens=10,
-            completion_tokens=2,
-            total_tokens=12,
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
         )
-        second
+        second_call = LLMResult(
+            answer=None,
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=6.0,
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
+        )
+
+        raise AgentModelCallLimitError(
+            completed_model_calls=[
+                first_call,
+                second_call,
+            ]
+        )
+
+    monkeypatch.setattr(
+        "app.main.run_agent",
+        fake_run_agent,
+    )
+
+    response = error_client.post(
+        "/chat",
+        json={
+            "conversation_id": "agent-call-limit-001",
+            "message": "一直调用 calculator",
+        },
+    )
+
+    connection = create_connection(str(database_path))
+
+    try:
+        messages = connection.execute(
+            """
+            SELECT role, content
+            FROM message
+            WHERE conversation_id = ?
+            ORDER BY message_id
+            """,
+            ("agent-call-limit-001",),
+        ).fetchall()
+
+        model_calls = connection.execute(
+            """
+            SELECT response_message_id, outcome
+            FROM model_call
+            WHERE conversation_id = ?
+            ORDER BY model_call_id
+            """,
+            ("agent-call-limit-001",),
+        ).fetchall()
+    finally:
+        connection.close()
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Agent reached the maximum number of model calls.",
+    }
+    assert messages == [
+        ("user", "一直调用 calculator"),
+    ]
+    assert model_calls == [
+        (None, "succeeded"),
+        (None, "succeeded"),
+    ]
 
 
 def test_chat_returns_service_unavailable_when_llm_connection_fails(

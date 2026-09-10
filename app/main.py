@@ -15,7 +15,11 @@ from app.database import (
     upsert_conversation,
 )
 from app.schemas import ChatRequest, ChatResponse, HealthResponse
-from app.services.agent import AgentRunError, run_agent
+from app.services.agent import (
+    AgentModelCallLimitError,
+    AgentRunError,
+    run_agent,
+)
 from app.services.llm import (
     LLMConnectionError,
     LLMRequestError,
@@ -66,6 +70,36 @@ def persist_failed_model_call(
             latency_ms=error.latency_ms,
             created_at=timestamp,
         )
+
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def persist_agent_model_call_limit_error(
+    conversation_id: str,
+    request_message_id: int,
+    error: AgentModelCallLimitError,
+) -> None:
+    connection = create_connection(settings.database_path)
+
+    try:
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        for model_call in error.completed_model_calls:
+            insert_successful_model_call(
+                connection=connection,
+                conversation_id=conversation_id,
+                request_message_id=request_message_id,
+                response_message_id=None,
+                model=model_call.model,
+                upstream_status=model_call.upstream_status,
+                latency_ms=model_call.latency_ms,
+                prompt_tokens=model_call.prompt_tokens,
+                completion_tokens=model_call.completion_tokens,
+                total_tokens=model_call.total_tokens,
+                created_at=timestamp,
+            )
 
         connection.commit()
     finally:
@@ -200,6 +234,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
         ) from exc
     except LLMResponseError as exc:
         persist_failed_model_call(
+            conversation_id=request.conversation_id,
+            request_message_id=request_message_id,
+            error=exc,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+    except AgentModelCallLimitError as exc:
+        persist_agent_model_call_limit_error(
             conversation_id=request.conversation_id,
             request_message_id=request_message_id,
             error=exc,

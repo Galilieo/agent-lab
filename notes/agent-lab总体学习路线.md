@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-09-04。
+> 最近核验：2026-09-08。
 
 ## 1. 项目定位
 
@@ -74,10 +74,10 @@ Python 工程
 - `app/config.py`：环境变量配置对象。
 - `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序，成功/失败调用插入函数负责保存可追踪调用记录。
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装普通或 Tool Calling 请求、调用 DeepSeek OpenAI 兼容接口、解析回答与 `tool_calls`，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
-- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator 可重复工具调用，将每轮工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用。
+- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator 可重复工具调用，将每轮工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，并用 `AgentModelCallLimitError` 表达调用预算耗尽。
 - `app/tools.py`：calculator 工具定义、Pydantic 参数校验和本地执行边界，拒绝未知工具、额外参数、非法运算符与除零参数。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
-- `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链、直接失败以及中途成功后最终 timeout 的调用记录持久化。
+- `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链、直接失败、中途成功后最终 timeout，以及调用预算耗尽时的调用记录持久化。
 - `tests/test_agent.py`：使用 fake HTTP client 验证 calculator 工具请求、工具结果消息、第二次模型请求、最终回答和完整成功调用列表。
 - `tests/test_tools.py`：验证 calculator 参数校验、本地执行和除零边界。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
@@ -247,11 +247,16 @@ pytest 8.4.2
 - 恢复时重新核验当前源码和测试；全量 `uv run pytest -q` 为 `35 passed`，测试使用 fake Agent / fake LLM 和本地临时 SQLite，没有访问真实 DeepSeek。
 - 恢复后的第一个小主题是最大模型调用预算耗尽时的结构化 Agent 异常、HTTP 状态映射和已完成调用持久化边界。
 
+2026-09-08 阶段 6 进行中验收：
+
+- 已使用 `AgentModelCallLimitError` 表达最大模型调用预算耗尽，并携带预算内已经成功的全部 `LLMResult`。
+- `/chat` 将该异常映射为 HTTP `502`，只保存本轮 user message 和两条成功 `model_call`；不创建 assistant message，也不虚构失败调用。
+- 代表性目标测试为 `1 passed`，全量 `uv run pytest -q` 为 `36 passed`；受影响 Python 文件通过 `py_compile`，`git diff --check` 通过。验证仅使用 fake Agent 和临时 SQLite，没有访问真实 DeepSeek。
+
 当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
 - 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
-- 最大模型调用预算耗尽时会停止 Agent，但尚未形成结构化 Agent 异常、HTTP 状态映射和已完成调用持久化边界。
 - 未知工具、非法 JSON、参数错误和工具执行失败尚未形成统一的 Agent / HTTP 错误边界。
 - 当前时间工具、本地 Markdown 查询工具和最小 MCP 接入尚未实现。
 - 记忆与 RAG。
@@ -544,10 +549,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator 参数校验与执行、可重复工具回传循环、默认最大模型调用次数、`AgentResult`、`AgentRunError`、`/chat` 接线，以及成功和“中途成功后最终失败”调用链持久化；阶段 6 仍处于进行中，不能标记完成。
+阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator 参数校验与执行、可重复工具回传循环、默认最大模型调用次数、`AgentResult`、`AgentRunError`、`AgentModelCallLimitError`、`/chat` 接线，以及成功、“中途成功后最终失败”和调用预算耗尽三条调用链的持久化；阶段 6 仍处于进行中，不能标记完成。
 
 ```text
-下一小主题：最大模型调用预算耗尽后的 Agent / HTTP / 持久化边界
+下一小主题：未知工具、非法参数和工具执行失败的统一错误边界
 ```
 
-具体范围：先明确最大模型调用预算耗尽时的结构化 Agent 异常，保留已经成功的模型调用，并为 `/chat` 补齐 HTTP 状态映射和数据库持久化边界；完成验证后，再继续未知工具、非法参数和工具执行失败的统一错误边界。之后实现当前时间工具、本地 Markdown 查询工具和最小 MCP 接入，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。
+具体范围：统一处理模型请求未知工具、工具参数不是合法 JSON、参数不符合 Schema，以及工具执行失败时的 Agent 异常、HTTP 映射和数据库持久化边界。完成验证后，再实现当前时间工具、本地 Markdown 查询工具和最小 MCP 接入，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。
