@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-09-08。
+> 最近核验：2026-09-21。
 
 ## 1. 项目定位
 
@@ -253,11 +253,17 @@ pytest 8.4.2
 - `/chat` 将该异常映射为 HTTP `502`，只保存本轮 user message 和两条成功 `model_call`；不创建 assistant message，也不虚构失败调用。
 - 代表性目标测试为 `1 passed`，全量 `uv run pytest -q` 为 `36 passed`；受影响 Python 文件通过 `py_compile`，`git diff --check` 通过。验证仅使用 fake Agent 和临时 SQLite，没有访问真实 DeepSeek。
 
+2026-09-21 阶段 6 进行中验收：
+
+- 已使用 `AgentToolError` 统一承接 `execute_tool()` 边界内的未知工具、非法 JSON、参数 Schema 校验和工具执行异常，并通过异常链保留原始原因，同时携带工具失败前已经成功的全部 `LLMResult`。
+- `/chat` 将工具处理失败映射为 HTTP `502`，保留事务一已经提交的 user message 和此前成功的 `model_call`；不创建不存在的 assistant message，也不把工具失败伪装成失败的模型调用。
+- 已将“保存已完成模型调用”的逻辑抽取为 `persist_completed_model_calls()`，由调用预算耗尽和工具失败两条边界复用；代表性未知工具测试贯穿真实 `/chat → run_agent() → execute_tool() → SQLite`，只 fake 外部模型调用。
+- 代表性目标测试为 `1 passed`，全量 `uv run pytest -q` 为 `37 passed`，`git diff --check` 通过；验证没有访问真实 DeepSeek、没有产生模型费用。
+
 当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
 - 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
-- 未知工具、非法 JSON、参数错误和工具执行失败尚未形成统一的 Agent / HTTP 错误边界。
 - 当前时间工具、本地 Markdown 查询工具和最小 MCP 接入尚未实现。
 - 记忆与 RAG。
 - LangChain / LangGraph。
@@ -549,10 +555,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator 参数校验与执行、可重复工具回传循环、默认最大模型调用次数、`AgentResult`、`AgentRunError`、`AgentModelCallLimitError`、`/chat` 接线，以及成功、“中途成功后最终失败”和调用预算耗尽三条调用链的持久化；阶段 6 仍处于进行中，不能标记完成。
+阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator 参数校验与执行、可重复工具回传循环、默认最大模型调用次数、`AgentResult`、`AgentRunError`、`AgentModelCallLimitError`、`AgentToolError`、`/chat` 接线，以及成功、“中途成功后最终失败”、调用预算耗尽和工具处理失败调用链的持久化；阶段 6 仍处于进行中，不能标记完成。
 
 ```text
-下一小主题：未知工具、非法参数和工具执行失败的统一错误边界
+下一小主题：当前时间工具的最小调用闭环
 ```
 
-具体范围：统一处理模型请求未知工具、工具参数不是合法 JSON、参数不符合 Schema，以及工具执行失败时的 Agent 异常、HTTP 映射和数据库持久化边界。完成验证后，再实现当前时间工具、本地 Markdown 查询工具和最小 MCP 接入，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。
+具体范围：在现有原生 Tool Calling 与 Agent 循环中增加当前时间工具，明确工具定义、参数边界、本地执行和结果回传，并用一条代表性测试完成闭环。完成验证后，再实现本地 Markdown 查询工具和最小 MCP 接入，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。

@@ -18,11 +18,13 @@ from app.schemas import ChatRequest, ChatResponse, HealthResponse
 from app.services.agent import (
     AgentModelCallLimitError,
     AgentRunError,
+    AgentToolError,
     run_agent,
 )
 from app.services.llm import (
     LLMConnectionError,
     LLMRequestError,
+    LLMResult,
     LLMTimeoutError,
     LLMUpstreamError,
     LLMResponseError,
@@ -76,17 +78,17 @@ def persist_failed_model_call(
         connection.close()
 
 
-def persist_agent_model_call_limit_error(
+def persist_completed_model_calls(
     conversation_id: str,
     request_message_id: int,
-    error: AgentModelCallLimitError,
+    model_calls: list[LLMResult],
 ) -> None:
     connection = create_connection(settings.database_path)
 
     try:
         timestamp = datetime.now(timezone.utc).isoformat()
 
-        for model_call in error.completed_model_calls:
+        for model_call in model_calls:
             insert_successful_model_call(
                 connection=connection,
                 conversation_id=conversation_id,
@@ -243,11 +245,22 @@ async def chat(request: ChatRequest) -> ChatResponse:
             detail=str(exc),
         ) from exc
     except AgentModelCallLimitError as exc:
-        persist_agent_model_call_limit_error(
+        persist_completed_model_calls(
             conversation_id=request.conversation_id,
             request_message_id=request_message_id,
-            error=exc,
+            model_calls=exc.completed_model_calls,
         )
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+    except AgentToolError as exc:
+        persist_completed_model_calls(
+            conversation_id=request.conversation_id,
+            request_message_id=request_message_id,
+            model_calls=exc.completed_model_calls,
+        )
+
         raise HTTPException(
             status_code=502,
             detail=str(exc),

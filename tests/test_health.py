@@ -16,6 +16,7 @@ from app.services.agent import (
 from app.services.llm import (
     LLMResult,
     LLMTimeoutError,
+    LLMToolCall,
     generate_reply,
 )
 
@@ -854,6 +855,101 @@ def test_chat_persists_completed_calls_when_agent_call_budget_is_exhausted(
     assert model_calls == [
         (None, "succeeded"),
         (None, "succeeded"),
+    ]
+
+
+def test_chat_persists_completed_call_when_agent_requests_unknown_tool(
+    monkeypatch,
+    database_path,
+    error_client,
+) -> None:
+    async def fake_generate_reply(
+        message: str,
+        history=None,
+        tools=None,
+        additional_messages=None,
+    ) -> LLMResult:
+        return LLMResult(
+            answer=None,
+            model="fake-model",
+            upstream_status=200,
+            latency_ms=5.0,
+            prompt_tokens=10,
+            completion_tokens=2,
+            total_tokens=12,
+            tool_calls=[
+                LLMToolCall(
+                    call_id="call_unknown_001",
+                    name="weather",
+                    arguments="{}",
+                )
+            ],
+        )
+
+    monkeypatch.setattr(
+        "app.services.agent.generate_reply",
+        fake_generate_reply,
+    )
+
+    response = error_client.post(
+        "/chat",
+        json={
+            "conversation_id": "agent-unknown-tool-001",
+            "message": "今天的天气怎么样？",
+        },
+    )
+
+    connection = create_connection(str(database_path))
+
+    try:
+        messages = connection.execute(
+            """
+            SELECT role, content
+            FROM message
+            WHERE conversation_id = ?
+            ORDER BY message_id
+            """,
+            ("agent-unknown-tool-001",),
+        ).fetchall()
+
+        model_calls = connection.execute(
+            """
+            SELECT
+                response_message_id,
+                model,
+                outcome,
+                upstream_status,
+                latency_ms,
+                prompt_tokens,
+                completion_tokens,
+                total_tokens
+            FROM model_call
+            WHERE conversation_id = ?
+            ORDER BY model_call_id
+            """,
+            ("agent-unknown-tool-001",),
+        ).fetchall()
+    finally:
+        connection.close()
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Agent tool execution failed.",
+    }
+    assert messages == [
+        ("user", "今天的天气怎么样？"),
+    ]
+    assert model_calls == [
+        (
+            None,
+            "fake-model",
+            "succeeded",
+            200,
+            5.0,
+            10,
+            2,
+            12,
+        ),
     ]
 
 

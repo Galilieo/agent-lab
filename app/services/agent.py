@@ -39,6 +39,17 @@ class AgentModelCallLimitError(Exception):
         self.completed_model_calls = completed_model_calls
 
 
+class AgentToolError(Exception):
+    def __init__(
+        self,
+        cause: Exception,
+        completed_model_calls: list[LLMResult],
+    ) -> None:
+        super().__init__("Agent tool execution failed.")
+        self.cause = cause
+        self.completed_model_calls = completed_model_calls
+
+
 async def run_agent(
     message: str,
     history: list[dict[str, str]] | None = None,
@@ -95,7 +106,13 @@ async def run_agent(
                 }
             )
 
-            tool_result = execute_tool(tool_call)
+            try:
+                tool_result = execute_tool(tool_call)
+            except Exception as exc:
+                raise AgentToolError(
+                    cause=exc,
+                    completed_model_calls=model_calls.copy(),
+                ) from exc
 
             tool_messages.append(
                 {
