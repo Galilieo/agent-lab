@@ -32,6 +32,8 @@ Python 工程
 4. 每一阶段必须有正常和失败验证。
 5. 优先形成能手写、能面试、能结合项目解释的能力。
 6. 测试服务于学习主线：练手阶段优先保护核心路径和关键回归，不按正式生产项目的穷举密度扩张。
+7. 同一请求链上的 2～4 个强相关点默认合并为一个可解释、可手写、可验证的小闭环，不以增加对话轮数制造“循序渐进”。
+8. 提升推进速度不能跳过真实源码核验、行为预测、正确 RED、目标测试、全量回归和用户复述；完成标准看掌握质量，不看轮次数量。
 
 ## 2. 当前进度
 
@@ -69,12 +71,12 @@ Python 工程
 
 已经存在：
 
-- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`；通过 lifespan 在应用启动时初始化 SQLite schema，由 `/chat` 调用原生 Agent，按两个短事务保存当前 user message、最终 assistant message 和本轮调用记录；后续模型调用失败时保存此前成功调用和最终失败调用，并保持 `504 / 503 / 502` 错误映射。
+- `app/main.py`：FastAPI 应用、`GET /health`、真实异步 `POST /chat`；通过 lifespan 在应用启动时初始化 SQLite schema，由 `/chat` 调用原生 Agent，按两个短事务保存当前 user message、最终 assistant message 和本轮调用记录；后续模型调用失败时保存此前成功调用和最终失败调用，工具处理失败时保存此前成功调用但不虚构失败模型调用，并保持 `504 / 503 / 502` 错误映射。
 - `app/schemas.py`：Pydantic 请求与响应模型。
 - `app/config.py`：环境变量配置对象。
 - `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序，成功/失败调用插入函数负责保存可追踪调用记录。
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装普通或 Tool Calling 请求、调用 DeepSeek OpenAI 兼容接口、解析回答与 `tool_calls`，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
-- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator 可重复工具调用，将每轮工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，并用 `AgentModelCallLimitError` 表达调用预算耗尽。
+- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator 可重复工具调用，将每轮工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，用 `AgentModelCallLimitError` 表达调用预算耗尽，并用 `AgentToolError` 统一承接工具处理失败及此前成功调用。
 - `app/tools.py`：calculator 工具定义、Pydantic 参数校验和本地执行边界，拒绝未知工具、额外参数、非法运算符与除零参数。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
 - `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链、直接失败、中途成功后最终 timeout，以及调用预算耗尽时的调用记录持久化。

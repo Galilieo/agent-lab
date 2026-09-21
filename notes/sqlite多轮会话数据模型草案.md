@@ -106,6 +106,7 @@ model_call 1 ── 0..1 assistant message
 - 已使用 pytest 临时文件验证提交后的会话消息可在重新连接后恢复，未提交写入会在连接关闭时回滚。
 - 已让 user / assistant message 插入函数返回生成的 `message_id`，并在 `/chat` 中用这两个 ID 保存与本轮消息关联的成功 `model_call`。
 - 已让 LLM service 的四类失败异常携带结构化元数据；失败时保留已提交的 user message，不生成 assistant message，并保存 `response_message_id` 和 Token 字段为空的失败 `model_call`。
+- 已明确工具处理失败与模型调用失败的区别：模型成功返回工具请求后，如果未知工具、非法参数或工具执行异常导致 Agent 中止，则保留该条 `succeeded` 的 `model_call` 且 `response_message_id` 为空，不创建 assistant message，也不虚构失败模型调用。
 - 已用两轮临时数据库路由测试验证成功调用记录及其消息归属，并用 timeout 代表性测试验证失败调用持久化；其他失败类型复用现有 HTTP 和日志测试回归。
 - 当前数据模型允许同一 user message 关联多条调用记录，但 `/chat` 不执行自动重试；重试策略留到阶段 10 的评测与工程化。
 - 最近消息窗口是当前最小上下文裁剪方案；历史摘要会额外引入模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项。
