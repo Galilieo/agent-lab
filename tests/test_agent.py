@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -14,6 +15,98 @@ from app.services.llm import (
     LLMTimeoutError,
     LLMToolCall,
 )
+
+
+def test_run_agent_returns_final_answer_after_current_time_tool_call(
+    monkeypatch,
+) -> None:
+    observed_payloads = []
+    tool_arguments = '{"timezone":"Asia/Shanghai"}'
+
+    class CurrentTimeAsyncClient:
+        def __init__(self, *, timeout=None) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        async def post(self, url, *, headers, json):
+            observed_payloads.append(json)
+
+            if len(observed_payloads) == 1:
+                response_message = {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_time_001",
+                            "type": "function",
+                            "function": {
+                                "name": "get_current_time",
+                                "arguments": tool_arguments,
+                            },
+                        }
+                    ],
+                }
+            elif len(observed_payloads) == 2:
+                response_message = {
+                    "role": "assistant",
+                    "content": "上海当前时间已获取。",
+                }
+            else:
+                raise AssertionError("Expected only two model requests")
+
+            return httpx.Response(
+                200,
+                request=httpx.Request("POST", url),
+                json={"choices": [{"message": response_message}]},
+            )
+
+    monkeypatch.setattr(
+        "app.services.llm.httpx.AsyncClient",
+        CurrentTimeAsyncClient,
+    )
+
+    before = datetime.now(timezone.utc)
+    result = asyncio.run(run_agent(message="上海现在几点？"))
+    after = datetime.now(timezone.utc)
+
+    assert result.answer == "上海当前时间已获取。"
+    assert len(result.model_calls) == 2
+    assert len(observed_payloads) == 2
+
+    for payload in observed_payloads:
+        assert [
+            tool["function"]["name"]
+            for tool in payload["tools"]
+        ] == ["calculator", "get_current_time"]
+
+    assistant_message, tool_message = (
+        observed_payloads[1]["messages"][-2:]
+    )
+
+    assert assistant_message["role"] == "assistant"
+    assert assistant_message["content"] is None
+
+    requested_call = assistant_message["tool_calls"][0]
+    assert requested_call["function"] == {
+        "name": "get_current_time",
+        "arguments": tool_arguments,
+    }
+
+    assert tool_message["role"] == "tool"
+    assert (
+        requested_call["id"]
+        == tool_message["tool_call_id"]
+        == "call_time_001"
+    )
+
+    reported_time = datetime.fromisoformat(tool_message["content"])
+    assert reported_time.utcoffset() == timedelta(hours=8)
+    assert before <=reported_time <= after
 
 
 def test_run_agent_returns_final_answer_after_calculator_tool_call(
@@ -219,9 +312,9 @@ def test_run_agent_repeats_tool_calls_until_model_returns_final_answer(
     assert len(result.model_calls) == 3
     assert call_count == 3
     assert observed_tool_names == [
-        ["calculator"],
-        ["calculator"],
-        ["calculator"],
+        ["calculator", "get_current_time"],
+        ["calculator", "get_current_time"],
+        ["calculator", "get_current_time"],
     ]
     assert observed_tool_results == [
         [],

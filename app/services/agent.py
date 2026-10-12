@@ -5,7 +5,7 @@ from app.services.llm import (
     LLMResult,
     generate_reply,
 )
-from app.tools import CALCULATOR_TOOL, execute_tool
+from app.tools import AVAILABLE_TOOLS, execute_tool
 
 
 DEFAULT_MAX_MODEL_CALLS = 3
@@ -66,7 +66,7 @@ async def run_agent(
             result = await generate_reply(
                 message=message,
                 history=history,
-                tools=[CALCULATOR_TOOL],
+                tools=AVAILABLE_TOOLS,
                 additional_messages=additional_messages,
             )
         except LLMRequestError as exc:
