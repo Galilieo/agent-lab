@@ -1,11 +1,15 @@
 import json
-from typing import Literal, Self
-
-from pydantic import BaseModel, ConfigDict, model_validator
 from datetime import datetime
+from pathlib import Path
+from typing import Literal, Self
 from zoneinfo import ZoneInfo
 
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from app.services.llm import LLMToolCall
+
+
+NOTES_DIR = Path(__file__).resolve().parent.parent / "notes"
 
 
 class CalculatorArguments(BaseModel):
@@ -21,6 +25,15 @@ class CalculatorArguments(BaseModel):
             raise ValueError("division by zero")
 
         return self
+
+
+class SearchNotesArguments(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    query: str = Field(min_length=1)
 
 
 class CurrentTimeArguments(BaseModel):
@@ -78,9 +91,32 @@ CURRENT_TIME_TOOL = {
     },
 }
 
+
+SEARCH_NOTES_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "search_notes",
+        "description": "按关键词查询项目 notes 目录中的 Markdown 笔记",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "需要查找的非空关键词",
+                    "minLength": 1,
+                },
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+
 AVAILABLE_TOOLS = [
     CALCULATOR_TOOL,
     CURRENT_TIME_TOOL,
+    SEARCH_NOTES_TOOL,
 ]
 
 
@@ -105,8 +141,40 @@ def run_current_time(arguments: CurrentTimeArguments) -> str:
     return current_time.isoformat()
 
 
+def run_search_notes(arguments: SearchNotesArguments) -> dict:
+    if not NOTES_DIR.is_dir():
+        raise FileNotFoundError("Notes directory does not exist")
+
+    matches = []
+
+    for note_file in sorted(NOTES_DIR.glob("*.md")):
+        if not note_file.is_file() or note_file.is_symlink():
+            continue
+
+        content = note_file.read_text(encoding="utf-8")
+
+        for line_number, text in enumerate(content.splitlines(), start=1):
+            if arguments.query in text:
+                matches.append(
+                    {
+                        "path": f"notes/{note_file.name}",
+                        "line": line_number,
+                        "text": text,
+                    }
+                )
+
+                if len(matches) >= 5:
+                    return {"query": arguments.query, "matches": matches}
+
+    return {"query": arguments.query, "matches": matches}
+
+
 def execute_tool(tool_call: LLMToolCall) -> str:
-    if tool_call.name not in ("calculator", "get_current_time"):
+    if tool_call.name not in (
+        "calculator",
+        "get_current_time",
+        "search_notes",
+    ):
         raise ValueError(f"Unknown tool: {tool_call.name}")
 
     arguments_data = json.loads(tool_call.arguments)
@@ -115,5 +183,10 @@ def execute_tool(tool_call: LLMToolCall) -> str:
         arguments = CalculatorArguments.model_validate(arguments_data)
         return str(run_calculator(arguments))
 
-    arguments = CurrentTimeArguments.model_validate(arguments_data)
-    return run_current_time(arguments)
+    if tool_call.name == "get_current_time":
+        arguments = CurrentTimeArguments.model_validate(arguments_data)
+        return run_current_time(arguments)
+
+    arguments = SearchNotesArguments.model_validate(arguments_data)
+    result = run_search_notes(arguments)
+    return json.dumps(result, ensure_ascii=False)

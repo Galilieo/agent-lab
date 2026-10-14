@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-11。
+> 最近核验：2026-10-14。
 
 ## 1. 项目定位
 
@@ -76,12 +76,12 @@ Python 工程
 - `app/config.py`：环境变量配置对象。
 - `app/database.py`：SQLite 连接入口，为每个连接开启外键，并初始化 `conversation`、`message`、`model_call` 三表结构；组合外键保证模型调用引用的请求/回复消息属于同一会话，`load_recent_messages()` 按会话读取最近消息窗口并恢复为模型上下文正序，成功/失败调用插入函数负责保存可追踪调用记录。
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装普通或 Tool Calling 请求、调用 DeepSeek OpenAI 兼容接口、解析回答与 `tool_calls`，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
-- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator / get_current_time 可重复工具调用，每轮通过 `AVAILABLE_TOOLS` 提供两个工具，将工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，用 `AgentModelCallLimitError` 表达调用预算耗尽，并用 `AgentToolError` 统一承接工具处理失败及此前成功调用。
-- `app/tools.py`：calculator 和 get_current_time 工具定义、统一工具列表、Pydantic 参数校验和本地执行边界；时间工具要求传入 timezone 字符串，通过 `ZoneInfo` 加载时区规则并返回含 UTC offset 的 ISO 8601 时间。未知工具、额外参数、非法运算符、除零和时区加载异常沿现有工具错误边界处理。
+- `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator / get_current_time / search_notes 可重复工具调用，每轮通过 `AVAILABLE_TOOLS` 提供三个工具，将工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，用 `AgentModelCallLimitError` 表达调用预算耗尽，并用 `AgentToolError` 统一承接工具处理失败及此前成功调用。
+- `app/tools.py`：calculator、get_current_time 和 search_notes 工具定义、统一工具列表、Pydantic 参数校验和本地执行边界；时间工具通过 `ZoneInfo` 返回含 UTC offset 的 ISO 8601 时间；笔记工具固定读取项目 notes 目录中的普通 Markdown 文件，按关键词逐行匹配，最多返回五条含文件路径、行号和原文的记录。未知工具、参数校验和工具执行异常沿现有工具错误边界处理。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
 - `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链、直接失败、中途成功后最终 timeout，以及调用预算耗尽时的调用记录持久化。
 - `tests/test_agent.py`：使用 fake HTTP client 验证 calculator 和 get_current_time 工具请求、工具结果消息、第二次模型请求、最终回答和完整成功调用列表；时间工具真实执行，代表性测试检查两轮工具注册、调用 ID 关联、上海 UTC offset 和返回时间位于执行前后之间。
-- `tests/test_tools.py`：验证 calculator 参数校验、本地执行和除零边界。
+- `tests/test_tools.py`：验证 calculator 参数校验、本地执行和除零边界；笔记工具使用临时文件验证匹配原文及出处、忽略非 Markdown 文件，以及未命中时返回空列表。
 - `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
 - `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
 
@@ -272,11 +272,20 @@ pytest 8.4.2
 - 已完成预测、核心代码和关键断言手写、正确 RED → GREEN、全量回归及复述收口；用户已能说明工具请求 / 结果消息、调用 ID 关联、参数对象字段取值、额外字段拒绝和可用工具名称 / 执行结果的区别。
 - 最终检查中已补充纠正测试覆盖范围：新增时间工具测试验证的是 Asia/Shanghai 的成功调用链，未新增额外字段或无效时区的失败测试；参数模型额外字段拒绝曾用本地探索代码验证，不能将其记为该代表性测试的覆盖项。用户已明确自动化测试不能证明真实模型会正确选择工具。
 
+2026-10-14 本地 Markdown 查询工具小主题验收：
+
+- 已新增 `SearchNotesArguments`，拒绝额外字段、去除关键词首尾空白并要求至少一个字符；已新增 `SEARCH_NOTES_TOOL` 并加入统一工具列表。
+- 已使用基于 `__file__` 的固定 notes 目录、按文件名排序的 Markdown 文件遍历和从 1 开始的行号；跳过非普通文件与符号链接，按字面包含查询，最多返回五条匹配，未命中正常返回空列表。
+- `execute_tool()` 使用正确参数模型执行查询，并通过 `json.dumps(..., ensure_ascii=False)` 将结构化结果转换成 Agent 工具消息所需的字符串。
+- 代表性测试先因未知工具形成正确 RED；手写实现后统一修正工具名中的逗号、错误参数模型、文件循环缩进及两处三工具注册预期。目标测试为 `1 passed`，全量为 `39 passed`，`git diff --check` 通过。
+- 额外使用临时文件做本地检查，验证多文件扫描、五条上限、关键词首尾空白处理和读取范围；另用 fake 模型配合真实本地查询检查两次模型调用、调用 ID 关联、工具结果回传和最终回答。上述检查未新增正式 pytest 用例，没有访问真实 DeepSeek。
+- 已完成预测、核心实现与关键断言手写、正确 RED → GREEN、全量回归和复述验收；用户能说明空白关键词先去除首尾空白、再因最小长度不足被参数模型拒绝，并在纠正消息角色后准确复述：查询结果经 JSON 序列化进入 tool 消息，通过 tool_call_id 关联模型原工具请求的 id。
+
 当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
 - 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
-- 本地 Markdown 查询工具和最小 MCP 接入尚未实现。
+- 最小 MCP 接入尚未实现。
 - 记忆与 RAG。
 - LangChain / LangGraph。
 - SSE 与评测。
@@ -567,10 +576,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成第一轮。阶段 6 已完成 Tool Calling 基础协议、calculator / get_current_time 参数校验与执行、统一工具列表、可重复工具回传循环、默认最大模型调用次数、`AgentResult`、`AgentRunError`、`AgentModelCallLimitError`、`AgentToolError`、`/chat` 接线，以及成功、“中途成功后最终失败”、调用预算耗尽和工具处理失败调用链的持久化；当前时间工具小主题已完成实现、自动化验证和复述收口。阶段 6 仍处于进行中，不能标记完成。
+阶段 5 已完成第一轮。阶段 6 已实现 calculator / get_current_time / search_notes 三个工具、统一工具列表、原生 Agent 循环及现有错误与持久化边界。当前时间和本地 Markdown 查询工具小主题均已完成实现、自动化验证及复述验收。阶段 6 仍处于进行中，不能标记完成。
 
 ```text
-下一小主题：本地 Markdown 查询工具的最小调用闭环
+下一小主题：最小 MCP 接入
 ```
 
-具体范围：在现有工具参数校验、分发和 Agent 回传链路中增加本地 Markdown 查询工具，先明确笔记读取范围、查询参数与结果格式，再完成代表性测试和手写实现。随后学习最小 MCP 接入，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。
+具体范围：先明确 MCP Client / Server 与现有 Tool Calling / Agent 循环的职责关系，再设计最小本地工具接入，复用已有查询能力并用隔离真实模型的测试验证协议接线，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。

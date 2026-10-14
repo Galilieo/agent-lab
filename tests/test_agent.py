@@ -82,7 +82,7 @@ def test_run_agent_returns_final_answer_after_current_time_tool_call(
         assert [
             tool["function"]["name"]
             for tool in payload["tools"]
-        ] == ["calculator", "get_current_time"]
+        ] == ["calculator", "get_current_time", "search_notes"]
 
     assistant_message, tool_message = (
         observed_payloads[1]["messages"][-2:]
@@ -312,9 +312,9 @@ def test_run_agent_repeats_tool_calls_until_model_returns_final_answer(
     assert len(result.model_calls) == 3
     assert call_count == 3
     assert observed_tool_names == [
-        ["calculator", "get_current_time"],
-        ["calculator", "get_current_time"],
-        ["calculator", "get_current_time"],
+        ["calculator", "get_current_time", "search_notes"],
+        ["calculator", "get_current_time", "search_notes"],
+        ["calculator", "get_current_time", "search_notes"],
     ]
     assert observed_tool_results == [
         [],
