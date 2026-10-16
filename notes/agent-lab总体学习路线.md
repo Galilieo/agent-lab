@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-14。
+> 最近核验：2026-10-16。
 
 ## 1. 项目定位
 
@@ -44,7 +44,7 @@ Python 工程
 | 3. FastAPI 请求链 | **已完成第一轮** | 完成请求、校验、响应、异常和测试 |
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
-| 6. 原生 Tool Calling 与 Agent 循环 | **进行中** | 不依赖框架完成工具闭环，并理解 Structured Output 与 MCP 的位置 |
+| 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
 | 7. 轻量记忆与原生最小 RAG | 待开始 | 记忆与检索来源可追踪 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
@@ -78,12 +78,16 @@ Python 工程
 - `app/services/llm.py`：原生 `httpx.AsyncClient` 异步 LLM service，负责组装普通或 Tool Calling 请求、调用 DeepSeek OpenAI 兼容接口、解析回答与 `tool_calls`，并让超时、连接、上游状态和非法响应异常携带结构化失败元数据。
 - `app/services/agent.py`：原生 Agent 编排层，当前支持直接回答或 calculator / get_current_time / search_notes 可重复工具调用，每轮通过 `AVAILABLE_TOOLS` 提供三个工具，将工具请求和结果继续回传模型；默认最多执行 3 次模型调用，用 `AgentResult` 返回最终回答和全部成功调用，用 `AgentRunError` 在后续模型失败时携带此前成功调用，用 `AgentModelCallLimitError` 表达调用预算耗尽，并用 `AgentToolError` 统一承接工具处理失败及此前成功调用。
 - `app/tools.py`：calculator、get_current_time 和 search_notes 工具定义、统一工具列表、Pydantic 参数校验和本地执行边界；时间工具通过 `ZoneInfo` 返回含 UTC offset 的 ISO 8601 时间；笔记工具固定读取项目 notes 目录中的普通 Markdown 文件，按关键词逐行匹配，最多返回五条含文件路径、行号和原文的记录。未知工具、参数校验和工具执行异常沿现有工具错误边界处理。
+- `app/mcp_server.py`：使用官方 MCP SDK 的 `MCPServer` 将 search_notes 注册为 MCP 工具，复用已有参数模型和查询函数，返回 JSON 文本；另注册 `notes://learning-route` Resource，读取固定学习路线文件并返回 Markdown 文本。作为模块运行时提供 stdio 服务。
+- `app/services/mcp_tools.py`：为 Agent 的 search_notes 分支提供异步 MCP Client 调用，校验模型参数后按 stdio 配置连接 Server，将文本内容块转换成工具消息字符串，并将工具错误标记或缺少文本转换成异常；calculator / get_current_time 继续由 Agent 调用本地执行函数。
 - `tests/test_database.py`：使用内存 SQLite 和 pytest 临时文件验证连接外键、三表写入、模型调用重试、失败调用无回复、无效外键、跨会话消息引用拒绝、消息历史稳定排序与最近消息窗口，以及提交和未提交数据在重新连接后的差异。
 - `tests/test_health.py`：TestClient 请求校验、应用启动 schema 初始化、业务异常、LLM 正常返回、Tool Calling 响应解析、超时、连接失败、上游状态错误和非法 JSON 映射测试；通过进入 TestClient 上下文触发 lifespan，并使用真实临时 SQLite 验证成功 Agent 调用链、直接失败、中途成功后最终 timeout，以及调用预算耗尽时的调用记录持久化。
 - `tests/test_agent.py`：使用 fake HTTP client 验证 calculator 和 get_current_time 工具请求、工具结果消息、第二次模型请求、最终回答和完整成功调用列表；时间工具真实执行，代表性测试检查两轮工具注册、调用 ID 关联、上海 UTC offset 和返回时间位于执行前后之间。
 - `tests/test_tools.py`：验证 calculator 参数校验、本地执行和除零边界；笔记工具使用临时文件验证匹配原文及出处、忽略非 Markdown 文件，以及未命中时返回空列表。
-- `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 已是运行依赖。
-- `playground/`：JSON、推导式、异步和 pytest 的第一轮练习。
+- `tests/test_mcp.py`：使用同进程 MCP Client 和真实临时笔记验证工具发现、必填参数声明、成功状态与 JSON 文本结果。
+- `tests/test_agent_mcp.py`：使用 fake 模型、真实临时笔记与同进程 MCP Server 验证 Agent 经 MCP 查询、调用参数、工具请求与结果 ID 关联、结果回传和最终回答；测试将 stdio 启动配置替换为同进程连接，不启动子进程。
+- `pyproject.toml`：Python、运行依赖、开发依赖和 pytest 配置；`httpx` 和 `mcp>=2.3,<3.0` 是运行依赖，当前锁定 MCP SDK 2.3.0。
+- `playground/`：JSON、推导式、异步和 pytest 的第一轮练习，以及独立 stdio Client `mcp_note_client.py`。
 
 2026-07-26 实际验证：
 
@@ -281,11 +285,34 @@ pytest 8.4.2
 - 额外使用临时文件做本地检查，验证多文件扫描、五条上限、关键词首尾空白处理和读取范围；另用 fake 模型配合真实本地查询检查两次模型调用、调用 ID 关联、工具结果回传和最终回答。上述检查未新增正式 pytest 用例，没有访问真实 DeepSeek。
 - 已完成预测、核心实现与关键断言手写、正确 RED → GREEN、全量回归和复述验收；用户能说明空白关键词先去除首尾空白、再因最小长度不足被参数模型拒绝，并在纠正消息角色后准确复述：查询结果经 JSON 序列化进入 tool 消息，通过 tool_call_id 关联模型原工具请求的 id。
 
+2026-10-14 最小 MCP Server / Client 小主题验收：
+
+- 已安装官方 MCP Python SDK 2.3.0，新增 Server 包装函数，通过 `@mcp.tool()` 注册 search_notes，复用已有参数校验与查询逻辑。
+- 已准备同进程 Client 测试，先观察工具列表为空形成正确 RED；补齐精确名称比较并修正 `listed.tools` 拼写后，手写 Server 注册函数完成 GREEN。
+- MCP 目标测试为 `1 passed`，全量测试为 `40 passed`，`git diff --check` 通过。
+- 已运行 `uv run --offline python playground/mcp_note_client.py`，真实启动独立 Server 子进程，通过 stdio 列出 search_notes 并查询真实笔记，程序以退出码 0 结束。Client 使用当前 Python 解释器和固定项目 cwd，读取结果前检查 `is_error`，再读取 `TextContent.text`。
+- 同进程测试与 stdio 实验均未调用真实模型；`run_agent()` 尚未接入 MCP Client，现有 `/chat` 查询仍直接调用本地工具。
+- 已完成独立 MCP 服务和调用链验证及复述收口；逐段复习了客户端脚本、启动配置、连接生命周期和内容块读取。用户能准确区分：`StdioServerParameters` 只准备配置，进入 `async with Client(...)` 才启动并连接 Server；`list_tools()` 列出声明，`call_tool()` 执行工具。
+
+2026-10-15 MCP Client 与 Agent 工具执行链接线验收：
+
+- 用户手写关键断言；修正工具名漏写的 s 后，代表性测试因 MCP 调用记录为空形成正确 RED，能区分直接本地查询成功与实际经过 MCP Client。
+- 用户手写 `execute_mcp_notes()` 和 Agent 查询分支：参数解析与校验 → MCP Client 调用 → 检查错误标记 → 提取并返回文本 → 原有 tool 消息回传模型。其他工具、模型循环和错误边界沿用现有实现。
+- 目标测试为 `1 passed`，全量为 `41 passed`，`git diff --check` 通过。该正式测试使用 fake 模型和真实同进程 MCP Server，没有启动 stdio 子进程，也没有访问真实模型；此前独立 stdio 实验为另一项已通过证据。
+- 另以临时缺失笔记目录运行真实同进程 MCP 失败探索，确认 `is_error` 触发的异常可由原有边界包装为 `AgentToolError`，保留此前一条成功模型调用且不再请求模型。SDK 清理连接时会以 `ExceptionGroup` 包装内部异常；现有 `except Exception` 能承接。此项未新增正式 pytest 用例。
+- 已完成复述收口：用户能说明 Agent 负责工具分发与 LLM 循环、Client 封装负责 MCP 调用、Server 包装函数调用真实笔记工具，以及异常抛出后不会继续追加工具结果消息；补充明确实际查询执行位于 Server 端。
+
+2026-10-16 MCP 职责复习与阶段 6 第一轮验收：
+
+- 用户已区分 Tool 的参数化操作、Resource 的资源读取接口和 Prompt 的提示词模板；能说明获取 Prompt 后仍需要应用调用模型，模板本身不构成输出正确性保证。
+- 用户补写 `notes://learning-route` Resource。复述中纠正了 URI 与文件路径混淆：URI 是 Client 请求使用的资源标识，实际文件由处理函数中的 `route_file` 决定；读取结果是否成为模型上下文，由应用如何组装消息决定。
+- 对真实 Server 运行 stdio 资源发现与读取探索，验证列出的 URI、Markdown 内容类型，以及返回文本与正式学习路线文件一致。此项未新增正式 pytest 用例，未调用真实模型；Resource 当前未自动注入 Agent 上下文，MCP Prompt 未新增实现。
+- 重新运行全量测试为 `41 passed`，`git diff --check` 通过。阶段 6 的工具实现、核心参数与失败边界、原生循环、MCP 接线、概念职责与复述均完成第一轮验收；真实模型的工具选择与完整 MCP 联调不在本次自动化证据范围内。
+
 当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
 - 当前最近 10 条消息窗口已经形成阶段 5 的最小上下文裁剪闭环；历史摘要会引入额外模型调用、摘要持久化和质量评测，暂不作为阶段 5 阻塞项，待阶段 7 记忆或阶段 10 评测出现真实需求后再实现。
-- 最小 MCP 接入尚未实现。
 - 记忆与 RAG。
 - LangChain / LangGraph。
 - SSE 与评测。
@@ -576,10 +603,10 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-阶段 5 已完成第一轮。阶段 6 已实现 calculator / get_current_time / search_notes 三个工具、统一工具列表、原生 Agent 循环及现有错误与持久化边界。当前时间和本地 Markdown 查询工具小主题均已完成实现、自动化验证及复述验收。阶段 6 仍处于进行中，不能标记完成。
+阶段 5、阶段 6 均已完成第一轮。阶段 6 的三个工具、原生循环、失败处理、MCP Client / Server 接线与 Tool / Resource / Prompt 职责已完成验证和复述，另有真实 stdio Resource 读取探索。全量测试基线为 `41 passed`。阶段 7 尚未开始；提交与推送仍按用户明确指令执行。
 
 ```text
-下一小主题：最小 MCP 接入
+下一小主题：会话历史、长期记忆与检索文档的边界，以及轻量记忆的最小契约
 ```
 
-具体范围：先明确 MCP Client / Server 与现有 Tool Calling / Agent 循环的职责关系，再设计最小本地工具接入，复用已有查询能力并用隔离真实模型的测试验证协议接线，不提前进入记忆、RAG、LangChain、LangGraph 或 SSE。
+具体范围：先从现有最近 10 条历史窗口出发，说明长期记忆解决的需求，并集中明确结构化记忆的归属范围、来源追踪、更新与删除以及何时注入上下文。先通过项目场景预测确定最小行为契约，再进入对应数据设计和 RED → GREEN；不同时扩展 Embedding、向量库、LangChain、LangGraph 或 SSE。

@@ -5,6 +5,7 @@ from app.services.llm import (
     LLMResult,
     generate_reply,
 )
+from app.services.mcp_tools import execute_mcp_notes
 from app.tools import AVAILABLE_TOOLS, execute_tool
 
 
@@ -107,7 +108,10 @@ async def run_agent(
             )
 
             try:
-                tool_result = execute_tool(tool_call)
+                if tool_call.name == "search_notes":
+                    tool_result = await execute_mcp_notes(tool_call)
+                else:
+                    tool_result = execute_tool(tool_call)
             except Exception as exc:
                 raise AgentToolError(
                     cause=exc,

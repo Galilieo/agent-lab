@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度：阶段 5“SQLite 与多轮对话”已完成第一轮；阶段 6“原生 Tool Calling 与 Agent 循环”已实现 calculator / get_current_time / search_notes、可重复循环、调用预算、中途模型失败和工具处理失败边界。笔记查询工具已完成自动化验证和复述验收，下一步是最小 MCP 接入。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
+> 当前进度：阶段 5“SQLite 与多轮对话”和阶段 6“原生 Tool Calling 与 Agent 循环”均已完成第一轮；已实现三个工具、Agent 循环、错误边界、MCP 查询接线及学习路线 Resource，并完成 Tool / Resource / Prompt 职责复述。下一步明确轻量记忆的最小契约。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
 
 ## 为什么创建这个仓库
 
@@ -33,23 +33,28 @@ agent-lab/
 │   ├── config.py
 │   ├── database.py
 │   ├── schemas.py
+│   ├── mcp_server.py
 │   ├── tools.py
 │   └── services/
 │       ├── __init__.py
 │       ├── agent.py
-│       └── llm.py
+│       ├── llm.py
+│       └── mcp_tools.py
 ├── playground/
 │   ├── 01_basic_syntax.py
 │   ├── 02_json_file.py
 │   ├── calculator.py
 │   ├── home.py
 │   ├── message.json
+│   ├── mcp_note_client.py
 │   └── use_calculator.py
 ├── tests/
 │   ├── __init__.py
 │   ├── test_agent.py
+│   ├── test_agent_mcp.py
 │   ├── test_database.py
 │   ├── test_health.py
+│   ├── test_mcp.py
 │   └── test_tools.py
 ├── notes/
 │   ├── README.md
@@ -122,12 +127,15 @@ uv run pytest
 - [x] 未知工具、非法参数和工具执行失败时返回 `502`，并保留此前成功的模型调用
 - [x] get_current_time 时区参数校验、本地执行、双工具注册与回传闭环的自动化验证
 - [x] search_notes 固定范围查询、原文出处、空结果和三工具注册的自动化验证
+- [x] 独立 MCP Server 工具注册、同进程 Client 测试与真实 stdio 查询实验
+- [x] MCP Client 接入 Agent 查询分支、工具结果回传与失败边界验证
+- [x] 学习路线 Resource 的真实 stdio 读取，以及 Tool / Resource / Prompt 职责复述
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
 
 阶段 5 已在用户明确授权后，通过本地 `.env`、真实 Uvicorn 和独立临时数据库完成一次真实 DeepSeek 两轮联调；第二轮正确回答了第一轮提供的合成测试代号。联调没有输出 API Key，临时数据库已在验证后删除。
 
-阶段 6 当前已实现 calculator / get_current_time / search_notes 工具、Pydantic 参数校验、工具结果回传模型、直接回答分支、可重复 Agent 循环、默认最大模型调用次数，以及现有成功与失败调用链的 `model_call` 持久化。2026-10-14 全量测试为 `39 passed`；查询工具使用真实临时文件验证，另以 fake 模型检查 Agent 查询回传链，没有访问真实 DeepSeek。当前时间和 Markdown 查询工具小主题均已完成复述验收，MCP 接入仍待完成，因此阶段 6 尚未完成。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
+阶段 6 已完成第一轮：三个工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 全量测试为 `41 passed`；fake 模型配合真实同进程 MCP 查询验证回传链，失败探索验证异常承接和调用记录保留，独立 stdio 实验验证工具查询与 Resource 读取。上述阶段 6 验证未访问真实 DeepSeek，不能证明真实模型的工具选择或完整 MCP 联调。Agent 接线与 Tool / Resource / Prompt 职责均已完成复述验收；Resource 未自动注入 Agent 上下文，MCP Prompt 只做职责理解。阶段 7 尚未开始。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
 
 ## 后续学习路线
 
