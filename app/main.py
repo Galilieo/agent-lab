@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 
 from app.config import settings
 from app.database import (
+    ConversationOwnershipError,
     create_connection,
     initialize_schema,
     insert_user_message,
@@ -165,6 +166,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
             connection=connection,
             conversation_id=request.conversation_id,
             timestamp=timestamp,
+            user_id=request.user_id,
         )
         history = load_recent_messages(
             connection=connection,
@@ -178,6 +180,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
             created_at=timestamp,
         )
         connection.commit()
+    except ConversationOwnershipError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Conversation ownership does not match.",
+        ) from exc
     finally:
         connection.close()
 

@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度：阶段 5“SQLite 与多轮对话”和阶段 6“原生 Tool Calling 与 Agent 循环”均已完成第一轮；已实现三个工具、Agent 循环、错误边界、MCP 查询接线及学习路线 Resource，并完成 Tool / Resource / Prompt 职责复述。下一步明确轻量记忆的最小契约。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
+> 当前进度：阶段 5、阶段 6 均已完成第一轮；阶段 7 的可选用户标识、会话归属检查和旧数据库兼容已通过验证与复述，全量测试为 `44 passed`。下一步设计两种作用范围的记忆存储与更新；记忆提取与注入尚未实现。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
 
 ## 为什么创建这个仓库
 
@@ -52,6 +52,7 @@ agent-lab/
 │   ├── __init__.py
 │   ├── test_agent.py
 │   ├── test_agent_mcp.py
+│   ├── test_conversation_ownership.py
 │   ├── test_database.py
 │   ├── test_health.py
 │   ├── test_mcp.py
@@ -94,6 +95,8 @@ curl -X POST http://127.0.0.1:8000/chat \
   -d '{"conversation_id":"test-001","message":"你好"}'
 ```
 
+`/chat` 可选传入 `user_id`；省略时创建匿名会话。会话建立后归属固定，后续请求必须保持一致，包括是否匿名；不同归属返回 `409`，不会保存本轮消息或调用 Agent。该字段当前是学习用身份标识，尚未接入登录认证。
+
 `.env` 只用于本地配置，已被 Git 忽略。不要在 `.env.example` 或代码中写入真实 API Key。
 
 ## GitHub SSH Key 撤销提醒
@@ -130,12 +133,15 @@ uv run pytest
 - [x] 独立 MCP Server 工具注册、同进程 Client 测试与真实 stdio 查询实验
 - [x] MCP Client 接入 Agent 查询分支、工具结果回传与失败边界验证
 - [x] 学习路线 Resource 的真实 stdio 读取，以及 Tool / Resource / Prompt 职责复述
+- [x] 可选用户标识、会话归属冲突检查与旧会话表补列兼容
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
 
 阶段 5 已在用户明确授权后，通过本地 `.env`、真实 Uvicorn 和独立临时数据库完成一次真实 DeepSeek 两轮联调；第二轮正确回答了第一轮提供的合成测试代号。联调没有输出 API Key，临时数据库已在验证后删除。
 
-阶段 6 已完成第一轮：三个工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 全量测试为 `41 passed`；fake 模型配合真实同进程 MCP 查询验证回传链，失败探索验证异常承接和调用记录保留，独立 stdio 实验验证工具查询与 Resource 读取。上述阶段 6 验证未访问真实 DeepSeek，不能证明真实模型的工具选择或完整 MCP 联调。Agent 接线与 Tool / Resource / Prompt 职责均已完成复述验收；Resource 未自动注入 Agent 上下文，MCP Prompt 只做职责理解。阶段 7 尚未开始。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
+阶段 6 已完成第一轮：三个工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 全量测试为 `41 passed`；fake 模型配合真实同进程 MCP 查询验证回传链，失败探索验证异常承接和调用记录保留，独立 stdio 实验验证工具查询与 Resource 读取。上述阶段 6 验证未访问真实 DeepSeek，不能证明真实模型的工具选择或完整 MCP 联调。Agent 接线与 Tool / Resource / Prompt 职责均已完成复述验收；Resource 未自动注入 Agent 上下文，MCP Prompt 只做职责理解。阶段 7 的可选用户标识与会话归属链路已实现并验证，记忆存储与注入仍待完成。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
+
+2026-10-19 会话归属目标测试为 `3 passed`，全量为 `44 passed`，`git diff --check` 通过。该测试使用临时旧数据库和 fake Agent，验证归属冲突返回 409、拒绝请求不追加消息和调用 Agent，以及旧会话数据保留；另以临时数据库验证重复初始化及旧会话继续聊天。已完成复述验收，没有调用真实模型。
 
 ## 后续学习路线
 

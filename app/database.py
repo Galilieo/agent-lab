@@ -1,6 +1,10 @@
 import sqlite3
 
 
+class ConversationOwnershipError(Exception):
+    pass
+
+
 def create_connection(
     database_path: str = ":memory:",
 ) -> sqlite3.Connection:
@@ -16,6 +20,7 @@ def initialize_schema(
         """
         CREATE TABLE IF NOT EXISTS conversation (
             conversation_id TEXT PRIMARY KEY NOT NULL,
+            user_id TEXT,
             status TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -58,30 +63,49 @@ def initialize_schema(
         """
     )
 
+    columns = connection.execute(
+        "PRAGMA table_info(conversation)"
+    ).fetchall()
+    column_names = {column[1] for column in columns}
+
+    if "user_id" not in column_names:
+        connection.execute(
+            "ALTER TABLE conversation ADD COLUMN user_id TEXT"
+        )
+
 
 def upsert_conversation(
     connection: sqlite3.Connection,
     conversation_id: str,
     timestamp: str,
+    user_id: str | None = None,
 ) -> None:
-    connection.execute(
+    cursor = connection.execute(
         """
         INSERT INTO conversation (
             conversation_id,
+            user_id,
             status,
             created_at,
             updated_at
         )
-        VALUES (?, 'active', ?, ?)
+        VALUES (?, ?, 'active', ?, ?)
         ON CONFLICT(conversation_id) DO UPDATE SET
             updated_at = excluded.updated_at
+        WHERE conversation.user_id IS excluded.user_id
         """,
         (
             conversation_id,
+            user_id,
             timestamp,
             timestamp,
         ),
     )
+
+    if cursor.rowcount == 0:
+        raise ConversationOwnershipError(
+            "Conversation ownership does not match."
+        )
 
 
 def insert_user_message(
