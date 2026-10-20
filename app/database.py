@@ -60,6 +60,20 @@ def initialize_schema(
             FOREIGN KEY (conversation_id, response_message_id)
                 REFERENCES message (conversation_id, message_id)
         );
+
+        CREATE TABLE IF NOT EXISTS memory (
+            memory_id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL
+                CHECK (scope IN ('user', 'conversation')),
+            scope_id TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT NOT NULL,
+            source_message_id INTEGER NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (scope, scope_id, key),
+            FOREIGN KEY (source_message_id)
+                REFERENCES message (message_id)
+        );
         """
     )
 
@@ -105,6 +119,66 @@ def upsert_conversation(
     if cursor.rowcount == 0:
         raise ConversationOwnershipError(
             "Conversation ownership does not match."
+        )
+
+
+def upsert_memory(
+    connection: sqlite3.Connection,
+    scope: str,
+    scope_id: str,
+    key: str,
+    value: str,
+    source_message_id: int,
+    updated_at: str,
+) -> None:
+    cursor = connection.execute(
+        """
+        INSERT INTO memory (
+            scope,
+            scope_id,
+            key,
+            value,
+            source_message_id,
+            updated_at
+        )
+        SELECT
+            :scope,
+            :scope_id,
+            :key,
+            :value,
+            :source_message_id,
+            :updated_at
+        FROM message AS m
+        JOIN conversation AS c
+            ON c.conversation_id = m.conversation_id
+        WHERE m.message_id = :source_message_id
+            AND m.role = 'user'
+            AND (
+                (:scope = 'user' AND c.user_id = :scope_id)
+                OR
+                (
+                    :scope = 'conversation'
+                    AND m.conversation_id = :scope_id
+                )
+            )
+        ON CONFLICT(scope, scope_id, key) DO UPDATE SET
+            value = excluded.value,
+            source_message_id = excluded.source_message_id,
+            updated_at = excluded.updated_at
+        """,
+        {
+            "scope": scope,
+            "scope_id": scope_id,
+            "key": key,
+            "value": value,
+            "source_message_id": source_message_id,
+            "updated_at": updated_at,
+        },
+    )
+
+    if cursor.rowcount == 0:
+        raise ValueError(
+            "Source message does not match memory scope."
         )
 
 
