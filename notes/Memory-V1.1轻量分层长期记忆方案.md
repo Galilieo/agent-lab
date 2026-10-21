@@ -36,7 +36,7 @@
 | 模块 | 已确定方案 | 优先级与边界 |
 | --- | --- | --- |
 | 数据存储 | SQLite，复用现有 memory 表 | P0；基础存储已验证 |
-| 提取器 | LLM 提出候选，Pydantic 校验结构，业务规则决定是否写入 | P0，待实现 |
+| 提取器 | LLM 提出候选，Pydantic 校验结构，业务规则决定是否写入 | P0；结构模型已验证，LLM 调用与业务接线待实现 |
 | 提取触发 | 显式请求 + 轻量规则触发 | P0；不默认每轮提取 |
 | 作用范围 | user / conversation | 存储与来源约束已验证，读取与注入待实现 |
 | 核心记忆 | 固定高价值 key，设置总长度上限，默认注入 | P0，待实现 |
@@ -97,7 +97,7 @@
 | Core Memory | 少量稳定、高价值 key，在预算内默认注入 | 回答风格、语言偏好 |
 | Regular Memory | 按当前问题类别和 key 选择 | 学习目标、项目进度、历史经历、技术偏好 |
 
-第一版通过固定 key 映射区分 Core / Regular，不立即增加层级字段或额外 scope。具体 key 名称、分类表、长度与条数上限在相关实现前确定；示例不等于已经确认的完整 key 白名单。
+第一版通过固定 key 映射区分 Core / Regular，不立即增加层级字段或额外 scope。候选 key 白名单已在 5.2 确定；Core / Regular 分类映射、长度与条数上限仍需在选择与注入实现前明确。本节举例说明层级，不额外扩展候选 key 白名单。
 
 “核心记忆常驻”指每次组装模型上下文时按规则读取并注入，不表示数据库内容能自动进入模型，也不表示模型永久保存了这些信息。
 
@@ -113,18 +113,26 @@
 
 ### 5.2 候选输出与职责
 
-LLM 候选示例：
+2026-10-21 已明确第一版提取结果契约：一个结果可包含多条待写入记忆，整体 action 为 upsert 或 skip。模型放在 app/schemas.py，使用 MemoryCandidate 描述单条候选、MemoryExtractionResult 描述整个结果。
 
 ```json
 {
   "action": "upsert",
-  "scope": "user",
-  "key": "learning_goal",
-  "value": "学习 AI Agent 开发"
+  "memories": [
+    {
+      "scope": "user",
+      "key": "learning_goal",
+      "value": "学习 AI Agent 开发"
+    }
+  ]
 }
 ```
 
-允许 skip，避免所有输入都被强行转换为记忆。skip 的具体 JSON 形式、一次是否允许多条候选、不同动作是否需要不同字段，在提取器小主题明确，当前示例不是最终完整接口模型。
+无候选时允许输入 `{"action": "skip"}`。模型中的 memories 使用独立的默认空列表，因此该输入归一化为 action=skip、memories=[]；skip 不允许携带非空记忆列表。upsert 必须携带非空列表，缺失或空列表都属于校验失败。
+
+单条候选仅允许 scope、key、value：scope 为 user / conversation，key 暂定固定为 answer_language、explanation_style、learning_goal、tech_stack，value 去除首尾空白后必须非空。候选与整体结果均拒绝额外字段，不接受模型指定 scope_id 或 source_message_id。匿名用户级候选等依赖当前请求的业务校验留到后续接线。
+
+2026-10-21 已完成正确 RED → 用户手写模型与关键断言 → GREEN → 复述收口：修正 learning_goal 拼写后，目标 3 passed、全量 51 passed；已澄清嵌套列表与元素类型、独立默认列表、ValueError 包装和 return self 的返回链。这里只验证提取结果结构，不代表 LLM 提取、业务范围校验或持久化已经接通。
 
 职责分配：
 
@@ -209,6 +217,8 @@ Memory Context 是应用明确标记的参考数据，不是高优先级命令�
 
 截至 2026-10-20 的已有验证记录：memory 表、upsert_memory()、范围归属与来源检查已实现；目标测试 4 passed、全量 48 passed。该结果来自此前实际运行，当前文档落盘不构成新一轮测试或新功能验收。
 
+2026-10-21 补充实际验证：用户手写 Pydantic 提取结果模型，目标 3 passed，全量 51 passed；结构校验已 GREEN，提取器 HTTP 调用、触发、选择和注入仍待实现。正式进度继续以总体路线为准。
+
 后续顺序：
 
 1. **提取器**：明确触发规则、候选结构与校验契约；用 fake 模型验证 upsert / skip、无效输出和代表性失败，接通显式保存及普通聊天按需提取。
@@ -226,8 +236,8 @@ Memory Context 是应用明确标记的参考数据，不是高优先级命令�
 
 总体架构已经确定，以下是后续局部接口细节，不意味着重新选择整套方案：
 
-- 固定 key 白名单、Core / Regular 映射、总长度与条数上限。
-- 轻量触发规则、明确记忆操作时序、提取器输入与输出模型、skip 表示和候选数量。
+- Core / Regular 的固定 key 映射、总长度与条数上限；当前候选 key 白名单见 5.2。
+- 轻量触发规则、明确记忆操作时序、提取器输入与候选数量上限；已确定的输出结构和 skip 语义见 5.2。
 - 提取模型配置、超时、调用预算与错误记录边界。
 - Memory Context 的协议角色与封装、检查及删除接口、防重建状态与重新保存规则。
 

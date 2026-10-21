@@ -2,6 +2,8 @@
 
 > 文档角色：记录 agent-lab 阶段 5 的最小逻辑数据模型，以及已经落地验证的表关系和当前实现边界。
 
+> 本文主要保留阶段 5 的三表设计；阶段 7 已增加 conversation.user_id 和 memory 表，当前进度见 [`agent-lab总体学习路线.md`](./agent-lab总体学习路线.md)，记忆设计见 [`Memory V1.1 方案`](./Memory-V1.1轻量分层长期记忆方案.md)。不要将本阶段草案当作当前数据库的完整结构。
+
 ## 1. `conversation`
 
 `conversation` 表示一段可持续、可恢复的对话。
@@ -13,7 +15,7 @@
 | `created_at` | 必填 | 记录会话创建时间 |
 | `updated_at` | 必填 | 记录会话最后更新时间 |
 
-当前项目没有用户系统，因此暂不增加 `user_id`。模型可能在同一会话中切换，因此 `model` 不属于 `conversation`。
+阶段 5 设计时尚未增加 `user_id`；阶段 7 已补充可选用户标识及归属检查，但尚未接入登录认证。模型可能在同一会话中切换，因此 `model` 不属于 `conversation`。
 
 ## 2. `message`
 

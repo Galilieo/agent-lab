@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度：阶段 5、阶段 6 均已完成第一轮；阶段 7 的可选用户标识、会话归属检查和旧数据库兼容已通过验证与复述，全量测试为 `44 passed`。下一步设计两种作用范围的记忆存储与更新；记忆提取与注入尚未实现。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
+> 当前进度：阶段 5、阶段 6 均已完成第一轮；阶段 7 的会话归属、两种范围记忆存储和 Pydantic 提取结果模型已通过回归，当前全量基线为 `51 passed`。Memory V1.1 方案已确定，提取结果结构校验小主题已收口，下一步是轻量触发规则与 LLM 提取调用契约；自动提取、记忆选择和注入尚未接通。详细阶段、验收标准和下一步见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md)。
 
 ## 为什么创建这个仓库
 
@@ -56,11 +56,15 @@ agent-lab/
 │   ├── test_database.py
 │   ├── test_health.py
 │   ├── test_mcp.py
+│   ├── test_memory.py
+│   ├── test_memory_extraction.py
 │   └── test_tools.py
 ├── notes/
 │   ├── README.md
 │   ├── agent-lab总体学习路线.md
 │   ├── Codex学习导师提示词.md
+│   ├── Memory-V1.1轻量分层长期记忆方案.md
+│   ├── 代码注释规范.md
 │   └── sqlite多轮会话数据模型草案.md
 ├── .vscode/
 │   └── settings.json
@@ -74,6 +78,24 @@ agent-lab/
 ```
 
 `app/` 保存可运行的 FastAPI 应用，`tests/` 保存自动化测试，`playground/` 保存独立的 Python 学习示例，`notes/` 用于记录实验过程和结论。
+
+## 源码从哪里开始读
+
+按下面的顺序阅读，可以先看清一条聊天请求，再进入协议与数据细节。各 Python 文件开头都有职责说明，关键函数补充输入输出、异常或事务约束。
+
+| 文件 | 主要负责什么 |
+| --- | --- |
+| [app/main.py](app/main.py) | HTTP 入口、归属检查、短事务、Agent 调用和错误状态映射 |
+| [app/schemas.py](app/schemas.py) | 请求与响应的数据结构；字段校验不替代业务规则 |
+| [app/config.py](app/config.py) | 从进程环境读取应用和模型配置，不直接解析 .env |
+| [app/services/agent.py](app/services/agent.py) | 多轮模型与工具循环、调用预算和中途失败边界 |
+| [app/services/llm.py](app/services/llm.py) | 单次模型 HTTP 请求、响应解析和结构化调用元数据 |
+| [app/tools.py](app/tools.py) | 工具声明、参数校验与本地工具执行 |
+| [app/services/mcp_tools.py](app/services/mcp_tools.py) | 将 Agent 的笔记工具请求接到 MCP Client |
+| [app/mcp_server.py](app/mcp_server.py) | 提供笔记 Tool 和学习路线 Resource，执行真实文件读取 |
+| [app/database.py](app/database.py) | SQLite 建表、历史窗口、消息/调用记录与记忆存储 |
+
+对应的 `tests/test_*.py` 说明每条链路的正常与失败预期。`pyproject.toml` 管理依赖与 pytest 配置，`uv.lock` 固定依赖解析结果；`playground/message.json` 是文件读写练习的数据，不是应用配置。注释写法见 [代码注释规范](notes/代码注释规范.md)。
 
 ## 本地运行
 
@@ -109,6 +131,8 @@ curl -X POST http://127.0.0.1:8000/chat \
 uv run pytest
 ```
 
+2026-10-21 实际全量结果为 `51 passed`，其中 `tests/test_memory_extraction.py` 的三个场景已由正确 RED 转为 GREEN。后续结果以正式路线更新为准；测试通过与真实模型联调是不同证据。
+
 ## 当前完成情况
 
 - [x] FastAPI 项目基础骨架
@@ -134,12 +158,16 @@ uv run pytest
 - [x] MCP Client 接入 Agent 查询分支、工具结果回传与失败边界验证
 - [x] 学习路线 Resource 的真实 stdio 读取，以及 Tool / Resource / Prompt 职责复述
 - [x] 可选用户标识、会话归属冲突检查与旧会话表补列兼容
+- [x] 两种范围 memory 表、UPSERT、来源校验与无效来源不覆盖旧记忆
+- [x] [Memory V1.1 完整方案](notes/Memory-V1.1轻量分层长期记忆方案.md)落盘并关联正式路线
+- [x] Pydantic 提取结果模型、多条候选与 skip、空 upsert 和伪造来源拒绝
+- [ ] LLM 按需提取、分层选择与上下文注入
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
 
 阶段 5 已在用户明确授权后，通过本地 `.env`、真实 Uvicorn 和独立临时数据库完成一次真实 DeepSeek 两轮联调；第二轮正确回答了第一轮提供的合成测试代号。联调没有输出 API Key，临时数据库已在验证后删除。
 
-阶段 6 已完成第一轮：三个工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 全量测试为 `41 passed`；fake 模型配合真实同进程 MCP 查询验证回传链，失败探索验证异常承接和调用记录保留，独立 stdio 实验验证工具查询与 Resource 读取。上述阶段 6 验证未访问真实 DeepSeek，不能证明真实模型的工具选择或完整 MCP 联调。Agent 接线与 Tool / Resource / Prompt 职责均已完成复述验收；Resource 未自动注入 Agent 上下文，MCP Prompt 只做职责理解。阶段 7 的可选用户标识与会话归属链路已实现并验证，记忆存储与注入仍待完成。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
+阶段 6 已完成第一轮：三个工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 全量测试为 `41 passed`；fake 模型配合真实同进程 MCP 查询验证回传链，失败探索验证异常承接和调用记录保留，独立 stdio 实验验证工具查询与 Resource 读取。上述阶段 6 验证未访问真实 DeepSeek，不能证明真实模型的工具选择或完整 MCP 联调。Agent 接线与 Tool / Resource / Prompt 职责均已完成复述验收；Resource 未自动注入 Agent 上下文，MCP Prompt 只做职责理解。阶段 7 的可选用户标识、会话归属与记忆存储已实现并验证，自动提取与上下文注入仍待完成。阶段 6 曾于 2026-08-26 暂停，并于 2026-09-04 恢复开发。
 
 2026-10-19 会话归属目标测试为 `3 passed`，全量为 `44 passed`，`git diff --check` 通过。该测试使用临时旧数据库和 fake Agent，验证归属冲突返回 409、拒绝请求不追加消息和调用 Agent，以及旧会话数据保留；另以临时数据库验证重复初始化及旧会话继续聊天。已完成复述验收，没有调用真实模型。
 
