@@ -1,3 +1,8 @@
+"""直接验证本地工具的参数校验、计算与 Markdown 查询。
+
+笔记查询使用 tmp_path 临时文件；不经过模型或 MCP，也不访问外部服务。
+"""
+
 import json
 
 import pytest
@@ -12,6 +17,7 @@ def test_execute_tool_searches_markdown_notes_with_source(
     monkeypatch,
     tmp_path,
 ) -> None:
+    """验证原文与出处、不读取非 Markdown 文件，以及未命中返回空列表。"""
     notes_dir = tmp_path / "note"
     notes_dir.mkdir()
     (notes_dir / "sample.md").write_text(
@@ -56,6 +62,7 @@ def test_execute_tool_searches_markdown_notes_with_source(
 
 
 def test_execute_tool_validates_and_runs_calculator() -> None:
+    """验证合法加法通过参数校验，并返回可放入 tool 消息的结果字符串。"""
     tool_call = LLMToolCall(
         call_id="call_001",
         name="calculator",
@@ -68,6 +75,7 @@ def test_execute_tool_validates_and_runs_calculator() -> None:
 
 
 def test_execute_tool_rejects_calculator_division_by_zero() -> None:
+    """验证除零输入在计算前由参数校验拒绝，并保留具体校验原因。"""
     tool_call = LLMToolCall(
         call_id="call_002",
         name="calculator",

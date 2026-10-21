@@ -1,3 +1,9 @@
+"""练习 Python 对象与 JSON 字符串、文件之间的转换。
+
+在仓库根目录运行 uv run python playground/02_json_file.py。
+脚本会写入 playground/message.json，再读回并打印，所以运行会修改该示例文件。
+"""
+
 #JSON 与文件读写
 import json
 message = {

@@ -1,3 +1,10 @@
+"""验证原生 Agent 的工具循环、消息回传、调用预算与失败记录。
+
+模型响应由 fake HTTP Client 或 fake generate_reply 预设。
+成功链执行真实本地工具；预算测试替换工具入口以观察执行次数。
+这些测试保护程序链路，不能证明真实模型会选择正确工具。
+"""
+
 import asyncio
 from datetime import datetime, timedelta, timezone
 
@@ -20,6 +27,7 @@ from app.services.llm import (
 def test_run_agent_returns_final_answer_after_current_time_tool_call(
     monkeypatch,
 ) -> None:
+    """预设模型选择时间工具，验证真实时间执行、UTC offset、调用 ID 和最终回答。"""
     observed_payloads = []
     tool_arguments = '{"timezone":"Asia/Shanghai"}'
 
@@ -112,6 +120,7 @@ def test_run_agent_returns_final_answer_after_current_time_tool_call(
 def test_run_agent_returns_final_answer_after_calculator_tool_call(
     monkeypatch,
 ) -> None:
+    """验证 calculator 工具请求、执行结果和第二次模型请求组成完整闭环。"""
     observed_payloads = []
 
     class AgentLoopAsyncClient:
@@ -219,6 +228,7 @@ def test_run_agent_returns_final_answer_after_calculator_tool_call(
 def test_run_agent_repeats_tool_calls_until_model_returns_final_answer(
     monkeypatch,
 ) -> None:
+    """验证连续两次工具执行与第三次最终回答，每轮都提供可用工具并保留旧结果。"""
     call_count = 0
     observed_tool_names = []
     observed_tool_results = []
@@ -326,6 +336,7 @@ def test_run_agent_repeats_tool_calls_until_model_returns_final_answer(
 def test_run_agent_stops_before_executing_tool_when_call_budget_is_exhausted(
     monkeypatch,
 ) -> None:
+    """验证预算在执行下一工具前生效，避免没有后续模型预算时再产生工具动作。"""
     model_call_count = 0
     executed_tool_call_ids = []
 
@@ -390,6 +401,7 @@ def test_run_agent_stops_before_executing_tool_when_call_budget_is_exhausted(
 def test_run_agent_preserves_completed_call_when_final_call_times_out(
     monkeypatch,
 ) -> None:
+    """验证后续请求超时时，AgentRunError 携带真实原因及此前成功调用。"""
     call_count = 0
 
     async def fake_generate_reply(

@@ -1,3 +1,4 @@
+# 项目元数据与运行依赖；uv sync 根据这里和 uv.lock 准备环境。
 [project]
 name = "agent-lab"
 version = "0.1.0"
@@ -11,14 +12,17 @@ dependencies = [
     "mcp>=2.3,<3.0",
 ]
 
+# 测试工具属于开发依赖，不是运行 HTTP 应用所必需的组件。
 [dependency-groups]
 dev = [
     "pytest>=8.3,<9.0",
 ]
 
+# 从仓库根目录导入 app，只收集 tests 下的测试，不执行 playground 练习。
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
 
+# 当前是直接运行源码的学习仓库，不构建或安装为独立 Python 发行包。
 [tool.uv]
 package = false

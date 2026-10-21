@@ -1,3 +1,9 @@
+"""单次异步 LLM 调用：组装兼容接口请求，解析回答或工具请求。
+
+由 Agent 调用，返回结构化 LLMResult；将网络与响应错误转换为业务异常。
+本层记录调用元数据，不负责工具执行、数据库写入或 HTTP 状态映射。
+"""
+
 from dataclasses import dataclass, field
 import json
 import logging
@@ -12,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LLMToolCall:
+    """模型提出的工具请求；arguments 保留原始 JSON，稍后由执行层校验。"""
     call_id: str
     name: str
     arguments: str
@@ -19,6 +26,11 @@ class LLMToolCall:
 
 @dataclass
 class LLMResult:
+    """一次成功模型调用的结构化结果，供 Agent 使用并由路由持久化。
+
+    工具请求时 answer 可以为 None；缺少 usage 时 Token 字段保持 None。
+    它代表一次调用，不等于整个 Agent 已经完成回答。
+    """
     answer: str | None
     model: str
     upstream_status: int
@@ -26,10 +38,12 @@ class LLMResult:
     prompt_tokens: int | None
     completion_tokens: int | None
     total_tokens: int | None
+    # 每个结果独享一个工具列表，避免不同模型调用共享可变默认对象。
     tool_calls: list[LLMToolCall] = field(default_factory=list)
 
 
 class LLMRequestError(Exception):
+    """携带失败模型名、分类、可用上游状态和耗时的统一模型异常边界。"""
     outcome: str
 
     def __init__(
@@ -47,18 +61,22 @@ class LLMRequestError(Exception):
 
 
 class LLMTimeoutError(LLMRequestError):
+    """模型读取超时；由路由映射为 HTTP 504。"""
     outcome = "timeout"
 
 
 class LLMConnectionError(LLMRequestError):
+    """连接上游失败；由路由映射为 HTTP 503。"""
     outcome = "connection_error"
 
 
 class LLMUpstreamError(LLMRequestError):
+    """上游返回非成功 HTTP 状态；由路由映射为 HTTP 502。"""
     outcome = "upstream_error"
 
 
 class LLMResponseError(LLMRequestError):
+    """HTTP 响应存在，但 JSON 或所需字段不可用；由路由映射为 HTTP 502。"""
     outcome = "invalid_response"
 
 
@@ -68,6 +86,23 @@ async def generate_reply(
     tools: list[dict] | None = None,
     additional_messages: list[dict] | None = None,
 ) -> LLMResult:
+    """执行一次异步模型请求，解析普通回答或待执行的工具请求。
+
+    Args:
+        message: 本轮用户问题。
+        history: 旧会话消息，以正序插入系统指令之后。
+        tools: 本轮允许模型选择的工具声明；None 表示不携带工具配置。
+        additional_messages: Agent 本轮已产生的工具请求和工具结果消息。
+
+    Returns:
+        回答、工具请求及本次调用的状态、耗时和可选 Token 元数据。
+
+    Raises:
+        LLMTimeoutError: 上游读取超时。
+        LLMConnectionError: 无法连接上游。
+        LLMUpstreamError: 上游返回非成功 HTTP 状态。
+        LLMResponseError: 响应无法解析为可用的模型结果。
+    """
     if history is None:
         history = []
 
@@ -81,6 +116,7 @@ async def generate_reply(
         "Content-Type": "application/json",
     }
 
+    # 列表解包保持消息列表扁平；旧历史在当前问题之前，工具交互在当前问题之后。
     payload = {
         "model": settings.openai_model,
         "messages": [
@@ -111,6 +147,7 @@ async def generate_reply(
                 headers=headers,
                 json=payload,
             )
+            # HTTP 层成功只允许继续解析，不保证正文是合法或可用的模型结果。
             response.raise_for_status()
     except httpx.ReadTimeout as exc:
         latency_ms = (time.perf_counter() - started_at) * 1000
@@ -165,10 +202,12 @@ async def generate_reply(
         ) from exc
 
     try:
+        # JSON 解析和必要字段提取放在同一边界，统一转换为 LLMResponseError。
         response_data = response.json()
         message_data = response_data["choices"][0]["message"]
         answer = message_data["content"]
 
+        # 此处只解析“模型希望调用什么”，工具是否可执行由后续 Agent/工具层判断。
         tool_calls = [
             LLMToolCall(
                 call_id=tool_call["id"],
@@ -195,6 +234,7 @@ async def generate_reply(
             latency_ms=latency_ms,
         ) from exc
 
+    # usage 是可选观测数据；缺失时返回 None，不让一条有效回答因统计缺失而失败。
     usage = response_data.get("usage") or {}
 
     prompt_tokens = usage.get("prompt_tokens")
@@ -203,6 +243,7 @@ async def generate_reply(
 
     latency_ms = (time.perf_counter() - started_at) * 1000
 
+    # 只记录分类、状态、耗时和 Token，不记录消息正文、请求头或 API Key。
     logger.info(
         "LLM request succeeded model=%s status=%s latency_ms=%.2f "
         "prompt_tokens=%s completion_tokens=%s total_tokens=%s",

@@ -1,3 +1,9 @@
+"""验证应用启动、HTTP 契约、LLM 解析和模型调用持久化。
+
+使用 TestClient 与独立临时 SQLite；模型调用通过 fake Agent 或 fake HTTP Client
+隔离。测试会真实执行被测层及其下游本地代码，但不访问真实模型服务。
+"""
+
 import asyncio
 import logging
 
@@ -23,6 +29,7 @@ from app.services.llm import (
 
 @pytest.fixture
 def database_path(monkeypatch, tmp_path):
+    """为每条测试注入独立的临时数据库路径，隔离本地真实会话数据。"""
     path = tmp_path / "agent-lab-test.db"
     monkeypatch.setattr(
         "app.main.settings.database_path",
@@ -33,12 +40,14 @@ def database_path(monkeypatch, tmp_path):
 
 @pytest.fixture
 def client(database_path):
+    """在临时数据库配置后启动应用，退出 fixture 时清理 TestClient 生命周期。"""
     with TestClient(app) as test_client:
         yield test_client
 
 
 @pytest.fixture
 def error_client(database_path):
+    """把未处理服务端异常转成 HTTP 响应，便于检查预期的路由错误状态。"""
     with TestClient(
         app,
         raise_server_exceptions=False,
@@ -49,6 +58,7 @@ def error_client(database_path):
 def test_app_startup_initializes_database_schema_without_chat_request(
     database_path,
 ) -> None:
+    """验证仅启动应用即可创建最初的三张核心表，不依赖 /chat 顺便建表。"""
     with TestClient(app):
         pass
 
@@ -81,6 +91,7 @@ def test_app_startup_initializes_database_schema_without_chat_request(
 
 
 def test_health_returns_ok(client) -> None:
+    """验证 /health 的状态码与固定响应结构，不触发模型调用。"""
     response = client.get("/health")
 
     assert response.status_code == 200
@@ -92,6 +103,10 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
     database_path,
     client,
 ) -> None:
+    """通过两轮请求验证历史恢复、消息提交时序与中间/最终模型调用关联。
+
+    只 fake Agent；HTTP 路由、SQLite 读写与重新连接查询真实执行。
+    """
     observed_calls = []
 
     async def fake_run_agent(
@@ -318,6 +333,7 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
 
 
 def test_chat_rejects_empty_message(client) -> None:
+    """验证空消息由请求模型拒绝，返回 422 并指出 message 字段。"""
     payload = {
         "conversation_id": "test-001",
         "message": "",
@@ -330,6 +346,7 @@ def test_chat_rejects_empty_message(client) -> None:
 
 
 def test_chat_rejects_missing_message(client) -> None:
+    """验证缺少必填消息字段时返回 422，不进入 Agent。"""
     payload = {
         "conversation_id": "test-001",
     }
@@ -341,6 +358,7 @@ def test_chat_rejects_missing_message(client) -> None:
 
 
 def test_chat_rejects_non_string_message(client) -> None:
+    """验证消息类型错误时返回 422，而非由业务代码猜测或转换。"""
     payload = {
         "conversation_id": "test-001",
         "message": 123,
@@ -355,6 +373,7 @@ def test_chat_rejects_non_string_message(client) -> None:
 
 
 def test_chat_rejects_closed_conversation(client) -> None:
+    """验证关闭会话的现有学习用分支返回 409。"""
     payload = {
         "conversation_id": "closed-001",
         "message": "你好",
@@ -369,6 +388,7 @@ def test_chat_rejects_closed_conversation(client) -> None:
 def test_generate_reply_returns_structured_result_and_includes_history(
     monkeypatch,
 ) -> None:
+    """观察 fake HTTP 请求，验证消息顺序、60 秒超时及结构化调用元数据。"""
     observed = {}
 
     class FakeAsyncClient:
@@ -469,6 +489,7 @@ def test_generate_reply_returns_structured_result_and_includes_history(
 def test_generate_reply_returns_tool_call_when_model_requests_calculator(
     monkeypatch,
 ) -> None:
+    """验证响应中的工具请求被解析为 LLMToolCall，此处不执行计算器。"""
     observed = {}
 
     calculator_tool = {
@@ -576,6 +597,7 @@ def test_chat_logs_and_returns_gateway_timeout_when_llm_times_out(
     database_path,
     error_client,
 ) -> None:
+    """模拟读取超时，验证 504、安全日志和无回答的失败调用持久化。"""
     observed = {}
 
     class TimeoutAsyncClient:
@@ -671,6 +693,7 @@ def test_chat_persists_completed_call_and_timeout_when_agent_final_call_times_ou
     database_path,
     error_client,
 ) -> None:
+    """验证后续模型超时仍保存此前成功调用及最终失败，且不生成助手回答。"""
     async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
@@ -777,6 +800,7 @@ def test_chat_persists_completed_calls_when_agent_call_budget_is_exhausted(
     database_path,
     error_client,
 ) -> None:
+    """验证预算耗尽返回 502，只保存真实发生的成功调用，不虚构失败请求。"""
     async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
@@ -863,6 +887,7 @@ def test_chat_persists_completed_call_when_agent_requests_unknown_tool(
     database_path,
     error_client,
 ) -> None:
+    """让真实 Agent 遇到未知工具，验证 502、用户消息保留及成功模型调用记录。"""
     async def fake_generate_reply(
         message: str,
         history=None,
@@ -958,6 +983,7 @@ def test_chat_returns_service_unavailable_when_llm_connection_fails(
     caplog,
     error_client,
 ) -> None:
+    """模拟网络连接失败，验证服务异常沿真实请求链映射为 HTTP 503。"""
     observed = {}
 
     class ConnectionFailingAsyncClient:
@@ -1008,6 +1034,7 @@ def test_chat_returns_bad_gateway_when_llm_returns_error_status(
     caplog,
     error_client,
 ) -> None:
+    """模拟上游 HTTP 错误，验证映射为本应用的 HTTP 502。"""
     observed = {}
 
     class UpstreamErrorAsyncClient:
@@ -1066,6 +1093,7 @@ def test_chat_returns_bad_gateway_when_llm_returns_invalid_json(
     caplog,
     error_client,
 ) -> None:
+    """模拟 HTTP 成功但正文不是 JSON，验证它仍是业务失败并返回 502。"""
     observed = {}
 
     class InvalidJsonAsyncClient:
@@ -1120,6 +1148,7 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_choices(
     monkeypatch,
     error_client,
 ) -> None:
+    """模拟合法 JSON 缺少 choices，验证字段解析错误被统一映射为 502。"""
     class MissingChoicesAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
@@ -1160,6 +1189,7 @@ def test_chat_returns_bad_gateway_when_llm_response_has_no_content(
     monkeypatch,
     error_client,
 ) -> None:
+    """模拟模型消息缺少 content，验证不能把结构残缺响应当作成功回答。"""
     class MissingContentAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass
@@ -1207,6 +1237,7 @@ def test_generate_reply_returns_none_and_logs_unavailable_when_usage_is_missing(
     monkeypatch,
     caplog,
 ) -> None:
+    """验证缺少可选 usage 不影响有效回答，Token 为 None 且日志显示 unavailable。"""
     observed = {}
 
     class SuccessfulAsyncClient:
@@ -1270,6 +1301,7 @@ def test_chat_logs_token_usage_for_successful_llm_call(
     caplog,
     client,
 ) -> None:
+    """验证成功调用日志包含上游提供的三项 Token 统计。"""
     class SuccessfulAsyncClient:
         def __init__(self, *, timeout=None) -> None:
             pass

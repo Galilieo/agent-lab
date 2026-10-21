@@ -1,3 +1,9 @@
+"""验证会话归属冲突先于消息写入和 Agent 调用被拒绝。
+
+从没有 user_id 列的旧 SQLite 表启动，同时检查旧库兼容和创建时间保留。
+Agent 被 fake 替换，因此只验证请求链和持久化，不调用真实模型。
+"""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -9,6 +15,7 @@ from app.services.llm import LLMResult
 
 @pytest.fixture
 def ownership_scenario(monkeypatch, tmp_path):
+    """准备旧版会话数据库、fake Agent 与启动后的 TestClient，并记录 Agent 调用。"""
     database_file = tmp_path / "legacy-agent-lab.db"
     connection = create_connection(str(database_file))
     try:
@@ -79,6 +86,7 @@ def test_chat_keeps_conversation_owner_and_rejects_conflicts(
     owner_id,
     conflicting_id,
 ):
+    """验证换用户、省略已绑定用户和认领匿名会话均失败，旧数据与消息数量保持正确。"""
     client = ownership_scenario["client"]
     payload = {"conversation_id": "owned-001", "message": "第一条消息"}
     if owner_id is not None:

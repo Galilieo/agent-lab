@@ -1,3 +1,9 @@
+"""Python 类、异步、pytest 与推导式的个人练习草稿。
+
+前半部分保留注释示例，当前执行部分比较循环与列表/字典推导式。
+在仓库根目录运行 uv run python playground/home.py；这里不调用真实模型。
+"""
+
 # class User:
 #   pass
 # user = User()

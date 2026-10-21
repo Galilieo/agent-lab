@@ -1,3 +1,9 @@
+"""声明模型可见的工具，并校验、执行本地工具参数。
+
+工具声明描述模型可以请求什么；Pydantic 模型限制参数形状；执行函数产生结果。
+Agent 中的笔记查询走 MCP，计算器和时间查询直接走本地执行入口。
+"""
+
 import json
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +18,7 @@ from app.services.llm import LLMToolCall
 NOTES_DIR = Path(__file__).resolve().parent.parent / "notes"
 
 
+# 计算器的本地参数契约；只允许四种运算，并拒绝未声明字段。
 class CalculatorArguments(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -19,6 +26,7 @@ class CalculatorArguments(BaseModel):
     operator: Literal["+", "-", "*", "/"]
     right: int | float
 
+    # after 阶段可以读取已通过字段校验的值，再检查运算符与右操作数组合是否合法。
     @model_validator(mode="after")
     def reject_division_by_zero(self) -> Self:
         if self.operator == "/" and self.right == 0:
@@ -27,6 +35,7 @@ class CalculatorArguments(BaseModel):
         return self
 
 
+# 笔记查询参数；先去掉首尾空白，再拒绝空关键词和额外字段。
 class SearchNotesArguments(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -36,12 +45,14 @@ class SearchNotesArguments(BaseModel):
     query: str = Field(min_length=1)
 
 
+# 时间工具参数；只验证字段形状，时区名称由 ZoneInfo 执行时验证。
 class CurrentTimeArguments(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     timezone: str
 
 
+# 这些声明进入模型请求，描述可用工具；真正执行前仍要通过上面的参数模型校验。
 CALCULATOR_TOOL = {
     "type": "function",
     "function": {
@@ -113,6 +124,7 @@ SEARCH_NOTES_TOOL = {
 }
 
 
+# 每轮提供的可用能力清单，不是已经执行的工具或执行结果。
 AVAILABLE_TOOLS = [
     CALCULATOR_TOOL,
     CURRENT_TIME_TOOL,
@@ -123,6 +135,7 @@ AVAILABLE_TOOLS = [
 def run_calculator(
     arguments: CalculatorArguments,
 ) -> int | float:
+    """执行已经通过参数校验的四则运算；除零由参数模型提前拒绝。"""
     if arguments.operator == "+":
         return arguments.left + arguments.right
 
@@ -137,11 +150,17 @@ def run_calculator(
 
 
 def run_current_time(arguments: CurrentTimeArguments) -> str:
+    """返回目标时区的 ISO 8601 当前时间，结果包含 UTC offset。"""
     current_time = datetime.now(ZoneInfo(arguments.timezone))
     return current_time.isoformat()
 
 
 def run_search_notes(arguments: SearchNotesArguments) -> dict:
+    """在固定 notes 目录按字面关键词查询 Markdown，最多返回五条。
+
+    每条结果包含文件路径、从 1 开始的行号和原文；不命中时正常返回空列表。
+    仅扫描目录下的普通 .md 文件，不递归，也不跟随符号链接。
+    """
     if not NOTES_DIR.is_dir():
         raise FileNotFoundError("Notes directory does not exist")
 
@@ -170,6 +189,11 @@ def run_search_notes(arguments: SearchNotesArguments) -> dict:
 
 
 def execute_tool(tool_call: LLMToolCall) -> str:
+    """按工具名解析、校验并执行本地工具，统一返回可放入 tool 消息的字符串。
+
+    未知工具、非法 JSON、参数错误与执行错误继续向外抛出，交给 Agent 包装。
+    Agent 的 search_notes 分支目前使用 MCP，本地笔记分支仍供直接调用与测试使用。
+    """
     if tool_call.name not in (
         "calculator",
         "get_current_time",
@@ -177,6 +201,7 @@ def execute_tool(tool_call: LLMToolCall) -> str:
     ):
         raise ValueError(f"Unknown tool: {tool_call.name}")
 
+    # 参数最初是模型返回的 JSON 字符串，先解码，再按具体工具进行 Schema 校验。
     arguments_data = json.loads(tool_call.arguments)
 
     if tool_call.name == "calculator":

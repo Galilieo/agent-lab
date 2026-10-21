@@ -1,3 +1,9 @@
+"""验证两种范围记忆的 UPSERT、用户消息来源与错误写入保护。
+
+使用真实内存 SQLite；覆盖同用户跨会话来源、范围与 key 共存，以及无效来源
+不能覆盖旧值。本文件不测试 LLM 提取、记忆读取合并或上下文注入。
+"""
+
 import pytest
 
 from app import database
@@ -9,6 +15,10 @@ SECOND_UPDATED_AT = "2026-10-19T10:01:00+00:00"
 
 @pytest.fixture
 def memory_scenario():
+    """准备两个用户、三个会话及用户/助手来源消息，供范围校验测试复用。
+
+    每条测试独享内存连接，yield 后关闭连接；初始样本已提交。
+    """
     connection = database.create_connection()
     try:
         database.initialize_schema(connection)
@@ -46,6 +56,7 @@ def memory_scenario():
 
 
 def read_memory_rows(connection):
+    """按固定顺序读取全部记忆字段，便于完整比较更新结果和失败前后的状态。"""
     return connection.execute(
         """
         SELECT scope, scope_id, key, value, source_message_id, updated_at
@@ -56,8 +67,10 @@ def read_memory_rows(connection):
 
 
 def test_memory_updates_only_matching_scope_owner_and_key(memory_scenario):
+    """验证四条不同范围/归属/key 的记忆共存，只更新指定用户级风格及来源时间。"""
     connection = memory_scenario["connection"]
     source_ids = memory_scenario["source_ids"]
+    # 建立不同范围、用户和 key 的邻居记录，防止 UPSERT 把无关记录一起覆盖。
     for scope, scope_id, key, value, source_key in [
         ("user", "user-001", "explanation_style", "使用 Java 类比", "source_a"),
         ("conversation", "conversation-A", "explanation_style", "直接用 Python 解释", "source_a"),
@@ -74,6 +87,7 @@ def test_memory_updates_only_matching_scope_owner_and_key(memory_scenario):
             updated_at=FIRST_UPDATED_AT,
         )
 
+    # 同用户另一会话的消息可以更新用户级偏好，但不应改变会话级覆盖值。
     database.upsert_memory(
         connection=connection,
         scope="user",
@@ -123,6 +137,7 @@ def test_memory_updates_only_matching_scope_owner_and_key(memory_scenario):
 def test_memory_rejects_invalid_source_without_overwriting(
     memory_scenario, scope, scope_id, source_key,
 ):
+    """验证跨用户、跨会话和助手来源都被拒绝，且已有记录完全不变。"""
     connection = memory_scenario["connection"]
     source_ids = memory_scenario["source_ids"]
     database.upsert_memory(
@@ -150,6 +165,7 @@ def test_memory_rejects_invalid_source_without_overwriting(
     with pytest.raises(ValueError):
         invalid_write()
 
+    # 抛出异常只说明拒绝了调用，还要确认拒绝前没有破坏已保存的值。
     after = read_memory_rows(connection)
     # 写入前后记录相同，失败不能覆盖原记忆。
     assert after == before

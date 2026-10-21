@@ -1,3 +1,9 @@
+"""使用真实 SQLite 验证表约束、历史窗口与提交后的持久化语义。
+
+内存库测试数据关系，tmp_path 文件库测试重新连接后的差异；不调用模型。
+多条 model_call 可以关联同一请求消息，只说明支持记录重试，不实现自动重试。
+"""
+
 import sqlite3
 
 import pytest
@@ -10,6 +16,7 @@ from app.database import (
 
 
 def test_create_connection_enables_foreign_keys() -> None:
+    """检查连接工厂确实启用外键；SQLite 的该设置按连接生效。"""
     connection = create_connection()
 
     try:
@@ -24,6 +31,7 @@ def test_create_connection_enables_foreign_keys() -> None:
 
 
 def test_initialize_schema_allows_message_for_existing_conversation() -> None:
+    """验证存在父会话时，消息能正常写入并按字段读回。"""
     connection = create_connection()
 
     try:
@@ -82,6 +90,7 @@ def test_initialize_schema_allows_message_for_existing_conversation() -> None:
 
 
 def test_initialize_schema_rejects_message_without_conversation() -> None:
+    """验证孤儿消息被真实数据库外键拒绝。"""
     connection = create_connection()
 
     try:
@@ -110,6 +119,7 @@ def test_initialize_schema_rejects_message_without_conversation() -> None:
 
 
 def test_initialize_schema_allows_retry_for_same_user_message() -> None:
+    """验证一个请求消息可关联失败与成功两条调用记录，不代表自动重试已实现。"""
     connection = create_connection()
 
     try:
@@ -266,6 +276,7 @@ def test_initialize_schema_allows_retry_for_same_user_message() -> None:
 
 
 def test_initialize_schema_rejects_invalid_model_call_references() -> None:
+    """验证调用记录不能引用不存在的会话、请求消息或回复消息。"""
     connection = create_connection()
 
     try:
@@ -350,6 +361,7 @@ def test_initialize_schema_rejects_invalid_model_call_references() -> None:
 
 
 def test_initialize_schema_rejects_model_call_for_message_from_other_conversation() -> None:
+    """验证消息虽然存在，属于其他会话时仍会被组合外键拒绝。"""
     connection = create_connection()
 
     try:
@@ -427,6 +439,7 @@ def test_initialize_schema_rejects_model_call_for_message_from_other_conversatio
 
 
 def test_initialize_schema_creates_message_history_index() -> None:
+    """验证历史索引包含会话、创建时间和消息 ID，顺序符合现有查询设计。"""
     connection = create_connection()
 
     try:
@@ -449,6 +462,7 @@ def test_initialize_schema_creates_message_history_index() -> None:
 
 
 def test_message_history_query_filters_conversation_and_orders_stably() -> None:
+    """验证会话过滤及时间相同时的 message_id 次序，不依赖插入顺序。"""
     connection = create_connection()
 
     try:
@@ -521,6 +535,7 @@ def test_message_history_query_filters_conversation_and_orders_stably() -> None:
 
 
 def test_recent_message_window_returns_latest_messages_in_chronological_order() -> None:
+    """验证先选最新 N 条，再恢复正序，且不会混入其他会话消息。"""
     connection = create_connection()
 
     try:
@@ -593,6 +608,7 @@ def test_recent_message_window_returns_latest_messages_in_chronological_order() 
 
 
 def test_file_database_persists_message_after_reconnecting(tmp_path) -> None:
+    """验证文件库提交并关闭后，新连接仍能恢复已保存的消息。"""
     database_path = tmp_path / "agent-lab.db"
 
     first_connection = create_connection(str(database_path))
@@ -661,6 +677,7 @@ def test_file_database_persists_message_after_reconnecting(tmp_path) -> None:
 
 
 def test_file_database_discards_uncommitted_conversation_after_reconnecting(tmp_path,) -> None:
+    """验证关闭未提交连接会丢弃该事务，后续连接无法读取这次写入。"""
     database_path = tmp_path / "uncomitted.db"
 
     first_connection = create_connection(str(database_path))

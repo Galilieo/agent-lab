@@ -1,3 +1,9 @@
+"""验证 Agent 经 MCP 查询笔记，再把带调用 ID 的结果交回模型。
+
+fake 模型只负责预设工具请求；MCP 协议和临时文件查询真实执行。
+fixture 将 stdio 启动配置替换为同进程连接，避免测试依赖外部子进程。
+"""
+
 import asyncio
 import json
 
@@ -11,6 +17,7 @@ from app.services.llm import LLMResult, LLMToolCall
 
 @pytest.fixture
 def notes_mcp_scenario(monkeypatch, tmp_path):
+    """准备临时笔记和同进程 MCP，记录协议调用与 fake 模型收到的工具消息。"""
     notes_dir = tmp_path / "notes"
     notes_dir.mkdir()
     (notes_dir / "sample.md").write_text(
@@ -80,6 +87,7 @@ def notes_mcp_scenario(monkeypatch, tmp_path):
 
 
 def test_run_agent_returns_notes_mcp_result_to_model(notes_mcp_scenario):
+    """验证查询实际经过 MCP，tool_call_id 正确关联，并把真实查询结果回传模型。"""
     observed = notes_mcp_scenario
     result = asyncio.run(run_agent(message="查一下工具失败的笔记"))
     assistant_message, tool_message = observed["model_messages"][1][-2:]
