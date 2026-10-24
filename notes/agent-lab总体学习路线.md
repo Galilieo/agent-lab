@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-21。
+> 最近核验：2026-10-24。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -47,7 +47,7 @@ Python 工程
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
-| 7. 轻量记忆与原生最小 RAG | **进行中：提取结果结构校验已收口** | 会话归属已收口；Memory V1.1 方案已确定，存储与 Pydantic 提取结果模型已验证，后者完成复述收口；LLM 提取、分层选择与注入尚未接通 |
+| 7. 轻量记忆与原生最小 RAG | **进行中：提取调用与候选绑定已收口** | 会话归属、记忆存储、Pydantic 提取结果、轻量触发、提取调用与候选绑定均已验证并收口；最近全量 60 passed；批量持久化、聊天接线、分层选择与注入尚未完成 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
@@ -412,6 +412,91 @@ pytest 8.4.2
 - 用户将 skip 必须为空、upsert 必须非空误归为后续业务规则；已结合 MemoryExtractionResult.validate_action 纠正：它们是现有 Pydantic 的 action/list 关联校验。依赖真实请求上下文的业务规则包括匿名请求不能写用户级记忆、来源消息必须属于匹配的用户或会话；合法 skip 正常结束，不写数据库。
 - 本小主题按主干正确、补充具体边界后收口，不重复相同检查题。最近验证基线仍为目标 4 passed、全量 55 passed；下一步明确 LLM 提取调用契约，尚未接通真实提取或写入。
 
+2026-10-21 LLM 提取调用预测与测试准备：
+
+- 用户已正确区分外层响应 JSON、正文字符串 answer 与解析后的模型对象。用户指出提取失败不应使正常聊天失败；已补充内部失败信号与对外聊天结果是两个边界，合法 skip 与无效提取不能混为一谈。
+- 本轮采用异步 extract_memories、专用系统指令、复用 generate_reply、model_validate_json 正文校验；先保留 LLMRequestError / ValidationError，聊天层捕获与安全失败记录待后续接线，不将无效输出静默转为 skip。
+- Codex 已准备 tests/test_memory_service.py 的 fake HTTP 样板，覆盖合法候选及 HTTP 200 但正文不是 JSON 的代表性失败。关键结果、出站消息与异常断言待用户手写；只运行 collect-only，2 tests collected，尚未确认本小主题的正确 RED，未修改核心实现。新增样板前最近全量为 55 passed。
+
+2026-10-21 两类模型调用与保存反馈设计澄清：
+
+- 用户已理解正常回答与记忆提取是两个独立任务；提取输出交给应用，第一版提取输入为本轮用户消息，不包含助手回答。规则命中仍可得到合法 skip，不能与非 JSON 正文等提取失败混淆。
+- 已分开说明主聊天失败、未触发提取、合法 skip、成功写入、记忆支线失败五种结果；普通聊天先成功保存，再考虑提取。提取器报告失败，由应用调用方捕获并记录，不把已成功聊天改成失败。
+- 用户确认无需第三次模型调用生成“已记住”：应用可在实际写入提交成功后追加固定确认。必须防止聊天模型提前承诺，并在聊天接线时保证最终回答与持久化历史一致；这属于后续接线约束，尚未实现。
+- 详细设计已写入 Memory V1.1 方案 5.4。本轮恢复到测试关键断言，不重复已澄清的调用次数、skip 和失败检查题；tests/test_memory_service.py 仍为待补断言的样板，尚未运行行为测试或编写核心实现。
+
+2026-10-22 LLM 提取调用关键断言与正确 RED：
+
+- 用户已手写完整候选 model_dump 比较、专用系统指令与原始用户消息断言，以及非 JSON 正文必须抛出 ValidationError 的异常断言。Codex 检查后移除已完成 TODO，并按注释规范保留行为意图说明。
+- 运行 `uv run --offline pytest -q tests/test_memory_service.py`，结果为 2 failed，均因 app.services.memory 尚未定义 extract_memories 而抛出 AttributeError。测试正常收集，正确 RED 已确认；核心实现尚未编写，最近通过的全量历史基线仍为 55 passed。
+- 已结合真实 generate_reply 与 fake client 演示请求分派：替换 AsyncClient 后，业务代码的 await client.post 进入 fake.post；其 json 参数是出站 payload，observed["messages"] 记录 payload 中的消息列表，configure 返回与闭包修改的是同一个字典。它不记录预设的响应正文，也不代表发起了真实网络请求。
+- 下一步用户集中手写 generate_reply 的可选系统指令参数、专用提取指令与 extract_memories 的调用和正文校验；不将本轮扩展为聊天接线或数据库写入。
+
+2026-10-24 LLM 提取调用 GREEN 与回归：
+
+- 用户已手写 generate_reply 的 keyword-only system_prompt 参数、请求 payload 替换、专用提取指令与异步 extract_memories；普通聊天默认指令保持原行为。提取调用只传本轮用户消息和专用指令，再通过 model_validate_json 校验正文，不吞掉网络或结构校验失败。
+- 实测目标 tests/test_memory_service.py 为 2 passed，全量离线 pytest 为 57 passed。测试真实执行请求组装、响应解析和 Pydantic 校验，只有外部 HTTP client 被替换；没有访问真实模型，不将预设候选记为真实模型提取质量证据。
+- Codex 仅调整 memory.py 模块职责说明、空行与注释措辞，保留用户核心实现。当前代码与回归已验证，参数兼容与测试证据边界的复述待收口；业务校验、数据库写入和聊天失败隔离仍未接通。
+
+2026-10-24 提取调用收口与下一主题准备：
+
+- 用户正确指出星号后的参数必须通过关键字传入；曾将默认值误解为必须使用的固定值，已结合函数签名与 payload 变量引用纠正：不传时使用默认聊天指令，显式传入时使用提取指令。已定位 fake HTTP 为测试中的 FakeAsyncClient，说明本地链路验证与真实模型提取质量的区别；补充具体误区后继续，不重复整组检查题。
+- 提取调用单元按正确 RED → 用户手写 GREEN → 目标 2 passed / 全量 57 passed → 具体纠偏收口。后续继续按用户授权范围决定提交，不自行 commit 或 push。
+- 下一主题聚焦候选的请求上下文绑定与匿名范围校验：scope_id 与 source_message_id 由应用提供，复用已有 upsert_memory 的来源归属检查。匿名请求混合 user / conversation 候选时，是整批拒绝还是只保留合法候选，属于尚待确认的保存行为；尚未新增业务校验实现或测试样板。
+
+2026-10-24 匿名混合候选策略确定：
+
+- 用户接受整批拒绝：匿名请求含 user 候选时不返回任何待写入项，不保留其中合法的 conversation 候选，不自动改变候选范围。
+- 局部接口设计已记入 Memory V1.1 方案 5.5：同步纯函数 prepare_memory_writes，使用内部 MemoryWrite dataclass 表达绑定后的 scope_id 与来源 ID，模型候选 Schema 和数据库结构保持不变。本轮不执行 HTTP 或数据库写入，实际来源归属校验继续复用 upsert_memory。
+- 当前下一步为集中预测用户级 / 会话级的 ID 绑定与匿名范围处理，再准备两组紧密相关的正常 / 拒绝测试样板。尚未新增核心实现或测试，不能记为业务校验 GREEN；最近全量基线仍为此前验证的 57 passed。
+
+2026-10-24 候选绑定预测纠偏与测试样板：
+
+- 用户预测 scope_id 按范围使用对应 ID；来源 ID 误写为 43，已按输入纠正为同一来源 42。用户随后明确匿名会话级候选可以返回待写入对象，绑定 conversation-A / 42；此前误把“匿名含 user 时整批拒绝”理解为匿名全部拒绝，已澄清。
+- 已用同 key 的 user 中文默认值与 conversation 英文覆盖值解释两条记录共存；准备函数只返回两条待写入项，后续才在独立记忆事务中调用 upsert_memory 并统一提交，不能据此记为写入或读取合并已实现。
+- Codex 已准备 tests/test_memory_binding.py：一个参数化正常测试覆盖有用户的混合范围与匿名会话级；一个拒绝测试覆盖匿名混合候选，不增加其他细粒度测试。只运行 collect-only，3 tests collected，关键断言待用户手写；当前尚未确认正确 RED。
+
+本轮实施计划（沿用用户手写核心代码的执行方式）：
+
+- 目标与契约：Memory V1.1 方案 5.5；原生 Python + dataclass + 现有 Pydantic，不新增依赖。只做候选范围检查与请求上下文绑定，不访问 LLM 或数据库。
+- 文件：新增 tests/test_memory_binding.py；GREEN 阶段修改 app/services/memory.py，加入五字段内部 MemoryWrite 与同步 prepare_memory_writes。前者字段为 scope、scope_id、key、value、source_message_id；后者接口为 `prepare_memory_writes(extraction: MemoryExtractionResult, *, user_id: str | None, conversation_id: str, source_message_id: int) -> list[MemoryWrite]`。
+- [x] Codex 准备候选与字面量预期数据，并验证三例可收集。
+- [x] 用户手写 `[asdict(write) for write in writes]` 与 expected 的完整比较，以及 `pytest.raises(ValueError)`；Codex 检查并运行目标测试，确认因缺少 prepare_memory_writes 导致的正确 RED（3 failed）。
+- [x] 用户集中实现 MemoryWrite 和绑定函数：按 scope 选择归属、绑定统一来源、匿名 user 拒绝整批、合法 skip 返回空列表；保留候选输入顺序，不改变模型候选对象。
+- [x] Codex 运行目标测试和全量离线回归、git diff --check；实际验证目标 3 passed、全量 60 passed 后更新基线。
+- [x] 用户复述临时对象与持久化的区别、来源绑定与数据库归属校验的边界，补充具体误区后收口。
+- [x] 用户明确授权分类提交，包含本轮三份知识笔记及索引；代码与笔记已分别提交，路线和方案独立归入 docs 提交。编辑器与独立练习保留，不推送。
+
+2026-10-24 候选绑定正确 RED：
+
+- 已检查用户手写的 asdict 完整列表比较与 pytest.raises(ValueError)，关键断言正确。运行 `uv run --offline pytest -q tests/test_memory_binding.py`，结果为 3 failed，均因 app.services.memory 缺少 prepare_memory_writes 而抛出 AttributeError；不是 collection error，也不是候选 Schema 无效。
+- Codex 已移除完成后的 TODO，保留检查归属、统一来源与整批拒绝的关键注释。下一步由用户在 app/services/memory.py 手写 MemoryWrite dataclass 与同步绑定函数，GREEN 后再运行目标与全量测试；当前不更新此前 57 passed 的通过基线。
+
+2026-10-24 候选绑定首次 GREEN 检查：
+
+- 用户已写 MemoryWrite 与 prepare_memory_writes。目标测试为 3 failed，均因构造 MemoryWrite 时缺少必填 value 而抛出 TypeError，尚未进入 GREEN；未将此运行更新为通过基线。
+- 完整输出与真实 diff 同次定位三处核心问题：key 错取 candidate.value、遗漏 value=candidate.value、return writes 位于 for 循环内而提前结束。后两类行为尚被当前构造异常遮挡，但已从真实源码定位；用户集中修正后再运行目标及全量回归，不拆成逐行试错。
+- Codex 仅整理标准库导入位置、签名参数缩进和 docstring 尾随空白，不代写上述核心修正。实际写库、事务与聊天失败隔离仍未接入。
+
+2026-10-24 候选绑定 GREEN 与回归：
+
+- 已核对用户修正：key=candidate.key、value=candidate.value、return writes 移至循环外。实测 tests/test_memory_binding.py 为 3 passed，全量离线 pytest 为 60 passed，git diff --check 通过；不新增额外细粒度测试。
+- 已验证不同 scope 的归属选择、每条候选绑定统一来源、匿名会话级通过和匿名混合候选拒绝。函数只构造内存对象，真实来源归属仍由已有数据库函数保护，未将此验证误记为批量写入事务或聊天接线完成。
+- 用户已完成关键断言和核心实现手写，正确 RED → GREEN 与回归已完成；当前等待复述临时对象/持久化、来源绑定/真实归属检查两项边界，再收口并继续后续持久化小主题。尚未提交或推送。
+
+2026-10-24 候选绑定复述收口：
+
+- 用户正确判断中途异常不会返回部分列表；已补充精确原因是本函数没有执行 SQL，前面只是临时内存对象，后续真实写入仍需事务保护。
+- 用户曾将调用方误认为 LLM，后已明确来源 ID 是应用保存用户消息后从数据库拿到并传入。最后将返回 ID 的函数误称 upsert，已结合真实源码补正为 insert_user_message 返回 cursor.lastrowid；upsert_memory 返回 None。用户所述应用调用数据库检查归属的方向正确，具体复用已有 SQL 来源检查。
+- 本单元预测、用户手写关键断言与核心代码、正确 RED → GREEN、目标 3 passed / 全量 60 passed、复述具体纠偏已完成。不重复已回答检查题；下一主题为独立记忆事务中的批量持久化与失败回滚，接口和代表性行为需结合现有数据库调用明确后再进入 RED。尚未提交或推送。
+
+2026-10-24 分类提交前复核：
+
+- 用户明确授权按近期 feat / docs 风格分类提交，范围包含提取调用、候选绑定，以及三份知识笔记和 notes/README.md 索引；编辑器设置与 playground/03_class.py 独立练习不纳入本轮。
+- 重新验证提取与绑定目标共 5 passed，全量离线 pytest 为 60 passed，git diff --check 通过。三份笔记的 17 段 Python 示例在本项目环境中执行通过，5 个本地文件链接目标存在；未核验外部网页或所有 Markdown 标题锚点。
+- 笔记保留个人原稿和待补充区，示例通过不等于学习者已经全部掌握。本轮不改变正式路线的下一主题，不将实际批量持久化或聊天接线记为完成；提交记录以 Git 历史为准，本轮没有推送授权。
+- 已完成本地代码提交 `cac8c2c feat: 新增记忆提取调用与候选上下文绑定`，以及笔记提交 `839cb32 docs: 新增 Python 与 Pydantic 学习笔记`。本段路线与方案另作 docs 提交；提交前审查发现的旧进度摘要与核验日期已同步。
+
 当前仍未完成：
 
 - 当前只支持同一 user message 关联多条 `model_call` 并记录每次尝试，尚未执行自动重试；重试策略、退避、最大次数和可重试错误选择归阶段 10“评测与工程化”。
@@ -601,7 +686,7 @@ POST /chat
 
 Memory V1.1 优先级：提取器、触发规则、核心/普通选择与注入为 P0；显式删除与防重建为 P1。FTS5 全文检索、Embedding 语义检索及可靠后台执行均为后续选项，不混作已实现能力。
 
-当前只完成存储层验证；提取、选择、注入、检查及删除的请求链接入仍待实现，不把方案确定记为功能完成。
+当前已完成存储、提取结构模型、轻量触发、提取调用和候选上下文绑定的局部验证与收口；批量持久化、提取的聊天接线、选择、注入、检查及删除仍待实现，不把局部单元通过记为完整记忆系统完成。
 
 ### 原生最小 RAG
 
@@ -716,16 +801,16 @@ agent-lab 中先理解
 
 已确认方案为 [`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。新会话先完整读取本路线、导师提示词和该方案，再核验真实源码与 Git 状态，不重新猜测已确认选型。
 
-阶段 5、阶段 6 均已完成第一轮。阶段 7 前置的可选 user_id、会话归属检查与旧库兼容已完成验证、复述和提交。两种范围记忆存储与提取结果模型均已完成正确 RED → 用户手写 GREEN → 回归并复述收口。轻量触发纯函数也已完成正确 RED → 用户手写 GREEN → 回归与复述纠偏，目标 `4 passed`，最近实际验证的全量基线为 `55 passed`（2026-10-21）。已回答的存储、模型校验和触发规则检查题不重问。Memory V1.1 后续 LLM 提取、业务校验、选择与注入尚未接通，阶段 7 仍在进行中。提交与推送仍按用户明确指令执行。
+阶段 5、阶段 6 均已完成第一轮。阶段 7 前置的可选 user_id、会话归属检查与旧库兼容已完成验证、复述和提交。两种范围记忆存储、提取结果模型、轻量触发、LLM 提取调用与候选上下文绑定均已通过正确 RED → 用户手写 GREEN → 回归并纠偏收口。候选绑定目标 `3 passed`，最近实际验证的全量基线为 `60 passed`（2026-10-24）。已回答的存储、模型校验、触发、两类模型调用、参数默认值和候选绑定检查题不重问。Memory V1.1 的提取持久化与聊天接线、选择和注入尚未完成，阶段 7 仍在进行中。提交与推送仍按用户明确指令执行。
 
 ```text
-当前小主题：LLM 提取调用契约与代表性测试设计
+当前小主题：批量记忆持久化的独立事务与失败回滚契约
 ```
 
 已确认且继续沿用：支持会话级与用户级记忆，不同用户隔离，同 key 会话级优先；存储按 (scope, scope_id, key) 新增或更新，来源必须为匹配范围的用户消息。无需重新讨论已确认的这些契约。
 
 已确定的实现方向：保留 SQLite，显式保存 + 按需 LLM 结构化提取；明确记忆请求及时处理，普通聊天成功后按需提取；核心记忆默认注入，其他记忆按 key 分类选择；支持检查、修正、显式删除与删除后防重建；记忆处理失败不影响正常回答并保留错误记录。不再重新比较已选定的总体方案，也不默认每轮额外调用模型提取。
 
-当前结构契约见 Memory V1.1 方案 5.2；两个模型与断言已验证并完成复述。当前触发契约见方案 5.1，用户已完成四个场景的预测、关键布尔断言和触发函数手写；此前缺少 should_extract_memory 的正确 RED（4 failed）已进入 GREEN，目标 4 passed、全量 55 passed，复述已补充具体边界后收口。下一步结合现有 app/services/llm.py，明确提取器输入、独立提取指令、模型正文的 JSON 解析入口与失败边界，再做行为预测和代表性 RED；不直接实现整个提取器。
+当前结构及提取调用局部契约见 Memory V1.1 方案 5.2，两类模型调用与保存确认见 5.4，候选绑定与匿名整批拒绝契约见 5.5；相关设计误区已澄清，不再重复相同问题。候选绑定已通过目标 3 passed、全量 60 passed，并补充具体纠偏后收口。下一步复用 upsert_memory，明确批量持久化函数的连接归属、整批一次提交和失败回滚，准备代表性成功与中途失败行为预测、正确 RED，再由用户手写实现。当前实际批量持久化、聊天失败隔离或保存确认拼接均未接通。
 
 轻量触发纯函数已闭环，不把它记为真实 LLM 提取、业务校验或持久化已经接通。后续依次接通提取与写入、分层选择与注入、检查与删除及端到端验证。删除防重建机制须在删除功能落地前明确。FTS5 仅在出现实际检索需求时评估，当前不扩展到 Embedding、向量库、LangChain、LangGraph 或 SSE。
