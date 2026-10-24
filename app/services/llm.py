@@ -85,6 +85,8 @@ async def generate_reply(
     history: list[dict[str, str]] | None = None,
     tools: list[dict] | None = None,
     additional_messages: list[dict] | None = None,
+    *,
+    system_prompt: str = "You are a helpful assistant.",
 ) -> LLMResult:
     """执行一次异步模型请求，解析普通回答或待执行的工具请求。
 
@@ -93,6 +95,7 @@ async def generate_reply(
         history: 旧会话消息，以正序插入系统指令之后。
         tools: 本轮允许模型选择的工具声明；None 表示不携带工具配置。
         additional_messages: Agent 本轮已产生的工具请求和工具结果消息。
+        system_prompt: 本次调用的系统指令；默认用于普通聊天。
 
     Returns:
         回答、工具请求及本次调用的状态、耗时和可选 Token 元数据。
@@ -122,7 +125,7 @@ async def generate_reply(
         "messages": [
             {
                 "role": "system",
-                "content": "You are a helpful assistant.",
+                "content": system_prompt,
             },
             *history,
             {
