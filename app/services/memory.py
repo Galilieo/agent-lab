@@ -1,11 +1,12 @@
-"""提供记忆预筛选、结构化提取与候选上下文绑定。
+"""提供记忆预筛选、结构化提取、候选绑定与批量持久化。
 
-轻量规则决定是否提取，提取器校验模型正文，绑定函数准备待写入数据。
-本模块不执行数据库写入；真实来源归属仍由数据库层检查。
+模型提取与数据库写入分开执行；持久化阶段使用独立短事务。
+真实来源归属由数据库层检查，本模块不处理 HTTP 响应。
 """
 
 from dataclasses import dataclass
 
+from app.database import create_connection, upsert_memory
 from app.schemas import MemoryExtractionResult
 from app.services.llm import generate_reply
 
@@ -124,3 +125,40 @@ def prepare_memory_writes(
         )
 
     return writes
+
+
+def persist_memory_writes(
+    writes: list[MemoryWrite],
+    *,
+    database_path: str,
+    updated_at: str,
+) -> None:
+    """用独立短事务保存整批记忆。
+
+    数据库表应已初始化。全部成功后统一提交，失败时回滚并报告异常。
+    本函数拥有连接并负责关闭，不在事务中执行模型调用。
+    """
+    if not writes:
+        return
+
+    connection = create_connection(database_path)
+
+    try:
+        for write in writes:
+            upsert_memory(
+                connection=connection,
+                scope=write.scope,
+                scope_id=write.scope_id,
+                key=write.key,
+                value=write.value,
+                source_message_id=write.source_message_id,
+                updated_at=updated_at,
+            )
+
+        # 循环全部成功后才提交，避免留下部分成功。
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
