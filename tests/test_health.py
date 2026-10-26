@@ -893,6 +893,8 @@ def test_chat_persists_completed_call_when_agent_requests_unknown_tool(
         history=None,
         tools=None,
         additional_messages=None,
+        *,
+        system_prompt=None,
     ) -> LLMResult:
         return LLMResult(
             answer=None,
