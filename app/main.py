@@ -1,10 +1,11 @@
 """FastAPI 入口：接收请求，编排数据库事务、Agent 调用和 HTTP 错误映射。
 
-/chat 的主链是保存用户消息 → 关闭连接 → 调用 Agent → 保存结果，再按需处理记忆。
+/chat 的主链是保存用户消息 → 独立读取记忆 → 调用 Agent → 保存结果，再按需提取写入记忆。
 模型失败与工具失败分别持久化，不能把未产生的回答或调用写成成功记录。
 """
 
 import logging
+import sqlite3
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -22,6 +23,7 @@ from app.database import (
     insert_failed_model_call,
     load_recent_messages,
     upsert_conversation,
+    load_memories,
 )
 from app.schemas import ChatRequest, ChatResponse, HealthResponse
 from app.services.agent import (
@@ -43,6 +45,8 @@ from app.services.memory import (
     prepare_memory_writes,
     persist_memory_writes,
     should_extract_memory,
+    merge_memories,
+    build_memory_context,
 )
 
 logger = logging.getLogger(__name__)
@@ -279,6 +283,32 @@ async def process_memory_after_reply(
     return final_answer
 
 
+def load_chat_memory_context(request: ChatRequest) -> str:
+    """独立读取记忆；SQLite 故障回退为空，归属异常继续传播。"""
+    connection = None
+
+    try:
+        connection = create_connection(settings.database_path)
+        rows = load_memories(
+            connection,
+            user_id=request.user_id,
+            conversation_id=request.conversation_id,
+        )
+    except sqlite3.Error as exc:
+        logger.warning(
+            "Memory processing failed phase=read error=%s conversation_id=%s",
+            type(exc).__name__,
+            request.conversation_id,
+        )
+        return ""
+    finally:
+        if connection is not None:
+            connection.close()
+
+    merged = merge_memories(rows)
+    return build_memory_context(merged, request.message)
+
+
 # 编排聊天请求：校验归属、恢复历史、调用 Agent，并保存成功或失败结果。
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
@@ -319,12 +349,19 @@ async def chat(request: ChatRequest) -> ChatResponse:
     finally:
         connection.close()
 
-    # 事务一已经提交用户消息并关闭连接，外部模型等待不占用数据库事务。
+    # 事务一已提交并关闭连接，再独立读取记忆、调用模型。
     try:
+        memory_context = load_chat_memory_context(request)
         result = await run_agent(
             message=request.message,
             history=history,
+            memory_context=memory_context,
         )
+    except ConversationOwnershipError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Conversation ownership does not match.",
+        ) from exc
     except AgentRunError as exc:
         # 后续模型失败携带此前成功调用；按原始模型错误选择 HTTP 状态。
         persist_agent_run_error(

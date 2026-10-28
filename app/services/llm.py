@@ -87,15 +87,17 @@ async def generate_reply(
     additional_messages: list[dict] | None = None,
     *,
     system_prompt: str = "You are a helpful assistant.",
+    memory_context: str = "",
 ) -> LLMResult:
     """执行一次异步模型请求，解析普通回答或待执行的工具请求。
 
     Args:
         message: 本轮用户问题。
-        history: 旧会话消息，以正序插入系统指令之后。
+        history: 旧会话消息，以正序插入系统指令和可选记忆参考之后。
         tools: 本轮允许模型选择的工具声明；None 表示不携带工具配置。
         additional_messages: Agent 本轮已产生的工具请求和工具结果消息。
         system_prompt: 本次调用的系统指令；默认用于普通聊天。
+        memory_context: 独立记忆参考数据；为空时不增加消息，不修改 history。
 
     Returns:
         回答、工具请求及本次调用的状态、耗时和可选 Token 元数据。
@@ -119,7 +121,14 @@ async def generate_reply(
         "Content-Type": "application/json",
     }
 
-    # 列表解包保持消息列表扁平；旧历史在当前问题之前，工具交互在当前问题之后。
+    memory_messages = []
+    if memory_context:
+        memory_messages.append({
+            "role": "user",
+            "content": memory_context,
+        })
+
+    # 独立参考数据在历史之前；当前问题和工具交互保持原有顺序。
     payload = {
         "model": settings.openai_model,
         "messages": [
@@ -127,6 +136,7 @@ async def generate_reply(
                 "role": "system",
                 "content": system_prompt,
             },
+            *memory_messages,
             *history,
             {
                 "role": "user",

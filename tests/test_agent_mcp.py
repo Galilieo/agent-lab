@@ -51,6 +51,7 @@ def notes_mcp_scenario(monkeypatch, tmp_path):
         additional_messages=None,
         *,
         system_prompt=None,
+        memory_context="",
     ):
         # 保存快照，避免 Agent 后续修改同一个列表影响观察结果。
         observed["model_messages"].append(

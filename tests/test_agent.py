@@ -240,6 +240,7 @@ def test_run_agent_repeats_tool_calls_until_model_returns_final_answer(
         additional_messages=None,
         *,
         system_prompt=None,
+        memory_context="",
     ) -> LLMResult:
         nonlocal call_count
         call_count += 1
@@ -349,6 +350,7 @@ def test_run_agent_stops_before_executing_tool_when_call_budget_is_exhausted(
         additional_messages=None,
         *,
         system_prompt=None,
+        memory_context="",
     ) -> LLMResult:
         nonlocal model_call_count
         model_call_count += 1
@@ -415,6 +417,7 @@ def test_run_agent_preserves_completed_call_when_final_call_times_out(
         additional_messages=None,
         *,
         system_prompt=None,
+        memory_context="",
     ) -> LLMResult:
         nonlocal call_count
         call_count += 1

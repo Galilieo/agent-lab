@@ -52,7 +52,7 @@ def chat_memory_scenario(monkeypatch, tmp_path):
     database_path = str(tmp_path / "chat-memory.sqlite3")
     observed = {"fail_extract": False, "before_extract": None}
 
-    async def fake_run_agent(message, history=None):
+    async def fake_run_agent(message, history=None, *, memory_context=""):
         return AgentResult(
             answer=NORMAL_ANSWER,
             model_calls=[

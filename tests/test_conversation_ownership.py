@@ -48,7 +48,7 @@ def ownership_scenario(monkeypatch, tmp_path):
 
     calls = []
 
-    async def fake_run_agent(message, history=None):
+    async def fake_run_agent(message, history=None, *, memory_context=""):
         calls.append({"message": message, "history": history})
         return AgentResult(
             answer="模拟回答",

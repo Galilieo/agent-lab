@@ -1,9 +1,10 @@
-"""提供记忆预筛选、结构化提取、候选绑定、批量持久化与范围合并。
+"""提供记忆预筛选、提取、绑定、持久化、范围合并及有预算的上下文选择。
 
 模型提取与数据库写入分开执行；持久化阶段使用独立短事务。
 真实来源归属由数据库层检查，本模块不处理 HTTP 响应。
 """
 
+import json
 from dataclasses import dataclass
 
 from app.database import create_connection, upsert_memory
@@ -178,3 +179,68 @@ def merge_memories(
                 merged[key] = value
 
     return merged
+
+
+def build_memory_context(
+    memories: dict[str, str],
+    message: str,
+    *,
+    max_chars: int = 1000,
+    max_value_chars: int = 300,
+    max_regular_items: int = 2,
+) -> str:
+    """选择合并后的记忆，在预算内生成参考文本，不修改输入。"""
+    if min(max_chars, max_value_chars, max_regular_items) < 0:
+        raise ValueError("Memory budgets must be non-negative.")
+
+    core_keys = ("answer_language", "explanation_style")
+    regular_rules = {
+        "learning_goal": (
+            "学习", "目标", "计划", "进度",
+            "learning", "study", "goal", "plan",
+        ),
+        "tech_stack": (
+            "编程", "代码", "技术栈", "接口", "后端", "前端", "项目",
+            "python", "java", "fastapi", "spring", "react", "vue", "sql",
+        ),
+    }
+
+    # Core 优先；Regular 只有匹配当前问题才进入候选列表。
+    candidate_keys = list(core_keys)
+    normalized_message_message = message.casefold()
+
+    for key, keywords in regular_rules.items():
+        if any(word in normalized_message_message for word in keywords):
+            candidate_keys.append(key)
+
+    selected: dict[str, str] = {}
+    context = ""
+    regular_count = 0
+
+    for key in candidate_keys:
+        value = memories.get(key, "")
+        if not value.strip() or len(value) > max_value_chars:
+            continue
+
+        is_regular = key not in core_keys
+        if is_regular and regular_count >= max_regular_items:
+            continue
+
+        # 先试装入新字典，不提前改变已经选中的结果。
+        candidate = {**selected, key: value}
+        candidate_context = (
+            "Memory Context:\n"
+            + json.dumps(candidate, ensure_ascii=False)
+        )
+
+        # 计算完整文本，包含标题、key、标点和转义后的字符。
+        if len(candidate_context) > max_chars:
+            continue
+
+        selected = candidate
+        context = candidate_context
+
+        if is_regular:
+            regular_count += 1
+
+    return context

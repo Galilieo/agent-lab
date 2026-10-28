@@ -112,6 +112,8 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
     async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
+        *,
+        memory_context="",
     ) -> AgentResult:
         connection = create_connection(str(database_path))
 
@@ -697,6 +699,8 @@ def test_chat_persists_completed_call_and_timeout_when_agent_final_call_times_ou
     async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
+        *,
+        memory_context="",
     ) -> AgentResult:
         completed_call = LLMResult(
             answer=None,
@@ -804,6 +808,8 @@ def test_chat_persists_completed_calls_when_agent_call_budget_is_exhausted(
     async def fake_run_agent(
         message: str,
         history: list[dict[str, str]] | None = None,
+        *,
+        memory_context="",
     ) -> AgentResult:
         first_call = LLMResult(
             answer=None,
@@ -895,6 +901,7 @@ def test_chat_persists_completed_call_when_agent_requests_unknown_tool(
         additional_messages=None,
         *,
         system_prompt=None,
+        memory_context="",
     ) -> LLMResult:
         return LLMResult(
             answer=None,
