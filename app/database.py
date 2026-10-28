@@ -1,4 +1,4 @@
-"""提供 SQLite 连接、启动建表、消息历史与调用记录、记忆存储。
+"""提供 SQLite 连接、启动建表、消息和调用记录、记忆存取。
 
 路由通过这些函数读写数据；普通写入函数不自行提交，由调用方控制事务。
 initialize_schema 用于启动阶段；模型网络等待应放在数据库事务之外。
@@ -230,6 +230,43 @@ def upsert_memory(
         raise ValueError(
             "Source message does not match memory scope."
         )
+
+
+def load_memories(
+    connection: sqlite3.Connection,
+    *,
+    user_id: str | None,
+    conversation_id: str,
+) -> list[tuple[str, str, str]]:
+    """核对会话归属，读取当前用户和当前会话的记忆。
+
+    返回 (scope, key, value)。连接由调用方管理，纯查询不提交事务。
+    """
+    conversation = connection.execute(
+        "SELECT user_id FROM conversation WHERE conversation_id = ?",
+        (conversation_id,),
+    ).fetchone()
+
+    if conversation is None:
+        raise ValueError("Conversation does not exist.")
+
+    if conversation[0] != user_id:
+        raise ConversationOwnershipError(
+            "Conversation ownership does not match."
+        )
+
+    return connection.execute(
+        """
+        SELECT scope, key, value
+        FROM memory
+        WHERE (scope = 'user' AND scope_id = :user_id)
+            OR (scope = 'conversation' AND scope_id = :conversation_id)
+        """,
+        {
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+        },
+    ).fetchall()
 
 
 def insert_user_message(

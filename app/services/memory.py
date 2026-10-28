@@ -1,4 +1,4 @@
-"""提供记忆预筛选、结构化提取、候选绑定与批量持久化。
+"""提供记忆预筛选、结构化提取、候选绑定、批量持久化与范围合并。
 
 模型提取与数据库写入分开执行；持久化阶段使用独立短事务。
 真实来源归属由数据库层检查，本模块不处理 HTTP 响应。
@@ -163,3 +163,18 @@ def persist_memory_writes(
         raise
     finally:
         connection.close()
+
+
+def merge_memories(
+    rows: list[tuple[str, str, str]],
+) -> dict[str, str]:
+    """按 key 合并记忆，会话级覆盖用户级，不修改数据库。"""
+    merged: dict[str, str] = {}
+
+    # 明确应用顺序，不依赖数据库返回记录的先后顺序。
+    for scope in ("user", "conversation"):
+        for row_scope, key, value in rows:
+            if row_scope == scope:
+                merged[key] = value
+
+    return merged
