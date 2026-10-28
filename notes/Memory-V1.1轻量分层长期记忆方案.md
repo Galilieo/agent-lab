@@ -4,7 +4,7 @@
 >
 > 学习进度、完成状态和测试基线以 [`agent-lab总体学习路线.md`](./agent-lab总体学习路线.md) 为唯一正式来源；本文件是方案说明，不代表所列功能已经实现。
 >
-> 教学方式继续遵循 [`Codex学习导师提示词.md`](./Codex学习导师提示词.md)：用户手写核心实现与关键断言，Codex 处理重复样板、执行验证和同步路线；不自行 commit 或 push。
+> 教学方式继续遵循 [`Codex学习导师提示词.md`](./Codex学习导师提示词.md)：以设计理解、真实源码与局部参考为主，按需要参考输入或明确委托修改，Codex 处理重复样板、执行验证和同步路线；不自行 commit 或 push。
 
 ## 1. 方案定位与目标
 
@@ -36,13 +36,13 @@
 | 模块 | 已确定方案 | 优先级与边界 |
 | --- | --- | --- |
 | 数据存储 | SQLite，复用现有 memory 表 | P0；基础存储已验证 |
-| 提取器 | LLM 提出候选，Pydantic 校验结构，业务规则决定是否写入 | P0；结构、提取调用、上下文绑定和批量持久化已离线验证，聊天接线待实现 |
+| 提取器 | LLM 提出候选，Pydantic 校验结构，业务规则决定是否写入 | P0；结构、提取调用、上下文绑定、批量持久化及聊天写入接线已离线验证 |
 | 提取触发 | 显式请求 + 轻量规则触发 | P0；不默认每轮提取 |
-| 作用范围 | user / conversation | 存储与来源约束已验证，读取与注入待实现 |
+| 作用范围 | user / conversation | 存储、来源约束及归属隔离读取已验证，读取接入聊天与注入待实现 |
 | 核心记忆 | 固定高价值 key，设置总长度上限，默认注入 | P0，待实现 |
 | 普通记忆 | 按 key / 当前问题类别选择，限制注入数量和长度 | P0，待实现 |
-| 冲突处理 | 同 key 会话级覆盖本次使用的用户级默认值 | P0；读取合并待实现，不删除用户级原记录 |
-| 更新 | UPSERT + 来源追踪 + 更新时间 | 部分完成；写入函数已验证，自动提取与请求链尚未接通 |
+| 冲突处理 | 同 key 会话级覆盖本次使用的用户级默认值 | P0；读取合并已验证，不删除用户级原记录，尚未注入模型上下文 |
+| 更新 | UPSERT + 来源追踪 + 更新时间 | 部分完成；写入与聊天后的按需提取已接通，端到端改口更新验收待完成 |
 | 管理与删除 | 显式保存、修正、用户检查、显式删除与防重建 | 管理分步接入；删除与防重建为 P1 |
 | 检索升级 | 必要时评估 FTS5 全文检索或 Embedding 语义检索 | 后续，不是第一版依赖 |
 | Agent 编排 | 原生 Python，沿用现有原生 Agent | P0；不引入复杂框架 |
@@ -285,7 +285,11 @@
 
 2026-10-24 预测纠偏与样板：用户正确选择更新原助手消息、保持主聊天成功状态；已补充最终助手内容应含与 HTTP answer 一致的确认，以及本轮 model_call 表只记录主 Agent，故示例为一条 succeeded，而非按两次模型请求写两条。已创建 tests/conftest.py 的默认路由提取 skip 隔离，以及 tests/test_chat_memory.py 的保存成功/普通失败/显式保存失败样板；旧 fake generate_reply 仅补充 system_prompt 参数兼容。新三例只运行 collect-only，3 tests collected，关键断言待用户写，尚未确认 RED；排除新未完成样板后的既有回归为 62 passed。生产接线、反馈 SQL 与主 Agent 指令仍未修改。
 
-2026-10-26 提交检查点：聊天接线生产实现仍未开始；未完成测试已保存为 [chat_memory_draft.py](../tests/drafts/chat_memory_draft.py)，核心断言保留，恢复步骤见 [草稿说明](../tests/drafts/README.md)。归档前实际为 3 failed、62 passed，含断言结构问题，尚非正确 RED；归档后默认全量 62 passed，草稿仅确认 3 tests collected，不计入通过基线。下一步先核对断言、恢复测试文件名并确认 RED，再按渐进自主方式练习局部核心实现。
+2026-10-26 提交检查点：聊天接线生产实现仍未开始；未完成测试已保存为 [聊天接线测试（后续已恢复）](../tests/test_chat_memory.py)，核心断言保留，恢复步骤见 [草稿说明](../tests/drafts/README.md)。归档前实际为 3 failed、62 passed，含断言结构问题，尚非正确 RED；归档后默认全量 62 passed，草稿仅确认 3 tests collected，不计入通过基线。下一步先核对断言、恢复测试文件名并确认 RED，再按最新教学要求，结合设计讲解与局部参考理解并完成实现，不强制先独立手写。
+
+2026-10-28 接线测试恢复：已统一三处字典键名并恢复 tests/test_chat_memory.py，目标正确 RED 为 3 failed，全量为 3 failed、62 passed。失败分别为缺少成功反馈、普通失败的安全分类日志、显式失败反馈；生产接线尚未实现，继续按本节已确认契约讲解与推进。
+
+2026-10-28 接线 GREEN：用户参考实现补齐编排、反馈更新、保存触发线索及主 Agent 指令。首次 2 failed / 1 passed 为遗漏最终 return 导致 ChatResponse 收到 None；用户修正后目标 3 passed、全量离线 65 passed、diff 检查通过。fake 模型配合真实 HTTP/临时 SQLite 验证写入和失败隔离，不证明真实模型遵守性。连接由 persist_memory_writes 与 persist_assistant_feedback 各自管理，路由钩子无需额外开连接；理解继续收口，读取与注入尚未实现。
 
 ## 6. 选择、合并与上下文注入
 
@@ -304,6 +308,19 @@ User：当前问题
 Memory Context 是应用明确标记的参考数据，不是高优先级命令，不得覆盖系统安全要求或当前用户明确的要求。它应独立于历史消息传递，具体消息角色和封装方式在注入小主题确定；不能因写了一个 Memory Context 标题就认为协议已经提供了新的消息角色或权限层级。
 
 没有相关普通记忆时不强行填充；没有任何记忆时保持现有聊天路径兼容。Core 也必须受总长度限制，Regular 同时受条数和长度限制。
+
+### 6.1 按范围读取与同 key 合并的局部契约
+
+2026-10-28 本轮集中处理读取范围、会话归属与内存合并，不接入聊天 Prompt，也不提前增加 Core/Regular 选择规则或新数据库字段。
+
+- `database.load_memories(connection, *, user_id: str | None, conversation_id: str) -> list[tuple[str, str, str]]`：接收已有连接，先读取 conversation 的真实归属；不存在抛 ValueError，归属不匹配抛已有 ConversationOwnershipError，不能返回他人会话记忆。匿名 None 仅匹配匿名会话。
+- 资格条件是 `(scope = user AND scope_id = user_id) OR (scope = conversation AND scope_id = conversation_id)`；匿名时 user 条件不命中。返回每条 `(scope, key, value)`，暂不按 key 筛选。连接由调用方关闭；纯读取无需 commit，不调用模型。
+- `memory.merge_memories(rows: list[tuple[str, str, str]]) -> dict[str, str]`：纯内存合并，先应用用户级、再应用会话级；不依赖查询行顺序，不修改数据库或删除用户级默认值。没有记忆返回空字典。
+- 用户正确预测只按 scope_id IN 会误读四条记录，当前请求只应读取示例①②。对“key 一起配合”补充：scope + scope_id 决定本轮读取资格，key 用于区分类别、合并或后续选择；三字段唯一约束仍负责存储去重。
+- Codex 已准备 tests/test_memory_reading.py 的真实内存 SQLite 与合法来源数据，包括用户/会话 ID 交叉重名、同用户另一会话的全局偏好和局部干扰记录。代表性测试检查读取/合并及数据不变，额外一条检查归属拒绝；没有模型调用。
+- 正确 RED：目标 2 failed、全量 2 failed / 65 passed，均因缺少 load_memories，数据准备和收集正常。读取与合并函数尚未实现，接下来提供完整局部参考供理解和修改，不将参考辅助记为独立实现。
+
+2026-10-28 读取与合并 GREEN：用户参考实现完成两个函数；首次合并失败源于 return 位于外层循环内，用户按定位提示修正后，目标 2 passed、全量离线 67 passed、diff 检查通过。范围、归属和顺序无关的覆盖合并由真实 SQLite 验证，数据库原记录保留。该单元收口；尚未将结果传给聊天模型，下一主题明确选择、预算、消息封装和读取失败回退后再接入。
 
 ## 7. 更新、检查、删除与失败隔离
 
