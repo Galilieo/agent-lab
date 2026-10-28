@@ -292,6 +292,28 @@ def insert_assistant_message(
     return cursor.lastrowid
 
 
+def update_assistant_message_content(
+    connection: sqlite3.Connection,
+    conversation_id: str,
+    message_id: int,
+    content: str,
+) -> None:
+    """更新指定会话中的原助手消息，事务由调用方管理。"""
+    cursor = connection.execute(
+        """
+        UPDATE message
+        SET content = ?
+        WHERE conversation_id = ?
+        AND message_id = ?
+        AND role = 'assistant'
+        """,
+        (content, conversation_id, message_id),
+    )
+
+    if cursor.rowcount != 1:
+        raise ValueError("Assistant message does not match conversation.")
+
+
 def insert_successful_model_call(
     connection: sqlite3.Connection,
     conversation_id: str,

@@ -64,6 +64,7 @@ def should_extract_memory(message: str) -> bool:
         "记下来",
         "以后",
         "默认",
+        "保存",
         "我的学习目标",
         "我的技术栈",
     )

@@ -1,8 +1,8 @@
-"""聊天记忆接线的学习草稿，默认不纳入 pytest 收集。
+"""验证聊天后的记忆写入、失败隔离与回答历史一致性。
 
 fake Agent 与提取器隔离模型；HTTP、SQLite、来源绑定和反馈更新真实执行。
 新连接观察提取前及请求后的状态，检查正常回答先提交、最终历史与返回一致。
-生产接线与部分断言仍待完成，恢复步骤见同目录 README；不能计为已通过测试。
+从学习草稿恢复为正式收集，已用于验证聊天记忆接线的正常与失败路径。
 """
 
 import logging
@@ -104,7 +104,7 @@ def test_chat_saves_memory_and_updates_original_answer(chat_memory_scenario):
     expected_answer = NORMAL_ANSWER + "\n\n已保存本次记忆。"
     before_extract = scenario["observed"]["before_extract"]
 
-    # TODO：检查 HTTP 200、完整 ChatResponse，以及数据库只有 user / assistant 两条消息。
+    # 检查 HTTP 200、完整 ChatResponse，以及数据库只有 user / assistant 两条消息。
     assert response.status_code == 200
     assert response.json() == {
         "conversation_id": "conversation-A",
@@ -112,26 +112,26 @@ def test_chat_saves_memory_and_updates_original_answer(chat_memory_scenario):
     }
     source_id = state["messages"][0][0]
     assistant_id = state["messages"][1][0]
-    # TODO：检查记忆绑定真实用户来源，主 model_call 只有一条 succeeded 且关联原助手消息。
+    # 检查记忆绑定真实用户来源，主 model_call 只有一条 succeeded 且关联原助手消息。
     assert state == {
-            "message": [
-                (source_id, "user", message),
-                (assistant_id, "assistant", expected_answer),
-            ],
-            "model_calls": [("succeeded", assistant_id)],
-            "memories": [
-                ("user", "user-001", "answer_language", "中文", source_id),
-            ],
-        }
-    # TODO：检查提取开始前，原正常回答与主调用已经能由另一连接读到。
+        "messages": [
+            (source_id, "user", message),
+            (assistant_id, "assistant", expected_answer),
+        ],
+        "model_calls": [("succeeded", assistant_id)],
+        "memories": [
+            ("user", "user-001", "answer_language", "中文", source_id),
+        ],
+    }
+    # 检查提取开始前，原正常回答与主调用已经能由另一连接读到。
     assert before_extract == {
-            "messages": [
-                (source_id, "user", message),
-                (assistant_id, "assistant", NORMAL_ANSWER),
-            ],
-            "model_calls": [("succeeded", assistant_id)],
-            "memories": [],
-        }
+        "messages": [
+            (source_id, "user", message),
+            (assistant_id, "assistant", NORMAL_ANSWER),
+        ],
+        "model_calls": [("succeeded", assistant_id)],
+        "memories": [],
+    }
 
 
 @pytest.mark.parametrize(
@@ -157,15 +157,15 @@ def test_chat_isolates_memory_failure(
 
     state = read_chat_state(scenario["database_path"])
 
-    # TODO：检查 HTTP 与完整 ChatResponse、最终助手消息一致；失败不留下记忆。
+    # 检查 HTTP 与完整 ChatResponse、最终助手消息一致；失败不留下记忆。
     assert response.status_code == 200
     assert response.json() == {
         "conversation_id": "conversation-A",
         "answer": expected_answer,
     }
-    # TODO：检查主 model_call 仍只有一条 succeeded，且仍关联原助手消息。
-    source_id = state["message"][0][0]
-    assistant_id = state["message"][1][0]
+    # 检查主 model_call 仍只有一条 succeeded，且仍关联原助手消息。
+    source_id = state["messages"][0][0]
+    assistant_id = state["messages"][1][0]
     assert state == {
         "messages": [
             (source_id, "user", message),
@@ -174,7 +174,7 @@ def test_chat_isolates_memory_failure(
         "model_calls": [("succeeded", assistant_id)],
         "memories": []
     }
-    # TODO：日志包含 ValidationError 失败分类，但不包含 PRIVATE_MODEL_BODY。
+    # 日志包含 ValidationError 失败分类，但不包含 PRIVATE_MODEL_BODY。
     assert any(
         record.name == "app.main"
         and "ValidationError" in record.getMessage()

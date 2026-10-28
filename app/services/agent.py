@@ -18,6 +18,12 @@ from app.tools import AVAILABLE_TOOLS, execute_tool
 # 限制模型请求次数，不是工具数量；一次模型响应可能请求多个工具。
 DEFAULT_MAX_MODEL_CALLS = 3
 
+# 实际保存结果由应用确认，主聊天模型不能提前承诺。
+AGENT_SYSTEM_PROMPT = """You are a helpful assistant.
+不要自行宣称长期记忆已经保存、修改或删除。
+实际记忆操作的结果由应用完成后另行反馈。
+"""
+
 
 @dataclass
 class AgentResult:
@@ -100,6 +106,7 @@ async def run_agent(
                 history=history,
                 tools=AVAILABLE_TOOLS,
                 additional_messages=additional_messages,
+                system_prompt=AGENT_SYSTEM_PROMPT,
             )
         except LLMRequestError as exc:
             if not model_calls:

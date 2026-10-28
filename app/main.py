@@ -1,9 +1,10 @@
 """FastAPI 入口：接收请求，编排数据库事务、Agent 调用和 HTTP 错误映射。
 
-/chat 的主链是保存用户消息 → 关闭连接 → 调用 Agent → 保存结果。
+/chat 的主链是保存用户消息 → 关闭连接 → 调用 Agent → 保存结果，再按需处理记忆。
 模型失败与工具失败分别持久化，不能把未产生的回答或调用写成成功记录。
 """
 
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -16,6 +17,7 @@ from app.database import (
     initialize_schema,
     insert_user_message,
     insert_assistant_message,
+    update_assistant_message_content,
     insert_successful_model_call,
     insert_failed_model_call,
     load_recent_messages,
@@ -36,6 +38,14 @@ from app.services.llm import (
     LLMUpstreamError,
     LLMResponseError,
 )
+from app.services.memory import (
+    extract_memories,
+    prepare_memory_writes,
+    persist_memory_writes,
+    should_extract_memory,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -169,6 +179,104 @@ def persist_agent_run_error(
         connection.commit()
     finally:
         connection.close()
+
+
+def persist_assistant_feedback(
+    conversation_id: str,
+    response_message_id: int,
+    answer: str,
+) -> None:
+    """用独立短事务回写最终反馈，不重新插入助手消息。"""
+    connection = create_connection(settings.database_path)
+    try:
+        update_assistant_message_content(
+            connection=connection,
+            conversation_id=conversation_id,
+            message_id=response_message_id,
+            content=answer,
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+async def process_memory_after_reply(
+    request: ChatRequest,
+    *,
+    request_message_id: int,
+    response_message_id: int,
+    answer: str,
+) -> str:
+    """在正常聊天提交后处理记忆，辅助流程失败保留原回答。"""
+    if not should_extract_memory(request.message):
+        return answer
+
+    explicit_save = any(
+        marker in request.message
+        for marker in ("记住", "记下来", "保存")
+    )
+    phase = "extract"
+
+    try:
+        extraction = await extract_memories(request.message)
+
+        phase = "prepare"
+        writes = prepare_memory_writes(
+            extraction,
+            user_id=request.user_id,
+            conversation_id=request.conversation_id,
+            source_message_id=request_message_id,
+        )
+
+        if writes:
+            phase = "persist"
+            persist_memory_writes(
+                writes,
+                database_path=settings.database_path,
+                updated_at=datetime.now(timezone.utc).isoformat(),
+            )
+            feedback = "已保存本次记忆。"
+        else:
+            feedback = "本次没有可保存的新记忆。" if explicit_save else ""
+
+    except Exception as exc:
+        # 仅记录分类与关联信息，不记录异常正文或用户内容。
+        logger.warning(
+            "Memory processing failed phase=%s error=%s "
+            "conversation_id=%s request_message_id=%s",
+            phase,
+            type(exc).__name__,
+            request.conversation_id,
+            request_message_id,
+        )
+        feedback = "本次长期记忆未保存。" if explicit_save else ""
+
+    if not feedback:
+        return answer
+
+    final_answer = f"{answer}\n\n{feedback}"
+
+    try:
+        persist_assistant_feedback(
+            conversation_id=request.conversation_id,
+            response_message_id=response_message_id,
+            answer=final_answer,
+        )
+    except Exception as exc:
+        # 反馈更新失败，不撤销已提交的记忆或主聊天。
+        logger.warning(
+            "Memory feedback failed phase=feedback error=%s "
+            "conversation_id=%s response_message_id=%s",
+            type(exc).__name__,
+            request.conversation_id,
+            response_message_id,
+        )
+        return answer
+
+    return final_answer
 
 
 # 编排聊天请求：校验归属、恢复历史、调用 Agent，并保存成功或失败结果。
@@ -338,7 +446,14 @@ async def chat(request: ChatRequest) -> ChatResponse:
     finally:
         connection.close()
 
+    final_answer = await process_memory_after_reply(
+        request,
+        request_message_id=request_message_id,
+        response_message_id=response_message_id,
+        answer=result.answer,
+    )
+
     return ChatResponse(
         conversation_id=request.conversation_id,
-        answer=result.answer,
+        answer=final_answer,
     )
