@@ -24,8 +24,18 @@ from app.database import (
     load_recent_messages,
     upsert_conversation,
     load_memories,
+    list_memory_records,
+    delete_memory_records,
 )
-from app.schemas import ChatRequest, ChatResponse, HealthResponse
+from app.schemas import (
+    ChatRequest,
+    ChatResponse,
+    HealthResponse,
+    MemoryQueryRequest,
+    MemoryQueryResponse,
+    MemoryDeleteRequest,
+    MemoryDeleteResponse,
+)
 from app.services.agent import (
     AgentModelCallLimitError,
     AgentRunError,
@@ -78,6 +88,64 @@ app = FastAPI(
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse()
+
+
+@app.post("/memories/query", response_model=MemoryQueryResponse)
+def query_memories(request: MemoryQueryRequest) -> MemoryQueryResponse:
+    """只读查看当前可见的原始记录；存储故障不能伪装成没有记忆。"""
+    connection = None
+    try:
+        connection = create_connection(settings.database_path)
+        records = list_memory_records(
+            connection,
+            user_id=request.user_id,
+            conversation_id=request.conversation_id,
+        )
+    except ConversationOwnershipError as exc:
+        raise HTTPException(status_code=409, detail="Conversation ownership does not match.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except sqlite3.Error as exc:
+        logger.warning("Memory management failed operation=query error=%s", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Memory storage is unavailable.") from exc
+    finally:
+        if connection is not None:
+            connection.close()
+
+    return MemoryQueryResponse(memories=records)
+
+
+@app.post("/memories/delete", response_model=MemoryDeleteResponse)
+def delete_memories(request: MemoryDeleteRequest) -> MemoryDeleteResponse:
+    """在短事务中删除指定范围；提交成功后才返回实际条数。"""
+    connection = None
+    try:
+        connection = create_connection(settings.database_path)
+        try:
+            deleted_count = delete_memory_records(
+                connection,
+                user_id=request.user_id,
+                conversation_id=request.conversation_id,
+                key=request.key,
+                target=request.target,
+            )
+            connection.commit()
+        except Exception:
+            # 这里只清理事务并重新抛出；不会把未知错误转为成功响应。
+            connection.rollback()
+            raise
+    except ConversationOwnershipError as exc:
+        raise HTTPException(status_code=409, detail="Conversation ownership does not match.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except sqlite3.Error as exc:
+        logger.warning("Memory management failed operation=delete error=%s", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Memory storage is unavailable.") from exc
+    finally:
+        if connection is not None:
+            connection.close()
+
+    return MemoryDeleteResponse(deleted_count=deleted_count)
 
 
 def persist_failed_model_call(

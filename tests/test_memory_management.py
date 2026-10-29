@@ -18,8 +18,12 @@ def management_database():
     try:
         database.initialize_schema(connection)
         sources = {}
-        for conversation_id, user_id in [("A", "user-001"), ("B", "user-001"),
-                                         ("other", "user-other"), ("anonymous", None)]:
+        for conversation_id, user_id in [
+            ("A", "user-001"),
+            ("B", "user-001"),
+            ("other", "user-other"),
+            ("anonymous", None),
+        ]:
             database.upsert_conversation(
                 connection, conversation_id, TIMESTAMP, user_id=user_id,
             )

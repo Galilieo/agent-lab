@@ -9,6 +9,11 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+MemoryKey = Literal[
+    "answer_language", "explanation_style", "learning_goal", "tech_stack",
+]
+
+
 # 健康检查的固定响应；服务可响应不代表模型服务可用。
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
@@ -36,12 +41,7 @@ class MemoryCandidate(BaseModel):
     )
 
     scope: Literal["user", "conversation"]
-    key: Literal[
-        "answer_language",
-        "explanation_style",
-        "learning_goal",
-        "tech_stack",
-    ]
+    key: MemoryKey
     value: str = Field(min_length=1)
 
 
@@ -63,3 +63,45 @@ class MemoryExtractionResult(BaseModel):
             raise ValueError("skip cannot contain memories")
 
         return self
+
+
+class MemoryQueryRequest(BaseModel):
+    """管理已有会话可见的记忆，不接受调用方指定任意 scope_id。"""
+
+    # 标识符与 ChatRequest 一样原样保留，避免管理时指向另一组已存在的 ID。
+    model_config = ConfigDict(extra="forbid")
+
+    conversation_id: str = Field(min_length=1)
+    user_id: str | None = Field(default=None, min_length=1)
+
+
+class MemoryDeleteRequest(MemoryQueryRequest):
+    """明确指定某一 key 和删除范围，不提供隐式全量删除默认值。"""
+
+    key: MemoryKey
+    target: Literal["user", "conversation", "all"]
+
+    @model_validator(mode="after")
+    def validate_user_target(self) -> Self:
+        if self.target in ("user", "all") and self.user_id is None:
+            raise ValueError("User-scoped deletion requires user_id.")
+        return self
+
+
+class MemoryRecord(BaseModel):
+    """查看原始记录及来源，不表示合并后本轮一定使用它。"""
+
+    scope: Literal["user", "conversation"]
+    scope_id: str
+    key: str
+    value: str
+    source_message_id: int
+    updated_at: str
+
+
+class MemoryQueryResponse(BaseModel):
+    memories: list[MemoryRecord]
+
+
+class MemoryDeleteResponse(BaseModel):
+    deleted_count: int = Field(ge=0)
