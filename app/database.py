@@ -232,16 +232,13 @@ def upsert_memory(
         )
 
 
-def load_memories(
+def validate_conversation_owner(
     connection: sqlite3.Connection,
     *,
     user_id: str | None,
     conversation_id: str,
-) -> list[tuple[str, str, str]]:
-    """核对会话归属，读取当前用户和当前会话的记忆。
-
-    返回 (scope, key, value)。连接由调用方管理，纯查询不提交事务。
-    """
+) -> None:
+    """核对已有会话的归属，供读取和管理共用，不修改数据。"""
     conversation = connection.execute(
         "SELECT user_id FROM conversation WHERE conversation_id = ?",
         (conversation_id,),
@@ -255,6 +252,17 @@ def load_memories(
             "Conversation ownership does not match."
         )
 
+
+def load_memories(
+    connection: sqlite3.Connection,
+    *,
+    user_id: str | None,
+    conversation_id: str,
+) -> list[tuple[str, str, str]]:
+    """核对归属后读取 (scope, key, value)，连接由调用方管理。"""
+    validate_conversation_owner(
+        connection, user_id=user_id, conversation_id=conversation_id,
+    )
     return connection.execute(
         """
         SELECT scope, key, value
@@ -267,6 +275,94 @@ def load_memories(
             "conversation_id": conversation_id,
         },
     ).fetchall()
+
+
+def list_memory_records(
+    connection: sqlite3.Connection,
+    *,
+    user_id: str | None,
+    conversation_id: str,
+) -> list[dict]:
+    """查看当前可见的原始记忆和来源，不合并、不提交事务。"""
+    validate_conversation_owner(
+        connection, user_id=user_id, conversation_id=conversation_id,
+    )
+    rows = connection.execute(
+        """
+        SELECT scope, scope_id, key, value, source_message_id, updated_at
+        FROM memory
+        WHERE (scope = 'user' AND scope_id = :user_id)
+            OR (scope = 'conversation' AND scope_id = :conversation_id)
+        ORDER BY scope, key
+        """,
+        {"user_id": user_id, "conversation_id": conversation_id},
+    ).fetchall()
+    fields = ("scope", "scope_id", "key", "value", "source_message_id", "updated_at")
+    return [dict(zip(fields, row)) for row in rows]
+
+
+def delete_memory_records(
+    connection: sqlite3.Connection,
+    *,
+    user_id: str | None,
+    conversation_id: str,
+    key: str,
+    target: str,
+) -> int:
+    """按明确目标删除某个 key；不自行提交，返回删除条数。"""
+    validate_conversation_owner(
+        connection,
+        user_id=user_id,
+        conversation_id=conversation_id,
+    )
+
+    if target not in ("user", "conversation", "all"):
+        raise ValueError("Invalid memory deletion target.")
+
+    if target in ("user", "all") and user_id is None:
+        raise ValueError("User-scoped deletion requires user_id.")
+
+    if target in ("user", "conversation"):
+        scope_id = user_id if target == "user" else conversation_id
+
+        cursor = connection.execute(
+            """
+            DELETE FROM memory
+            WHERE scope = :scope
+              AND scope_id = :scope_id
+              AND key = :key
+            """,
+            {
+                "scope": target,
+                "scope_id": scope_id,
+                "key": key,
+            },
+        )
+    else:
+        cursor = connection.execute(
+            """
+            DELETE FROM memory
+            WHERE key = :key
+              AND (
+                  (scope = 'user' AND scope_id = :user_id)
+                  OR
+                  (
+                      scope = 'conversation'
+                      AND scope_id IN (
+                          SELECT conversation_id
+                          FROM conversation
+                          WHERE user_id = :user_id
+                      )
+                  )
+              )
+            """,
+            {
+                "key": key,
+                "user_id": user_id,
+            },
+        )
+
+    return cursor.rowcount
 
 
 def insert_user_message(

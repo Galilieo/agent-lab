@@ -387,7 +387,22 @@ Memory Context 是应用明确标记的参考数据，不是高优先级命令�
 
 防重建所需的处理策略、是否需要删除标记或提取边界状态、删除后允许用户重新明确保存的条件，在删除实现前集中确定，不预先将某一种机制记为已完成。
 
-### 7.2 失败处理
+### 7.2 查看与删除的数据库局部契约（2026-10-29，已 GREEN）
+
+- 用户已正确解释：删除当前会话某 key 只影响该会话；删除当前用户全部范围的某 key，要同时匹配用户级记录及通过 conversation.user_id 找到的全部会话级记录。后者不是删除全库同 key，也不是删除该用户所有 key。
+- `validate_conversation_owner(connection, *, user_id, conversation_id) -> None`：从既有 load_memories 抽取归属检查，行为不变；会话不存在 ValueError，归属不匹配 ConversationOwnershipError。无身份认证的新能力，仍是当前学习服务的归属检查。
+- `list_memory_records(connection, *, user_id, conversation_id) -> list[dict]`：返回当前用户级及当前会话级原始记录，包含 scope、scope_id、key、value、source_message_id、updated_at，不合并；不包含同用户其他会话的局部记录。匿名只查看当前匿名会话。
+- `delete_memory_records(connection, *, user_id, conversation_id, key, target) -> int`：key 必填，返回实际删除条数。target=conversation 只删当前会话；target=user 只删用户级；target=all 删除当前用户两种范围的该 key。target 为其他值抛 ValueError，匿名 user/all 操作拒绝。
+- 三个函数都接受调用方连接，不自行提交。删除函数仅修改 memory，不改 message；重复删除已不存在记录返回 0。删除会话级覆盖后可恢复用户级默认，删除 all 后该用户各会话不再从这些记录注入此 key。
+- 当前只做数据库层；HTTP 管理路由随后补齐并带读，响应在提交成功后生成，不能将失败返回成功。无真实库删除，不增加自动自然语言删除分支。
+- 测试使用真实内存 SQLite：一条串联查看、局部删除恢复默认、重复删除、调用方 rollback 以及 all 删除的归属限制；一条保护归属拒绝、匿名范围和非法 target。关键删除函数留给用户参考实现，Codex 准备测试、查看与复用归属检查。
+- 防重建仍需 HTTP/聊天串联验证：当前提取器仅接收新用户消息，不自动重扫历史；旧历史保留且可能被模型看到，不能把停止长期记忆注入等同于从所有上下文遗忘。新消息重新明确保存应允许，删除后的并发在途提取未在本单元验证，不将其记为保证。
+
+2026-10-28 管理 RED：目标两例首次因 list_memory_records 不存在失败。Codex 按分工补齐原始记录查看与既有归属检查复用后，全量 2 failed、72 passed，两例都因缺少 delete_memory_records 失败；查看内容和错误归属拒绝的先行断言通过。下一步为用户参考实现删除函数，数据库函数不自行提交，HTTP 路由仍待后续补齐；不记作 P1 已完成。
+
+2026-10-29 数据库 GREEN：用户参考实现删除函数，首次因函数名 delete_memory_rocords 拼写错误导致两个 AttributeError；用户改为 delete_memory_records 后目标 2 passed、全量离线 74 passed、diff 检查通过。查看、三种目标删除、回滚与归属保护由真实 SQLite 验证；不删除聊天历史。下一步补管理 HTTP 路由与删除后聊天串联，不把数据库层通过记作全部 P1 完成；未操作真实库、未 commit/push。
+
+### 7.3 失败处理
 
 - 提取超时、响应不可解析、候选无效或记忆写入失败，不把已经成功的正常聊天改成失败响应。
 - 回答持久化与记忆写入使用分开的事务边界；记忆事务失败不能回滚已经提交的正常聊天。
