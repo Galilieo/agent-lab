@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-10-29T05:59:30.880444+00:00",
+  "model": "bge-m3:latest",
+  "query": "为什么请求模型前要释放数据库连接？",
+  "vector_count": 4,
+  "dimensions": [
+    1024,
+    1024,
+    1024,
+    1024
+  ],
+  "l2_norms": [
+    1.0000004645382563,
+    1.0000001371346752,
+    1.0000002403369246,
+    1.000000271241806
+  ],
+  "query_vector_first_five_values": [
+    -0.023234934,
+    -0.008172766,
+    -0.04432257,
+    0.0004338619,
+    -0.0075197895
+  ],
+  "ranking": [
+    {
+      "document": "调用大模型之前，应先提交数据库事务并关闭连接，避免网络等待期间长时间占用事务。",
+      "cosine_similarity": 0.7232369158466845
+    },
+    {
+      "document": "用户级记忆可跨会话复用，会话级记忆只在当前会话内生效。",
+      "cosine_similarity": 0.4108395247266036
+    },
+    {
+      "document": "番茄炒蛋的做法是先炒鸡蛋，再加入番茄翻炒。",
+      "cosine_similarity": 0.21600212991977977
+    }
+  ],
+  "elapsed_seconds": 1.182858957996359,
+  "prompt_eval_count": 82,
+  "scope": "One synthetic Chinese query; local embedding probe only, not a retrieval benchmark."
+}
