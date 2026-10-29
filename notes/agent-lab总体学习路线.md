@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-29；P1 HTTP 管理目标 4 passed，全量离线 78 passed，diff 检查通过。记忆 P0/P1 最小闭环已离线验证，用户已说明路由连接、数据库调用和异常处理的主干，记忆学习收口，下一步原生最小 RAG。真实模型提取/遵循性、自然语言删除及并发在途写入防重建未验证。
+> 最近核验：2026-10-29；记忆 P0/P1 最小闭环已离线收口。RAG 文档读取、固定字符窗口切分及 Embedding 服务已完成，已完成部分回归 83 passed（排除工作区未完成的 Chroma 测试），diff 检查通过；新增 CRLF 原文保真回归已通过。本地 BGE-M3 合成示例探索此前已实际运行，相关段落余弦得分 0.7232、排名第一。用户已选择本地持久化 Chroma，当前准备依赖与测试；索引、检索和完整回答接线仍待实现，不将离线服务测试视为真实模型效果验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -67,7 +67,7 @@ Python 工程
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
-| 7. 轻量记忆与原生最小 RAG | **进行中：记忆最小闭环已收口，转入原生 RAG** | 全量 78 passed；记忆 P0/P1 已离线验证并完成必要带读；RAG 待设计实现，真实模型记忆效果未验证 |
+| 7. 轻量记忆与原生最小 RAG | **进行中：记忆已收口，文档处理和 Embedding 服务已验证** | 已完成部分 83 passed；本地 Embedding 合成示例已运行；Chroma 依赖/占位与测试准备中，索引、检索和回答接线待实现，真实模型记忆效果未验证 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
@@ -837,6 +837,12 @@ Memory V1.1 优先级：提取器、触发规则、核心/普通选择与注入�
 
 ### 原生最小 RAG
 
+2026-10-29 前置环境与选型核对：用户明确希望先准备 Ollama、Embedding 模型和组件选型，再推进切分实现。实际只读核验本机 Apple M5、24 GiB 内存、Ollama CLI 0.40.6，可访问本地模型服务；已有 bge-m3:latest，模型 ID 790764642607、约1.2GB，ollama show 显示566.70M参数、F16、8192上下文、1024维、embedding能力。此次未下载模型、未调用嵌入推理、未变更环境配置。
+
+起步建议（待后续验证，不记为已实现）：复用 Ollama+bge-m3 生成文档与问题向量，回答沿用现有 DeepSeek 调用；先以少量笔记、Python 内存向量和余弦相似度建立可观察基线，再明确持久化方案，不立即引入向量数据库服务或框架。官方候选 Qwen3-Embedding:0.6b 的 Ollama权重约639MB、官方模型卡支持1024维/32K，可作后续对照；本地已有BGE-M3，无需为了开始学习重复下载。不能混用不同Embedding模型的向量，切换模型需重建相应索引；本项目检索效果仍须固定中文问题验证，不能仅据宣传排名判断。官方参考：[BGE-M3](https://ollama.com/library/bge-m3)、[Ollama Embeddings](https://docs.ollama.com/capabilities/embeddings)、[Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)。
+
+2026-10-29 本地 Embedding 实测：用户同意继续此项验证后，Codex 添加独立探索脚本 `playground/rag_embedding_probe.py`，使用已有 httpx 请求本机 `POST /api/embed`，input 为一个中文问题和三个合成段落，显式 truncate=false。脚本检查输入/输出数量、1024维和有限值，原生 Python 计算余弦并保存摘要至 `playground/results/bge_m3_probe.json`。真实执行成功：向量4条、范数约1；问题“为什么请求模型前要释放数据库连接？”对应事务/关闭连接段落0.7232369，记忆范围段落0.4108395，做菜段落0.2160021；本次耗时约1.183秒、prompt_eval_count=82。只是一组探索结果，不是检索效果评测、吞吐基准或得分阈值，不把分数当正确概率；没有调用DeepSeek、下载权重或修改生产接口。本轮是第一次模型API探索，允许先观察真实响应，不强造RED或新增镜像测试；正式嵌入服务接入后仍需fake HTTP的关键验证，pytest保持不访问真实模型。
+
 - 读取本地 Markdown。
 - 切分文档。
 - 生成 Embedding。
@@ -964,11 +970,19 @@ agent-lab 中先理解
 
 已确认方案为 [`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。新会话先完整读取本路线、导师提示词和该方案，再核验真实源码与 Git 状态，不重新猜测已确认选型。
 
-阶段 5、阶段 6 已完成第一轮。阶段 7 的 P0 记忆从提取到跨会话读取及改口更新已离线闭环。最新串联目标 1 passed、全量离线 72 passed（2026-10-28），diff 检查通过。已答过的模型调用、来源绑定、事务、连接归属、读取范围、合并顺序和读取失败边界不重问。
+阶段 5、阶段 6 已完成第一轮。阶段 7 的 P0/P1 记忆最小闭环已离线收口（2026-10-29 全量 78 passed），随后文档处理与 Embedding 服务加入后，已完成部分增至 83 passed。2026-10-28 的 72 passed 是历史 P0 串联基线，保留作证据，不作为当前最新结果。已答过的模型调用、来源绑定、事务、连接归属、读取范围、合并顺序和读取失败边界不重问。
 
 ```text
-当前小主题：记忆 P0/P1 最小闭环收口并整理本地提交 → 原生 RAG 总览与本地 Markdown 文档切分设计
+当前小主题：Embedding 服务已 GREEN（新增 Chroma 测试前全量 82 passed）；用户已选择本地持久化 Chroma，正在准备依赖与存储测试，集合打开和入库核心由用户参考实现。
 ```
+
+2026-10-29 分类提交与独立复查：用户要求分批整理提交已完成内容。独立只读检查发现 Path.read_text 默认将 CRLF 规范成 LF，会破坏保留原文的字符位置契约；Codex 增加真实 CRLF 文件回归先确认正确 RED，再用 open(encoding="utf-8", newline="") 保留换行，已完成部分回归 83 passed（忽略工作区未完成的 tests/test_vector_store.py），diff 检查与独立复查通过。该边界修复由 Codex 完成，不记为用户独立实现。已本地提交 0fc4bd8（读取与切片）、f91cae8（Embedding 服务）、7e28d50（合成示例探索与实测摘要）；本次路线同步另作 docs 提交。编辑器设置、playground/03_class.py，以及正在准备的 Chroma 依赖、忽略规则、vector_store.py 和测试继续保留未提交；不推送。提交后的已完成代码默认回归应为 83 项，当前工作区新增 Chroma 测试处于未完成学习现场，不据此称整个工作区全绿。
+
+2026-10-29 Embedding GREEN 与 Chroma 设计：用户参考完成 embed_texts，数量、维度和有限值校验及错误向上传播均保留；最新全量离线 pytest 82 passed、diff 检查通过，不代表本轮实际访问了 Ollama。用户接受 Chroma 本地持久化选型，故后续存储直接接入 Chroma，不再新增一套长期使用的内存持久化方案。选用 PersistentClient，集合 notes-bge-m3-1024-v1；显式 embedding_function=None，只接收已有 BGE-M3 向量；configuration.hnsw.space=cosine，查询返回距离=1-余弦相似度，越小越相关。每条记录保存 source::chunk_index 作为稳定 ID、text 作为 document、source/chunk_index/start/end 作为 metadata，以及对应 embedding；重复 ID 用 upsert 更新。upsert 本身不删除文档缩短后的旧片段，清理/重建规则留给索引编排，不承诺完整文档更新同步。已准备 vector_store.py 两个占位与 tests/test_vector_store.py，目标为写入进程退出后的重新打开与检索、重复写入不增殖，以及数量不匹配时拒绝写入；只用人工向量和临时目录，不调用模型。默认本地索引规划为 .cache/chroma/，已加入 gitignore。依赖安装与存储测试的实际结果待随后记录；不提交或推送。
+
+2026-10-29 Markdown 读取 GREEN：用户参考实现 load_markdown_chunks，初次误将循环中文件检查写为 notes_dir，导致所有文件被跳过、返回空列表；依据真实失败输出定位后，用户改为 note_file。修正后全量离线 pytest 80 passed，diff 检查通过；文件筛选、顺序、UTF-8 原文与出处在临时目录中验证，尚未批量嵌入项目真实笔记。下一主题先明确 embed_texts 的文本输入/向量输出与片段按顺序对应，以及文档索引和在线问题嵌入的两条链，再由用户参考实现核心 HTTP 和解析，Codex 负责 fake HTTP 样板与验证。本轮未调用真实模型、未提交或推送。
+
+2026-10-29 Embedding 服务 RED：用户准确说明文档向量应保存复用以避免每次提问重复计算；已澄清当前尚未接入向量库，先用内存片段/向量建立原生链路，进程重启后的持久化另行实现。新增 app/services/embedding.py 常量与 embed_texts 占位，以及 tests/test_embedding.py 的 fake HTTP 样板。局部契约：文本列表输入，按输入顺序返回向量；空输入不发请求；复用本地 BGE-M3 /api/embed，truncate=false；检查数量、1024 维和有限值，错误向调用方传播，不伪装为空结果；暂不接入聊天路由的错误映射。目标实测 2 failed，均因 NotImplementedError，正确 RED；测试不连接真实 Ollama/DeepSeek，最新全量通过基线仍为此前 80 passed。下一步用户参考实验代码实现函数，再运行目标与全量回归；不自动提交或推送。
 
 读取契约见方案 6.1，已实现 database.load_memories 与 memory.merge_memories。用户正确预测了范围读取，参考实现并在提示下修正循环提前 return；属于参考辅助完成，当前单元收口，不强制额外独立重写。回答前接线现已完成，模型请求实际包含预算内选中的 memory 上下文，详见方案 6.3。
 
@@ -976,7 +990,13 @@ agent-lab 中先理解
 
 2026-10-28 选择/预算 GREEN：用户参考实现完成 build_memory_context，目标 2 passed、全量离线 69 passed，diff 检查通过。Codex 仅清理一处行尾空格；normalized_message_message 名字重复但引用一致，不影响行为。用户已解释参数合法性、Core 先进入候选列表和超限跳过；补充 is_regular 检查负责限制普通记忆条数，不是重复保证排序。参考辅助实现不记为独立设计。结果仍未进入模型请求。
 
-下一步从原生 RAG 总览与本地 Markdown 的文档/片段模型和切分设计开始，沿已有 search_notes 的字面关键词检索与 MCP/工具返回链对照理解，再推进 Embedding、TopK 检索、上下文注入、来源和未命中回退。具体模型、接口、依赖和存储先讨论验证，不自动升级为向量数据库或框架项目。用户已理解记忆 HTTP 路由主干，不重复要求抄写样板。真实模型联调须单独明确授权并独立记录；记忆当前未验证的边界保留，不自动操作真实库。
+当前下一步：完成 Chroma 依赖与测试准备，由用户参考实现 vector_store.py 的持久化集合打开及片段/已有向量 upsert，再运行人工向量的跨进程持久化和检索验证。文档读取、字符切分和 embed_texts 不重复从头教学；之后再串联实际片段嵌入、索引更新、TopK、上下文注入、来源与未命中回退。Chroma 本地持久化已获用户接受，不再标作待选；不自动扩大为云端 DeepSeek 联调或真实模型自动测试，不自动推送。
+
+2026-10-29 切分主题开始：用户已带读本地 API、HTTP Response、向量数量检查与余弦计算，准确说明下一片起点按 chunk_size-overlap 前进。本次探索脚本由 Codex 提供，不能记为用户独立实现；后续核心切分继续由用户参考实现，Codex 负责数据结构和测试样板。新增 app/services/rag.py 的 DocumentChunk 与 split_document 占位，字段为 source/chunk_index/start/end/text；start/end 对应原始字符串左闭右开字符位置，不先 strip 原文。切分约定为正 chunk_size、0<=overlap<chunk_size、空文本返回空列表、到达文末立即停止。新增 tests/test_rag_chunking.py，验证重叠、出处与到达文末不重复产生尾片；实测目标 1 failed，失败明确为 NotImplementedError，属于正确 RED，diff 检查通过。最近全量通过仍为此前 78 passed，本轮未重跑全量；新增占位使默认全量预计包含这一待实现失败，不记为当前全绿。下一步用户实现 split_document，再运行目标和全量回归；尚未读取实际 Markdown、生成新向量或接入生产聊天，未提交或推送。
+
+2026-10-29 切分 GREEN 与读取 RED：用户参考实现 split_document，并理解 while 起点条件、min 限制终点及文末 break。实测切分目标 1 passed、全量 79 passed、diff 检查通过；另以本地调用检查空文本、短尾片和非法窗口参数，均通过，不记为新增持久化测试。之后 Codex 添加 load_markdown_chunks 占位与临时目录测试，读取契约为按文件名排序、仅本层普通 *.md、忽略符号链接与目录、UTF-8 读取、保留文本和 source 后调用现有切分；source 为目录名/文件名，当前仅用于单一笔记目录，chunk_index 在每个文件内从零编号。实测两个 RAG 目标 1 passed、1 failed，失败为新读取函数的 NotImplementedError，属正确 RED；79 passed 是新增读取测试前的全量基线，不表示当前默认全量已绿。下一步用户参考实现读取接线，目标与全量通过后再推进嵌入服务；未调用模型或提交推送。
+
+2026-10-29 RAG 顺序补充（环境核对时的历史记录，嵌入探索结果见上）：用户已理解文档处理/切分/嵌入与在线检索两条链，指出应先完成向量模型和Ollama选型准备。后续以环境/模型→少量示例的本地Embedding验证→文档切分/索引→检索与回答接线推进；不要求用户先猜模型或下载已存在模型。复用已安装BGE-M3，单问题真实嵌入输出与排序已在随后探索中验证，更广泛中文检索质量仍未评测；不计为RAG已实现，不自动切换现有聊天模型。
 
 2026-10-28 P1 管理数据库 RED：用户已正确说明同用户全部用户级/会话级同 key 删除，局部契约见方案 7.2。Codex 新增 tests/test_memory_management.py 两条真实 SQLite 测试，首次均因缺少 list_memory_records 失败。随后按 P1 分工补齐查看和抽取既有归属检查 validate_conversation_owner，保留原 load_memories 行为；当前全量 2 failed、72 passed，两例都因尚未定义 delete_memory_records 失败，查看结果和归属拒绝先行断言已通过。下一步给出完整删除函数参考，由用户结合已理解的 scope/scope_id/key 和用户会话子查询实现；尚未新增管理 HTTP 路由或删除真实数据库，未 commit/push 本轮 P1 改动。
 
