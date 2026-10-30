@@ -55,3 +55,26 @@ def upsert_chunks(
             for chunk in chunks
         ],
     )
+
+
+def sync_chunks(
+    collection: Collection,
+    chunks: list[DocumentChunk],
+    vectors: list[list[float]],
+) -> None:
+    """将专用笔记集合与当前片段同步；先 upsert，成功后删除多余 ID。
+
+    空片段列表表示清空此集合。不提供跨 upsert/delete 的事务或并发快照。
+    """
+    existing_ids = set(collection.get(include=[])["ids"])
+
+    current_ids = {
+        f"{chunk.source}::{chunk.chunk_index}"
+        for chunk in chunks
+    }
+
+    upsert_chunks(collection, chunks, vectors)
+
+    obsolete_ids = existing_ids - current_ids
+    if obsolete_ids:
+        collection.delete(ids=sorted(obsolete_ids))
