@@ -15,5 +15,8 @@ htmlcov/
 *.db
 *.sqlite3
 
+# Local vector index (vectors, original text and metadata)
+.cache/chroma/
+
 # macOS
 .DS_Store

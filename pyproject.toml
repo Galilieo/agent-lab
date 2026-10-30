@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.10,<3.0",
     "uvicorn[standard]>=0.34,<1.0",
     "mcp>=2.3,<3.0",
+    "chromadb>=1,<2",
 ]
 
 # 测试工具属于开发依赖，不是运行 HTTP 应用所必需的组件。
