@@ -1,0 +1,85 @@
+{
+  "checked_at": "2026-10-30T08:08:41.480004+00:00",
+  "status": "failed",
+  "embedding_model": "bge-m3:latest",
+  "configured_chat_model": "deepseek-flash",
+  "chromadb_version": "1.5.9",
+  "chat_requests_attempted": 2,
+  "cases": [
+    {
+      "name": "answer_with_source",
+      "question": "agent-lab 本次联调的演示索引批次标签是什么？",
+      "references": [
+        {
+          "citation": "[notes/index.md::0]",
+          "text": "# 联调演示索引\n本次虚构测试资料：agent-lab 的演示索引批次标签为「青柠7429」。这里没有负责人的联系方式。\n",
+          "source": "notes/index.md",
+          "distance": 0.22651392221450806
+        },
+        {
+          "citation": "[notes/memory.md::0]",
+          "text": "# 记忆范围\n用户级记忆可跨会话复用，会话级记忆只在当前会话内生效。\n",
+          "source": "notes/memory.md",
+          "distance": 0.6219425201416016
+        }
+      ],
+      "answer": "agent-lab 本次联调的演示索引批次标签是「青柠7429」[notes/index.md::0]。",
+      "checks": {
+        "relevant_document_first": true,
+        "correct_synthetic_fact": true,
+        "correct_source_citation": true
+      },
+      "passed": true,
+      "model": "deepseek-flash",
+      "upstream_status": 200,
+      "latency_ms": 1598.669207999592,
+      "prompt_tokens": 238,
+      "completion_tokens": 58,
+      "total_tokens": 296
+    },
+    {
+      "name": "insufficient_evidence",
+      "question": "agent-lab 这个演示索引批次的负责人联系电话是多少？",
+      "references": [
+        {
+          "citation": "[notes/index.md::0]",
+          "text": "# 联调演示索引\n本次虚构测试资料：agent-lab 的演示索引批次标签为「青柠7429」。这里没有负责人的联系方式。\n",
+          "source": "notes/index.md",
+          "distance": 0.27568191289901733
+        },
+        {
+          "citation": "[notes/memory.md::0]",
+          "text": "# 记忆范围\n用户级记忆可跨会话复用，会话级记忆只在当前会话内生效。\n",
+          "source": "notes/memory.md",
+          "distance": 0.6436075568199158
+        }
+      ],
+      "answer": "参考片段未提供负责人联系电话，并注明“这里没有负责人的联系方式” [notes/index.md::0]。",
+      "checks": {
+        "states_insufficient_evidence": false
+      },
+      "passed": false,
+      "model": "deepseek-flash",
+      "upstream_status": 200,
+      "latency_ms": 2091.579332999572,
+      "prompt_tokens": 238,
+      "completion_tokens": 106,
+      "total_tokens": 344
+    }
+  ],
+  "scope": "Synthetic live component integration; production RAG routes and vector_store wrappers are not implemented.",
+  "phase": "chat_api:insufficient_evidence",
+  "document_count": 3,
+  "chunk_count": 3,
+  "dimensions": [
+    1024
+  ],
+  "indexed_count": 3,
+  "elapsed_seconds": 5.508672542000568,
+  "manual_review": {
+    "retrieval_and_grounded_answer": "passed",
+    "insufficient_evidence_semantics": "passed",
+    "required_literal_phrase": "failed",
+    "note": "负例回答明确表示资料未提供联系方式且未编造号码，但没有逐字输出系统要求的“资料不足”。保留原严格检查失败和 overall status，不将语义拒答等同于逐字遵循。"
+  }
+}
