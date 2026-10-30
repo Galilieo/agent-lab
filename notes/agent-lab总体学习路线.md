@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-29；记忆 P0/P1 最小闭环已离线收口。RAG 文档读取、固定字符窗口切分及 Embedding 服务已完成，已完成部分回归 83 passed（排除工作区未完成的 Chroma 测试），diff 检查通过；新增 CRLF 原文保真回归已通过。本地 BGE-M3 合成示例探索此前已实际运行，相关段落余弦得分 0.7232、排名第一。用户已选择本地持久化 Chroma，当前准备依赖与测试；索引、检索和完整回答接线仍待实现，不将离线服务测试视为真实模型效果验证。
+> 最近核验：2026-10-30；文档读取、切分与 Embedding 服务已完成，已完成部分回归 83 passed（排除未完成的 Chroma 包装层测试），diff 检查通过。Chroma 1.5.9 安装、人工向量写入、写入进程退出后重新打开及检索已验证。用户本轮明确授权真实模型联调：合成文档→本地 BGE-M3→Chroma→配置的 deepseek-flash API 两次返回200，正例事实与引用正确；负例明确未提供联系方式、未编造号码，但未逐字输出要求的“资料不足”，严格探针仍记录失败。正式 vector_store.py、索引编排与 /chat RAG 接线仍未实现，不将探针记为完整生产链路或质量评测。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -67,7 +67,7 @@ Python 工程
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
-| 7. 轻量记忆与原生最小 RAG | **进行中：记忆已收口，文档处理和 Embedding 服务已验证** | 已完成部分 83 passed；本地 Embedding 合成示例已运行；Chroma 依赖/占位与测试准备中，索引、检索和回答接线待实现，真实模型记忆效果未验证 |
+| 7. 轻量记忆与原生最小 RAG | **进行中：文档处理已验证，真实 RAG 组件联调已运行** | 已完成部分 83 passed；Chroma 持久化可用；真实模型合成正例正确，负例未编造但固定短语检查失败；正式存储包装、索引和回答路由接线待实现，记忆真实模型效果未验证 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
@@ -973,8 +973,16 @@ agent-lab 中先理解
 阶段 5、阶段 6 已完成第一轮。阶段 7 的 P0/P1 记忆最小闭环已离线收口（2026-10-29 全量 78 passed），随后文档处理与 Embedding 服务加入后，已完成部分增至 83 passed。2026-10-28 的 72 passed 是历史 P0 串联基线，保留作证据，不作为当前最新结果。已答过的模型调用、来源绑定、事务、连接归属、读取范围、合并顺序和读取失败边界不重问。
 
 ```text
-当前小主题：Embedding 服务已 GREEN（新增 Chroma 测试前全量 82 passed）；用户已选择本地持久化 Chroma，正在准备依赖与存储测试，集合打开和入库核心由用户参考实现。
+当前小主题：Chroma 环境已可用；正式存储层目标测试已确认正确 RED（2 failed，均由集合打开占位导致），用户参考实现 open_notes_collection 与 upsert_chunks。
 ```
+
+2026-10-30 Chroma 前置准备分类提交：用户要求先整理已完成的 Chroma 前置工作，并明确未完成内容先不整理提交。本轮核验 uv lock --check --offline、uv pip check 均通过；已完成部分离线83 passed（排除未完成的 tests/test_vector_store.py）、diff 检查通过。独立只读复核确认锁文件未升级既有包、探针不会被默认 pytest 收集、报告保留严格短语失败及人工语义复核，未发现提交阻碍。本地已提交 ed1da1b（Chroma 依赖、锁文件和索引忽略规则）、9d6d6fd（真实模型联调探针与实测记录），本段路线再单独提交；本轮没有重新调用模型或推送。app/services/vector_store.py、tests/test_vector_store.py 原样保留未提交，不把未实现占位记为完成；.vscode/settings.json 和 playground/03_class.py 继续保留。
+
+2026-10-30 语义验收与正式存储层：用户确认真实探针负例按业务语义是正确回答，未输出固定短语只是更严格的格式条件，不因此阻断当前学习；保留原始严格检查结果与人工语义复核，不把逐字文案要求作为当前产品必需行为。本轮未再次调用模型。已核验当前 Chroma 1.5.9 的 get_or_create_collection/upsert 源码签名，运行 tests/test_vector_store.py 得到 2 failed，完整输出均指向 open_notes_collection 的 NotImplementedError，属于正式存储接线的正确 RED。下一步提供两个函数的完整局部参考，由用户实现；随后验证跨进程保留数据、重复 upsert 不增殖、数量不匹配拒绝，以及默认全量回归。不会代写核心、提交或推送。
+
+2026-10-30 Chroma 环境和真实模型联调：本项目虚拟环境确认 chromadb 1.5.9 可导入。先使用人工 1024 维向量在临时目录写入两条记录，由独立写入进程退出后重新打开并检索，数量、原文、出处和 cosine 距离检查通过，未调用模型。用户随后明确要求加上真实模型和 API 测试；Codex 新增独立 playground/rag_live_probe.py，用三个合成 Markdown、现有 load_markdown_chunks 和 embed_texts、临时 Chroma 直接 API、现有 generate_reply 串联。通过标准 uv --env-file 复用现有配置，未输出密钥，未发送业务文档，也未代写 vector_store.py 的核心占位。
+
+本轮实际结果保存于 playground/results/rag_live_probe.json：3 个片段生成 1024 维向量，2 次本地 Embedding 请求、2 次 deepseek-flash 聊天请求；API 均200，共640 total tokens，整段联调约5.51秒。正例检索首位为 notes/index.md，回答“青柠7429”并带 [notes/index.md::0]，三项严格检查均通过。负例回答参考资料未提供负责人联系电话并引用来源，没有编造号码，但系统要求逐字输出“资料不足”的检查为 false；保留原 status=failed，另附人工复核说明，不把语义拒答等同于逐字遵循，不通过放宽断言伪造全绿。该结果说明所测组件可协作，不能证明一般检索质量、确定性兜底、正式 /chat 接线或记忆效果。已完成部分离线回归仍83 passed（--ignore=tests/test_vector_store.py），diff 检查通过。探针和报告未提交，当前没有新增提交或推送授权。
 
 2026-10-29 分类提交与独立复查：用户要求分批整理提交已完成内容。独立只读检查发现 Path.read_text 默认将 CRLF 规范成 LF，会破坏保留原文的字符位置契约；Codex 增加真实 CRLF 文件回归先确认正确 RED，再用 open(encoding="utf-8", newline="") 保留换行，已完成部分回归 83 passed（忽略工作区未完成的 tests/test_vector_store.py），diff 检查与独立复查通过。该边界修复由 Codex 完成，不记为用户独立实现。已本地提交 0fc4bd8（读取与切片）、f91cae8（Embedding 服务）、7e28d50（合成示例探索与实测摘要）；本次路线同步另作 docs 提交。编辑器设置、playground/03_class.py，以及正在准备的 Chroma 依赖、忽略规则、vector_store.py 和测试继续保留未提交；不推送。提交后的已完成代码默认回归应为 83 项，当前工作区新增 Chroma 测试处于未完成学习现场，不据此称整个工作区全绿。
 
@@ -990,7 +998,7 @@ agent-lab 中先理解
 
 2026-10-28 选择/预算 GREEN：用户参考实现完成 build_memory_context，目标 2 passed、全量离线 69 passed，diff 检查通过。Codex 仅清理一处行尾空格；normalized_message_message 名字重复但引用一致，不影响行为。用户已解释参数合法性、Core 先进入候选列表和超限跳过；补充 is_regular 检查负责限制普通记忆条数，不是重复保证排序。参考辅助实现不记为独立设计。结果仍未进入模型请求。
 
-当前下一步：完成 Chroma 依赖与测试准备，由用户参考实现 vector_store.py 的持久化集合打开及片段/已有向量 upsert，再运行人工向量的跨进程持久化和检索验证。文档读取、字符切分和 embed_texts 不重复从头教学；之后再串联实际片段嵌入、索引更新、TopK、上下文注入、来源与未命中回退。Chroma 本地持久化已获用户接受，不再标作待选；不自动扩大为云端 DeepSeek 联调或真实模型自动测试，不自动推送。
+当前下一步：Chroma 环境与独立组件探针已验证，由用户参考实现 vector_store.py 的持久化集合打开及片段/已有向量 upsert，再运行正式包装层的人工向量持久化和检索测试。文档读取、字符切分和 embed_texts 不重复从头教学；之后串联索引更新、TopK、上下文注入、来源与未命中回退。固定兜底文案不能只凭模型提示词视为确定行为，本次真实探针的逐字遵循偏差须保留。用户已授权本次合成资料真实 API 联调；默认 pytest 仍隔离模型，不自动扩展成真实业务文档云端测试或推送。
 
 2026-10-29 切分主题开始：用户已带读本地 API、HTTP Response、向量数量检查与余弦计算，准确说明下一片起点按 chunk_size-overlap 前进。本次探索脚本由 Codex 提供，不能记为用户独立实现；后续核心切分继续由用户参考实现，Codex 负责数据结构和测试样板。新增 app/services/rag.py 的 DocumentChunk 与 split_document 占位，字段为 source/chunk_index/start/end/text；start/end 对应原始字符串左闭右开字符位置，不先 strip 原文。切分约定为正 chunk_size、0<=overlap<chunk_size、空文本返回空列表、到达文末立即停止。新增 tests/test_rag_chunking.py，验证重叠、出处与到达文末不重复产生尾片；实测目标 1 failed，失败明确为 NotImplementedError，属于正确 RED，diff 检查通过。最近全量通过仍为此前 78 passed，本轮未重跑全量；新增占位使默认全量预计包含这一待实现失败，不记为当前全绿。下一步用户实现 split_document，再运行目标和全量回归；尚未读取实际 Markdown、生成新向量或接入生产聊天，未提交或推送。
 
