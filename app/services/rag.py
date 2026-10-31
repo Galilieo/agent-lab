@@ -15,6 +15,14 @@ class DocumentChunk:
     text: str
 
 
+@dataclass(frozen=True)
+class RetrievedChunk:
+    """检索命中的原文片段及 cosine 距离；距离越小越相关。"""
+
+    chunk: DocumentChunk
+    distance: float
+
+
 def split_document(
     text: str,
     *,

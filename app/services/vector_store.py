@@ -6,7 +6,7 @@ import chromadb
 from chromadb.api.models.Collection import Collection
 from chromadb.config import Settings
 
-from app.services.rag import DocumentChunk
+from app.services.rag import DocumentChunk, RetrievedChunk
 
 
 COLLECTION_NAME = "notes-bge-m3-1024-v1"
@@ -78,3 +78,44 @@ def sync_chunks(
     obsolete_ids = existing_ids - current_ids
     if obsolete_ids:
         collection.delete(ids=sorted(obsolete_ids))
+
+
+def query_chunks(
+    collection: Collection,
+    query_vector: list[float],
+    *,
+    top_k: int = 3,
+) -> list[RetrievedChunk]:
+    """检索一条问题向量，返回原文、出处和距离；不进行相关性阈值过滤。"""
+    if top_k <= 0:
+        raise ValueError("top_k must be positive.")
+
+    limit = min(top_k, collection.count())
+    if limit == 0:
+        return []
+
+    result = collection.query(
+        query_embeddings=[query_vector],
+        n_results=limit,
+        include=["documents", "metadatas", "distances"],
+    )
+
+    hits = []
+    for text, metadata, distance in zip(
+        result["documents"][0],
+        result["metadatas"][0],
+        result["distances"][0],
+        strict=True,
+    ):
+        chunk = DocumentChunk(
+            source=metadata["source"],
+            chunk_index=metadata["chunk_index"],
+            start=metadata["start"],
+            end=metadata["end"],
+            text=text,
+        )
+        hits.append(
+            RetrievedChunk(chunk=chunk, distance=distance)
+        )
+
+    return hits
