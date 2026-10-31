@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-30；文档读取、切分、Embedding、Chroma 存储和显式全量索引同步已完成。索引目标2 passed、默认全量87 passed，diff 检查与独立复核通过；真实临时文件/Chroma及 fake Embedding 验证文件缩短、删除、新增、空目录清理和 Embedding 失败保留旧记录。本轮未调用模型。此前真实组件探针的事实回答与语义拒答正确，固定短语格式偏差原样保留。正式 TopK 检索服务和 /chat RAG 接线仍待实现；索引写入/删除不提供跨操作事务或并发快照一致性。
+> 最近核验：2026-10-31；文档处理、Embedding、Chroma 存储、显式索引同步和正式 TopK 检索已完成。检索目标2 passed、默认全量89 passed，diff 检查与独立复核通过；真实临时 Chroma、人工向量和 fake Embedding 验证排序/数量/完整出处、只嵌入问题、空索引跳过模型、非法输入拒绝和嵌入失败传播。本轮没有调用真实模型。此前真实组件探针证据保留；正式 RAG 回答上下文、引用和 /chat 接线仍待实现，TopK 暂无相关性阈值，索引更新仍无跨 upsert/delete 事务保证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -67,7 +67,7 @@ Python 工程
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
-| 7. 轻量记忆与原生最小 RAG | **进行中：文档处理、Chroma 存储与索引同步已验证** | 默认全量87 passed；真实模型合成探针已运行；正式 TopK 检索与回答路由接线待实现，记忆真实模型效果未验证 |
+| 7. 轻量记忆与原生最小 RAG | **进行中：文档处理、索引同步与 TopK 检索已验证** | 默认全量89 passed；真实模型合成探针已运行；正式 RAG 上下文、引用和回答路由接线待实现，记忆真实模型效果未验证 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
@@ -973,8 +973,20 @@ agent-lab 中先理解
 阶段 5、阶段 6 已完成第一轮。阶段 7 的 P0/P1 记忆最小闭环已离线收口（2026-10-29 全量 78 passed），随后文档处理与 Embedding 服务加入后，已完成部分增至 83 passed。2026-10-28 的 72 passed 是历史 P0 串联基线，保留作证据，不作为当前最新结果。已答过的模型调用、来源绑定、事务、连接归属、读取范围、合并顺序和读取失败边界不重问。
 
 ```text
-当前小主题：索引全量同步已 GREEN（目标2 passed、默认全量87 passed）；下一主题为问题嵌入与 TopK 检索结果的局部设计。
+当前小主题：正式 TopK 检索已 GREEN（目标2 passed、默认全量89 passed）；下一主题为检索片段的回答上下文、来源引用和资料不足处理。
 ```
+
+2026-10-31 TopK 检索提交检查点：用户明确要求将已完成检索单元单独整理提交后继续下一步。提交前再次验证默认全量89 passed、diff 检查通过；既有独立复核结论保留，无新增行为改动。已本地提交 788ddb8（问题向量 TopK 检索与片段还原，含检索结果模型和两条测试），路线验收另作 docs 提交，不推送。尚未实现的 RAG 回答上下文与路由接线不纳入本次提交；编辑器设置和 playground/03_class.py 继续保留未提交。本轮未调用真实模型，下一步先设计检索片段到上下文与来源引用的对应关系，再安排核心参考与测试。
+
+2026-10-31 TopK 检索 GREEN：用户参考完成 query_chunks 与 retrieve，首次 query_embeddings 参数后漏逗号导致 SyntaxError、测试收集停止；Codex 依据完整输出指出该处，用户修正。目标 tests/test_rag_retrieval.py 2 passed、默认全量89 passed、diff 检查通过；独立只读复核无当前契约下阻碍。真实临时 Chroma 与人工1024维向量验证按 cosine 距离升序、TopK 截断/超过条数、完整原文出处及距离还原；fake Embedding 记录只接收当前问题，空索引不请求模型，空白问题/非正top_k拒绝，有索引时的嵌入错误继续传播。问答检索不调用 build_index 或重新嵌入文档，本轮没有真实 Ollama/云端请求。不将参考实现记为独立设计；TopK 不设置未经验证的相关性阈值，也不保证每条返回项能回答问题。单元已适合整理提交，当前未提交或推送；编辑器设置与独立练习继续保留。
+
+2026-10-30 TopK 检索局部契约与计划：输入一个非空问题、索引目录和正整数 top_k（默认3），只嵌入当前问题，不调用 build_index 或重新嵌入文档。输出 list[RetrievedChunk]，每项复用 DocumentChunk 保存原文与完整出处，并增加 cosine distance；不把 Chroma 原始嵌套结果传给上层。距离越小越相关，TopK 是相对排序，当前不凭空设置阈值或承诺返回项都能回答问题。
+
+模块分工：rag.py 增加 frozen dataclass RetrievedChunk(chunk: DocumentChunk, distance: float)；vector_store.py 增加 query_chunks(collection, query_vector: list[float], *, top_k=3) -> list[RetrievedChunk]，按 min(top_k, count) 查询一条问题向量并还原片段对象；rag_retrieval.py 增加 async retrieve(question: str, persist_directory: Path, *, top_k=3) -> list[RetrievedChunk]，先校验输入并打开已有本地笔记集合，空集合直接返回[]，否则调用 embed_texts([question]) 和 query_chunks。沿用 open_notes_collection：路径/集合尚不存在时会建立一个空集合并返回[]，不自动索引。存储层重复查询 count 用于实际查询时限制结果数；编排层预先检查空集合用于避免无意义的嵌入请求。错误不降级成“未命中”。
+
+计划：Codex 准备数据结构、两个函数占位和 tests/test_rag_retrieval.py（人工向量+真实临时Chroma+fake Embedding），验证排序/数量/出处、问题单独嵌入、空索引/非法输入跳过嵌入及嵌入失败传播，先确认正确 RED；用户参考实现核心；通过目标和全量回归后更新完成状态。不调用模型或提交未完成内容，不接入回答路由。
+
+2026-10-30 TopK 检索 RED：已添加 RetrievedChunk、query_chunks/retrieve 占位及两条检索测试。目标实测2 failed，完整输出均因 retrieve 的 NotImplementedError，属于正确 RED，无收集错误。测试只用人工向量、真实临时 Chroma 和 fake Embedding；本轮没有调用模型，也未重跑全量，87 passed 为新增本单元前基线。下一步用户参考实现数据库查询和结果还原、问题嵌入编排，再验证 GREEN；不自动提交。
 
 2026-10-30 索引同步提交检查点：用户明确要求整理提交本单元。提交前重新验证默认全量87 passed、diff 检查通过；仅整理 vectors 赋值处的空格，不改变行为。已本地提交 41e89f3（笔记索引全量同步与过期片段清理，含两条索引测试），本段验收和路线记录另作 docs 提交，不推送。尚未开始的 TopK 检索实现不纳入本次提交；.vscode/settings.json 与 playground/03_class.py 继续保留未提交。本轮没有重新调用真实模型。
 
@@ -1012,7 +1024,7 @@ agent-lab 中先理解
 
 2026-10-28 选择/预算 GREEN：用户参考实现完成 build_memory_context，目标 2 passed、全量离线 69 passed，diff 检查通过。Codex 仅清理一处行尾空格；normalized_message_message 名字重复但引用一致，不影响行为。用户已解释参数合法性、Core 先进入候选列表和超限跳过；补充 is_regular 检查负责限制普通记忆条数，不是重复保证排序。参考辅助实现不记为独立设计。结果仍未进入模型请求。
 
-当前下一步：索引同步已完成，设计正式 TopK 检索：只为当前问题生成向量，查询已保存的文档向量，返回片段原文、出处和距离。复用现有 Embedding 与 Chroma 索引，问答时不调用 build_index；先明确返回模型、空索引和 TopK 行为，再按用户参与方式准备测试与核心参考。之后才接入回答上下文、来源和未命中回退。本次合成探针的格式偏差仍作为独立诊断保留，不把固定拒答短语当作当前必需行为。默认 pytest 继续隔离真实模型，不自动扩展业务文档云端测试或推送。
+当前下一步：正式检索已完成，设计 RetrievedChunk 到模型回答上下文的封装、可追溯来源和资料不足处理，再接入回答链。检索数据作为参考资料，不作为系统指令；空索引、无回答依据与模型/存储错误须分清，不能把 API 失败伪装成未命中。不凭空设置距离阈值，也不把逐字拒答短语当作当前必需行为。之后再做正式 /chat 接线与 fake 模型端到端验收；默认 pytest 继续隔离真实模型，不自动扩展业务文档云端测试或推送。
 
 2026-10-29 切分主题开始：用户已带读本地 API、HTTP Response、向量数量检查与余弦计算，准确说明下一片起点按 chunk_size-overlap 前进。本次探索脚本由 Codex 提供，不能记为用户独立实现；后续核心切分继续由用户参考实现，Codex 负责数据结构和测试样板。新增 app/services/rag.py 的 DocumentChunk 与 split_document 占位，字段为 source/chunk_index/start/end/text；start/end 对应原始字符串左闭右开字符位置，不先 strip 原文。切分约定为正 chunk_size、0<=overlap<chunk_size、空文本返回空列表、到达文末立即停止。新增 tests/test_rag_chunking.py，验证重叠、出处与到达文末不重复产生尾片；实测目标 1 failed，失败明确为 NotImplementedError，属于正确 RED，diff 检查通过。最近全量通过仍为此前 78 passed，本轮未重跑全量；新增占位使默认全量预计包含这一待实现失败，不记为当前全绿。下一步用户实现 split_document，再运行目标和全量回归；尚未读取实际 Markdown、生成新向量或接入生产聊天，未提交或推送。
 
