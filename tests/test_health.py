@@ -902,6 +902,7 @@ def test_chat_persists_completed_call_when_agent_requests_unknown_tool(
         *,
         system_prompt=None,
         memory_context="",
+        rag_context="",
     ) -> LLMResult:
         return LLMResult(
             answer=None,
