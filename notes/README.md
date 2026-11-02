@@ -33,7 +33,14 @@
 ### 学习路线与项目约定
 
 - [`agent-lab总体学习路线.md`](./agent-lab总体学习路线.md)：学习进度和路线的唯一正式版本。
+- 换会话时先定位路线的[第14节：当前下一步](./agent-lab总体学习路线.md#14-当前下一步)，按该处接续提示读取约定和源码，不以历史记录中的旧占位或旧测试数覆盖最新状态。
 - [`Memory-V1.1轻量分层长期记忆方案.md`](./Memory-V1.1轻量分层长期记忆方案.md)：阶段 7 已确定的 Memory V1.1 完整设计基线，记录分层、提取、选择、注入与管理边界；实现进度仍以正式路线为准。
 - [`Codex学习导师提示词.md`](./Codex学习导师提示词.md)：约束教学粒度、设计讲解、局部参考与代码验证协作，不记录正式学习进度。
 - [`代码注释规范.md`](./代码注释规范.md)：参考 PEP 8 / PEP 257，约定文件职责、函数契约、关键分支与测试说明的写法。
 - [`sqlite多轮会话数据模型草案.md`](./sqlite多轮会话数据模型草案.md)：记录阶段 5 已落地的数据关系、持久化语义和当前边界，不承担后续阶段进度管理。
+
+### RAG 固定合成题验收材料
+
+- [问题与合成文档](../playground/fixtures/rag_acceptance.json)：同题对照关闭/开启知识库。
+- [显式运行脚本](../playground/rag_acceptance_probe.py)：真实本机 Embedding、Chroma 和聊天 API，经进程内正式 `/chat` 入口；默认 pytest 不会执行。
+- [首次记录](../playground/results/rag_acceptance_probe.json)、[连接中断记录](../playground/results/rag_acceptance_recheck.json)、[完整复验记录](../playground/results/rag_acceptance_recheck_2.json)：保留原始结果及 Codex 的逐题复核，证据范围和当前结论以正式路线为准。重跑时通过 `--output` 选择新文件，不覆盖历史记录。
