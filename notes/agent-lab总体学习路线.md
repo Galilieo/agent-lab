@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-10-31；文档处理、索引同步、检索、上下文预算及原生 Agent/LLM 的 RAG 参考消息接线已完成。消息接线目标2 passed、默认全量93 passed，diff 检查与独立复核通过；fake HTTP 验证记忆/RAG/历史/当前问题顺序及工具两轮复用，本轮没有真实模型调用。提示词使用规则已进入请求，但不能据此证明模型抗注入或引用正确。程序级引用校验、显式 RAG 空资料兜底与 /chat 接线仍待实现；已有组件探针证据和存储一致性边界保留。
+> 最近核验：2026-11-02；Agent 按需语义检索和共用回答收尾均已完成，默认全量110 passed，diff检查与两次限定范围独立复核通过。应用控制索引目录和可用能力，模型可直接回答或检索；工具结果和片段对应、跨调用来源累积、空结果继续、最终引用映射/标注及原始调用保留已离线验证。严格知识库路径保留；/chat 启用工具与来源响应仍待接通，原生 RAG 端到端验收未完成。引用存在不证明语义支持，fake 模型不证明真实工具选择，本轮没有真实模型调用；已有组件探针和存储一致性边界保留。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -67,7 +67,7 @@ Python 工程
 | 4. 真实 LLM 调用 | **已完成第一轮** | 异步单轮调用、错误边界、安全日志和 Token usage 已验证 |
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
-| 7. 轻量记忆与原生最小 RAG | **进行中：检索上下文与原生模型消息接线已验证** | 默认全量93 passed；真实模型合成探针已运行；程序引用校验、RAG空资料兜底与回答路由接线待实现，记忆真实模型效果未验证 |
+| 7. 轻量记忆与原生最小 RAG | **进行中：Agent 按需检索及共用回答收尾已验证** | 默认全量110 passed；/chat 工具启用、来源响应及端到端验收待实现；真实模型合成探针已运行，记忆真实模型效果未验证 |
 | 8. LangChain | 待开始 | 用框架重构已完成的调用、工具和 RAG |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
@@ -940,6 +940,57 @@ LangChain 不作为入门起点，而用于重构已经完成的原生能力。
 - 设计范围：上下文、记忆、工具执行、失败恢复与观测，也包括会话组织、任务状态、权限确认、取消/重试和结果反馈。不为覆盖所有维度制造功能；按实际产品与业务需要选择。
 - 产出：简短的产品/架构图、一个核心链路说明、设计取舍与代价、可借鉴/不适用的部分、适量改进及验证依据。参考的是机制与设计，不默认复制完整产品、插件系统或编程语言；心屿保持 Java 业务后端 + Python AI 服务方向。
 
+2026-11-02 教程与题库补充约定：用户同意参考以下四个项目，之后按需补充，现有主线和阶段顺序先保持不变。继续以 agent-lab 的源码、测试和本路线为正式进度；外部资料结合当前主题选读，用于原理对照、设计取舍、效果评估与项目表达，不另开四套并行课程。
+
+- [Hello-Agents](https://github.com/datawhalechina/hello-agents)：对照 Agent 范式、自建框架、记忆检索、上下文与评估，按已有实践定向阅读章节和示例。
+- [All-in-RAG](https://github.com/datawhalechina/all-in-rag)：补充分块、检索优化和 RAG 评估；先完成已定原生闭环，优化方案结合固定问题和对照实验选择。
+- [AgentGuide](https://github.com/adongwanai/AgentGuide)：作为工程知识地图、项目落地与面试追问参考，使用前核对具体页面是否已完成。
+- [AI Agent Interview Guide](https://github.com/bcefghj/ai-agent-interview-guide)：按用户偏好选择 Star 较高的这个同名项目，用题库检查理解，结合 Python 引用解析等源码讨论边界，不照搬模板经历或未经验证的生产能力描述。
+
+本轮已核对四个仓库的目录、维护数据，并抽读部分正文与代码，未运行它们的项目。补充资料不自动改变当前下一步：仍继续回答引用的程序校验与显式 RAG 空资料兜底，再做 /chat 接线和端到端验收；LangChain、LangGraph、SSE 及心屿 Java + Python 接入安排沿原路线推进。本轮仅记录补充参考约定，不新增功能完成标志或测试通过数。
+
+2026-11-02 引用处理设计与 Harness 定向对照：用户同意先将检查与处理策略分开；当前计划由检查函数返回合法引用（按出现顺序去重）和无效 ID，不在函数内直接拒答。学习助手保留回答，将无效引用明确标注、不生成来源链接并提示问题；自动修正重试暂不加入本单元。显式 RAG 无可用资料的生成前兜底保持独立。引用存在不代表资料支持结论，无引用也不能直接判定为编造；上述仍是待实现设计，不计为 GREEN。
+
+本轮局部实现计划：新增 app/services/rag_citations.py 的 CitationCheck(valid_sources, invalid_ids) 与 check_citations(answer: str, sources: list[DocumentChunk]) -> CitationCheck；sources 只取预算后的 RagContext.sources。函数识别方括号中带 `::` 的本项目引用标记，合法来源和无效 ID 各自按首次出现顺序去重，普通 [1]、[示例] 不视为本协议引用；当前不扩展为完整 Markdown 解析器。Codex 准备数据类、占位和 tests/test_rag_citations.py，确认代表性 RED 后提供完整局部参考，用户实现核心解析与映射；之后检查真实文件、运行目标与全量回归。此单元不修改回答正文、不接入 /chat、不实现自动重试；无资料兜底及无效标记展示在上层接线时继续完成，不把纯函数通过记为整个回答链已完成。
+
+2026-11-02 引用检查正确 RED：已新增上述数据类、函数占位及两条代表性测试，覆盖合法/未知/重复引用、同文件不同片段、未引用资料不返回、普通方括号与空来源。实测目标 2 failed、全量 2 failed / 93 passed，失败均为 check_citations 内的 NotImplementedError，无收集错误，diff 检查通过；没有访问真实模型。核心解析与映射尚未实现，下一步用户参考局部函数输入后再验证；不提交或推送，编辑器设置与独立练习保留。
+
+2026-11-02 引用检查 GREEN：用户参考实现 check_citations，首次将 return 放在 for 内，导致仅处理首条引用、无引用时隐式返回 None；依据两条真实失败输出定位后，用户将 return 移到循环外。实测目标2 passed、默认全量95 passed、diff检查通过，不调用真实模型。用户已理解 by_id 为本轮真实切片的 ID 映射，并指出同一来源在多段正文中仍应保留每处角标；已明确当前仅来源列表去重，函数不改正文。此单元属于参考辅助实现，验证来源映射而非语义忠实，不记为完整 RAG 回答闭环；无效引用标注、空资料短路与 /chat 接线继续待实现。未提交或推送，编辑器、独立练习及新增的其他笔记保持原样。
+
+2026-11-02 上层 RAG 回答编排局部计划：新增 app/services/rag_answer.py，复用 retrieve → build_rag_context → run_agent → check_citations，不另建 Agent 循环。接口 answer_with_rag(message: str, persist_directory: Path, history=None, *, memory_context="", top_k=3, max_chars=4000) -> RagAnswer；输出 answer、实际合法引用 sources、invalid_ids 和原始 model_calls。预算后无来源时返回明确缺少可用片段的应用文本、空来源及空调用记录，不请求回答模型；有片段不代表足以回答，允许模型如实说明不足而不要求固定短语。合法角标逐处保留，无效标记每处替换为 [引用未找到]、末尾追加一次提示；原始 LLMResult 不被展示文本覆盖。检索/Agent 异常原样传播；若返回的最终正文不是非空字符串，RagAnswerError 携带已完成调用，后续 /chat 需接住并保存，不能将真实调用丢失或当作空资料。此层只处理既有方括号 ID 协议，不是完整 Markdown 或事实核验器。
+
+分工与验证：Codex 准备 RagAnswer、RagAnswerError、文案常量、函数占位与 fake 检索/Agent 测试，用户参考实现核心编排。正常样例同时验证预算排除后的引用无效、合法重复角标保留、未知角标逐处标注、来源去重、历史和原始模型记录不改；关键分支验证空检索/零预算跳过 Agent、检索/Agent 故障不冒充无资料、无有效正文时保留调用。先确认 RED，再由用户实现，目标与全量 GREEN 后更新基线；本单元暂不改 /chat、不做真实模型调用、不自动提交或推送。
+
+2026-11-02 上层回答编排正确 RED：已准备上述模块及 tests/test_rag_answer.py，目标6 failed，全量6 failed / 95 passed；四例直接遇到函数内 NotImplementedError，两例故障传播断言因占位异常并非预设异常而失败，均源于核心尚未实现，无收集错误，diff检查通过。测试使用 fake 检索与 fake Agent，不接触本地/云端模型或实际索引。下一步用户参考完整局部函数实现后检查目标与全量，不把占位提交为已完成功能。
+
+2026-11-02 严格回答编排 GREEN 与检索策略调整：用户参考实现 answer_with_rag，初次 context.sourcess 拼写错误使目标1 failed / 5 passed，修正后默认全量101 passed。已解释类型/空白正文检查、生成后处理和真实调用保留。用户指出应先结合案例确定整体策略，不应把 use_rag 开关及“无片段跳过 Agent”直接推广为普通聊天默认流程；讨论后用户同意普通对话由 Agent 按需调用检索工具，当前 answer_with_rag 保留为明确限定知识库的严格路径。严格路径的生成前无资料兜底、生成后无效角标标注和来源映射已离线验证；尚未接入路由，不能记为完整 RAG 验收。
+
+普通 Agent 检索接线计划：保留经 MCP 执行的字面关键词 search_notes；新增语义工具 search_knowledge，直接复用当前 Python retrieve/build_rag_context。模型只给 query，应用指定专用索引目录、TopK 和每次结果字符预算，避免模型指定文件路径。Agent 将 content 作为对应 tool_call_id 的 tool 消息回传，同时登记同次返回的 sources；本轮多次调用累积实际交付片段，最终引用检查以该白名单为准。空结果是正常工具结果，允许模型调整查询或解释资料缺失，不在该工具内直接结束整轮或生成固定拒答；服务异常沿现有 AgentToolError 保留已完成调用。最终来源响应与标注策略继续复用已确认规则。各次工具预算并非整轮总上下文预算，不扩大已有保证。
+
+当前工具边界单元：Codex 已添加 tools.py 的 SearchKnowledgeArguments 与 SEARCH_KNOWLEDGE_TOOL（尚未加入 AVAILABLE_TOOLS，等待 Agent 接线），新增 rag_tools.py 的 execute_knowledge_search(tool_call, persist_directory, *, top_k=3, max_chars=4000) -> RagContext 占位及 tests/test_rag_tools.py。测试验证查询去空白、应用参数传递、预算选择后的 content/sources 对应、模型不能夹带索引路径、空结果与真实故障分开。实测目标2 failed、默认全量2 failed / 101 passed，均因占位 NotImplementedError，无收集错误，diff检查通过；下一步用户参考实现参数校验、检索和预算选择，验证后再集中接 Agent 循环。未调用真实模型、未提交或推送，原无关内容保留。
+
+2026-11-02 工具补写检查与注释纠偏：用户已参考补写适配函数，目标2 failed，均因把工具名写成 search_konwledge 导致合法请求在名称检查时被 ValueError 拒绝；错误文案也有同一拼写，待用户统一改为 knowledge 后再验。该失败替代此前占位失败，不记作 GREEN；最近全量全绿仍是新增工具测试前的101 passed。用户要求每次补写讲清核心链路及 Codex 新增部分，已同步导师约定。Codex 只修正文档与注释：RagContext 表达预算内准备传递的资料，不冒充已发模型；工具声明不等于执行注册；源码不写“尚待接线”等进度；answer_with_rag 明确为严格知识库路径；引用检查只做本轮 ID 映射、保留正文重复角标，不做语义核验。未更改用户核心实现或既有模型提示词，diff检查通过，没有真实模型调用或提交推送。
+
+2026-11-02 工具适配 GREEN 与 Agent 接线 RED：用户修正工具名后全量103 passed，Codex 顺手统一不影响逻辑的错误文案 knowledge 拼写。适配层已验证参数、预算、空结果与故障传播；空结果交给调用方，不结束 Agent。下一单元契约为 run_agent 新增 keyword-only knowledge_directory: Path | None = None：配置目录时使用 AVAILABLE_TOOLS 的本轮副本并追加 SEARCH_KNOWLEDGE_TOOL，None 时不声明也不执行该工具，不修改全局基础列表。遇到工具请求时调用 execute_knowledge_search，content 进入现有 tool 消息并保留 call_id 关联；sources 以知识工具本轮资料列表累积，空内容换成明确的空结果工具文本，允许下一次模型判断。最终 AgentResult 新增 knowledge_sources（独立默认空列表，可重复，不表示实际引用），原始 answer/model_calls 保持原职责；外部 rag_context 的来源仍由其调用方保留。本单元不在 Agent 内提前标注最终引用，也不修改 /chat 或给所有请求强制检索。
+
+Codex 已准备上述返回字段、导入和 tests/test_agent_knowledge.py，核心签名、工具清单选择、执行分发与来源累积由用户参考实现。测试覆盖三次模型调用内两轮语义检索＋真实计算器、预算排除、来源累积、历史不改；直接回答不检索、空结果后继续；未启用或检索故障按 AgentToolError 保存已完成调用。目标5 failed、全量5 failed / 103 passed，均因缺少 knowledge_directory 参数的 TypeError，正确 RED，无收集错误，diff检查通过。fake 模型与检索隔离网络，不宣称模型实际会选择正确工具；本轮未提交推送。
+
+2026-11-02 Agent 语义工具接线 GREEN：用户参考补全 knowledge_directory 参数、每轮能力副本、语义工具执行、knowledge_sources 累积和返回。实测目标5 passed、默认全量108 passed；Codex 仅补参数尾逗号、去一处行尾空格、更新执行分支和返回值注释，业务实现保留，diff检查通过。真实执行 Agent 循环、语义工具适配/预算和计算器，只有生成接口与检索底层用 fake，验证多轮资料交付、call_id 关联、跨调用来源累积、空结果继续、直接回答不检索、禁用/检索失败保留调用；未改 history/global AVAILABLE_TOOLS。尚未启用 /chat 的语义工具或将 knowledge_sources 变成实际引用响应，未访问真实模型。此单元适合整理提交，仍需用户授权；原设置、独立练习与其他未提交笔记保留。
+
+Agent 接线独立只读复核：限定检查工具适配与循环接线，无当前契约下阻碍问题；复核了能力副本/禁用边界、调用 ID、预算内来源累积、空结果和错误原因/调用保留。复核者仅静态阅读，未运行测试或模型；目标及全量证据来自上述主流程实测。不因可选补测建议扩展当前单元，原有预算和独立 rag_context 回归继续保留。
+
+2026-11-02 共用回答收尾局部计划与 RED：将 answer_with_rag 末尾已有的正文检查、引用校验、无效标记替换和 RagAnswer 返回提取为同步 finalize_rag_answer(result: AgentResult, sources: list[DocumentChunk]) -> RagAnswer。严格路径生成后传 context.sources；普通按需工具路径由上层传 result.knowledge_sources。函数不调用检索或模型，不修改原 AgentResult/model_calls/sources，不凭空读取索引；sources 为空也允许正常无引用回答，不套用严格路径生成前的 NO_MATERIAL_ANSWER。RagAnswerError 仍保留真实调用；合法正文角标全部保留，输出来源按首次引用去重，未知 ID 标注并提示一次。Codex 已补 AgentResult 导入、函数占位、职责注释及 tests/test_rag_answer_finalization.py 两条纯函数测试；用户参考提取核心函数，并将严格路径 run_agent 之后的整段收尾替换为一次调用。实测目标2 failed，均为新占位 NotImplementedError，无收集错误，diff检查通过；未改原有严格路径行为或 /chat，不调用真实模型。后续目标/全量通过后再接 HTTP。
+
+2026-11-02 共用收尾 GREEN 与分类提交：用户在提出整理提交时已补完 finalize_rag_answer，并将严格路径末尾改为调用它；核对真实文件后执行默认全量110 passed（包含新收尾2例和原严格问答6例），diff检查通过。独立只读复核检查引用检查器、共用收尾、严格路径及对应测试，无当前契约下阻碍问题；复核者只静态阅读，测试由主流程执行。新收尾验证工具资料含重复时按正文首次引用输出来源、保留重复合法角标、标注无效引用且不改原始回答/调用；普通 Agent 未检索的正常回答原样保留，不触发严格路径兜底。没有真实模型或业务资料调用。
+
+用户提醒应先整理已完成检查点，再推进新单元，本次按依赖顺序完成本地提交：b0e57f0（语义检索工具与参数边界）、3ed2d69（Agent 按需工具接线与来源累积）、f785d8f（引用校验、严格问答及已验证的共用收尾）。学习路线与导师约定随后单独归入 docs 提交，实际哈希以 Git 历史为准；不推送。未提交 .vscode/settings.json、playground/03_class.py 和其他来源的 notes/设计复核-2026-11-02.md。本次不新增 /chat 功能，下一步先确定应用索引配置、来源响应及异常映射，再写路由接线的代表性测试，不自行提交未完成占位。
+
+- 用户指定 [liuup/claude-code-analysis](https://github.com/liuup/claude-code-analysis) 作为补充阅读。仓库自述为 2026 年 3 月公开流传源码的第三方静态分析，不能直接代表当前官方版本。本次沿其 src/tools/WebSearchTool/prompt.ts、WebSearchTool.ts 与 src/query.ts 阅读：工具说明要求来源列表，工具结果追加引用提醒；结束路径的 Stop Hook 可把 blockingErrors 加回消息后继续循环。这些证据不等于内置逐条引用真实性校验，也不证明所有插件或服务端路径都没有校验。
+- DeepSeek Harness：读取本机官方仓库快照 c36a83ff6b（2026-09-22），未拉取更新。packages/web/tool-web/src/search.ts 分别保存结构化来源、渲染引用提示；packages/core/agent-loop/src/agent.ts 的已读完成分支在无工具请求时返回 completed，未见该分支内正文引用逐条核验。不将此局部结论泛化到全部插件或最新版本。
+- Hermes Agent：核对官方仓库快照 e8639fd4312e5102d6f10c76b56406cb01c19092 的 skills/research/grounded-citations/SKILL.md 及 scripts/sources.py。技能采用来源登记表、程序生成来源列表和 verify 检查；verify_draft 返回退出码、错误与警告，技能要求修正后重验；可选 evidence 检查附带原文摘录，但文本匹配不等于语义支持。它是本次定位到的专门技能流程，不能表述为全部普通对话强制经过该脚本。
+
+本轮仅静态阅读，没有运行上述项目、安装技能、调用真实模型或修改 agent-lab 核心代码；不改变学习阶段顺序与既有测试完成数。
+
 ## 13. 阶段 11：以 Java + Python 后端接入心屿
 
 2026-10-28 用户明确：保留 Python 实现 Agent 与 AI 能力，心屿采用 Java + Python 后端。这里的“迁移”指将实验能力整理为可集成的服务，不是改写为 Java；此前“Java 侧迁移”的表述据此修正。该决定不代表服务接入已实现，也不预先锁定框架、部署方式或数据库方案。
@@ -973,7 +1024,7 @@ agent-lab 中先理解
 阶段 5、阶段 6 已完成第一轮。阶段 7 的 P0/P1 记忆最小闭环已离线收口（2026-10-29 全量 78 passed），随后文档处理与 Embedding 服务加入后，已完成部分增至 83 passed。2026-10-28 的 72 passed 是历史 P0 串联基线，保留作证据，不作为当前最新结果。已答过的模型调用、来源绑定、事务、连接归属、读取范围、合并顺序和读取失败边界不重问。
 
 ```text
-当前小主题：模型参考消息接线已 GREEN（目标2 passed、默认全量93 passed）；下一主题为回答引用的程序校验与显式 RAG 空资料兜底。
+当前小主题：Agent 按需语义工具与共用回答收尾已 GREEN（全量110 passed），已按用户要求整理功能提交；下一步设计 /chat 的应用索引配置、工具启用、来源响应与错误映射，再做接线及端到端验收。严格路径保留，不把其空资料短路规则套到普通聊天。
 ```
 
 2026-10-31 上下文与模型接线分类提交：用户明确要求先整理提交两个已完成单元，并正确概括接线为每轮生成调用附加 rag_context；已补充其作为独立参考消息每次只出现一份，空值不附加，不写进 history。提交前再次验证默认全量93 passed、diff 检查通过；仅补充 rag_context 参数说明，不改变行为。已本地提交 ba2e33f（上下文预算与来源对应）、002c43d（Agent每轮RAG参考消息注入及测试），本段路线另作 docs 提交，不推送。尚未实现的程序引用校验、空资料上层兜底与 /chat RAG 接线不纳入本次提交；编辑器设置和 playground/03_class.py 继续保留未提交。本轮没有调用真实模型。
@@ -1042,7 +1093,7 @@ AGENT_SYSTEM_PROMPT 增加条件性使用规则：RAG Context 仅作为参考资
 
 2026-10-28 选择/预算 GREEN：用户参考实现完成 build_memory_context，目标 2 passed、全量离线 69 passed，diff 检查通过。Codex 仅清理一处行尾空格；normalized_message_message 名字重复但引用一致，不影响行为。用户已解释参数合法性、Core 先进入候选列表和超限跳过；补充 is_regular 检查负责限制普通记忆条数，不是重复保证排序。参考辅助实现不记为独立设计。结果仍未进入模型请求。
 
-当前下一步：原生 Agent/LLM 的参考消息传递已完成，设计基于 RagContext.sources 校验回答引用，区分提供的资料和模型实际引用；显式 RAG 模式没有可用片段时由上层直接返回资料不足，不把 rag_context 空字符串的普通聊天默认值误当成兜底。检索/模型错误仍传播，不能伪装成未命中；不凭空设置距离阈值或强制逐字拒答。然后沿既有归属、历史和调用记录链安排 /chat 接线及 fake 模型端到端验收。默认 pytest 继续隔离模型，不自动扩展业务文档云端测试或推送。
+当前下一步：run_agent 按需语义工具分发、资料回传和共用 finalize_rag_answer 已完成并提交，继续按既有归属、历史与调用记录链设计 /chat 的索引配置、能力启用、来源响应与错误映射，再完成 fake 模型端到端验收。应用控制索引目录与是否提供能力，模型决定是否调用，不能把“启用工具”误写成“每轮强制检索”。严格 answer_with_rag 保留，不作为所有聊天必经入口；普通工具空结果允许模型继续，严格请求空资料由应用兜底，检索/模型故障不能伪装成未命中。同一来源的正文角标逐处保留、来源列表按首次引用顺序去重，无效标记明确提示，不直接整段拒答；不凭空设置距离阈值或强制逐字拒答。默认 pytest 隔离模型，不自动扩展业务文档云端测试或推送。
 
 2026-10-29 切分主题开始：用户已带读本地 API、HTTP Response、向量数量检查与余弦计算，准确说明下一片起点按 chunk_size-overlap 前进。本次探索脚本由 Codex 提供，不能记为用户独立实现；后续核心切分继续由用户参考实现，Codex 负责数据结构和测试样板。新增 app/services/rag.py 的 DocumentChunk 与 split_document 占位，字段为 source/chunk_index/start/end/text；start/end 对应原始字符串左闭右开字符位置，不先 strip 原文。切分约定为正 chunk_size、0<=overlap<chunk_size、空文本返回空列表、到达文末立即停止。新增 tests/test_rag_chunking.py，验证重叠、出处与到达文末不重复产生尾片；实测目标 1 failed，失败明确为 NotImplementedError，属于正确 RED，diff 检查通过。最近全量通过仍为此前 78 passed，本轮未重跑全量；新增占位使默认全量预计包含这一待实现失败，不记为当前全绿。下一步用户实现 split_document，再运行目标和全量回归；尚未读取实际 Markdown、生成新向量或接入生产聊天，未提交或推送。
 
