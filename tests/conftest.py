@@ -2,6 +2,8 @@
 
 默认让路由提取入口返回 skip，接线测试按场景覆盖该入口。
 不替换服务层 extract_memories，直接服务测试仍用各自的 fake HTTP 验证解析。
+默认关闭配置中的语义工具，防止运行者的索引配置改变旧测试的工具清单；
+知识库 HTTP 场景自行使用临时索引和 fake 外部接口。
 """
 
 import pytest
@@ -17,3 +19,4 @@ def isolate_chat_memory_extraction(monkeypatch):
 
     # 路由引用在接线 RED 阶段尚未导入，允许先提供测试替身。
     monkeypatch.setattr("app.main.extract_memories", skip_extraction, raising=False)
+    monkeypatch.setattr("app.main.settings.rag_index_path", None)

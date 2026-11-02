@@ -26,10 +26,23 @@ class ChatRequest(BaseModel):
     user_id: str | None = Field(default=None, min_length=1)
 
 
-# 聊天成功响应；只暴露会话标识和最终回答，不暴露内部调用记录。
+class ChatSource(BaseModel):
+    """本轮回答实际引用且 ID 合法的片段快照，不证明资料支持结论。"""
+
+    id: str
+    source: str
+    chunk_index: int
+    start: int
+    end: int
+    text: str
+
+
+# 来源来自应用保留的片段，调用元数据仍留在内部，不接受模型自行提供出处对象。
 class ChatResponse(BaseModel):
     conversation_id: str
     answer: str
+    sources: list[ChatSource] = Field(default_factory=list)
+    invalid_citation_ids: list[str] = Field(default_factory=list)
 
 
 class MemoryCandidate(BaseModel):

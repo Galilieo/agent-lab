@@ -8,6 +8,7 @@ import logging
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 
@@ -30,6 +31,7 @@ from app.database import (
 from app.schemas import (
     ChatRequest,
     ChatResponse,
+    ChatSource,
     HealthResponse,
     MemoryQueryRequest,
     MemoryQueryResponse,
@@ -58,6 +60,7 @@ from app.services.memory import (
     merge_memories,
     build_memory_context,
 )
+from app.services.rag_answer import RagAnswerError, finalize_rag_answer
 
 logger = logging.getLogger(__name__)
 
@@ -420,15 +423,37 @@ async def chat(request: ChatRequest) -> ChatResponse:
     # 事务一已提交并关闭连接，再独立读取记忆、调用模型。
     try:
         memory_context = load_chat_memory_context(request)
-        result = await run_agent(
+
+        agent_options = {}
+        if settings.rag_index_path is not None:
+            agent_options["knowledge_directory"] = Path(
+                settings.rag_index_path
+            )
+        agent_result = await run_agent(
             message=request.message,
             history=history,
             memory_context=memory_context,
+            **agent_options,
+        )
+
+        result = finalize_rag_answer(
+            agent_result,
+            agent_result.knowledge_sources,
         )
     except ConversationOwnershipError as exc:
         raise HTTPException(
             status_code=409,
             detail="Conversation ownership does not match.",
+        ) from exc
+    except RagAnswerError as exc:
+        persist_completed_model_calls(
+            conversation_id=request.conversation_id,
+            request_message_id=request_message_id,
+            model_calls=exc.completed_model_calls,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
         ) from exc
     except AgentRunError as exc:
         # 后续模型失败携带此前成功调用；按原始模型错误选择 HTTP 状态。
@@ -561,4 +586,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(
         conversation_id=request.conversation_id,
         answer=final_answer,
+        sources=[
+            ChatSource(
+                id=f"{chunk.source}::{chunk.chunk_index}",
+                source=chunk.source,
+                chunk_index=chunk.chunk_index,
+                start=chunk.start,
+                end=chunk.end,
+                text=chunk.text,
+            )
+            for chunk in result.sources
+        ],
+        invalid_citation_ids=result.invalid_ids,
     )

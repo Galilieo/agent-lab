@@ -190,11 +190,15 @@ def test_chat_persists_assistant_message_after_successful_llm_call(
     assert first_response.json() == {
         "conversation_id": "conversation-c",
         "answer": "模拟模型回答",
+        "sources": [],
+        "invalid_citation_ids": [],
     }
     assert second_response.status_code == 200
     assert second_response.json() == {
         "conversation_id": "conversation-c",
         "answer": "模拟模型回答",
+        "sources": [],
+        "invalid_citation_ids": [],
     }
     assert observed_calls == [
         {

@@ -109,6 +109,8 @@ def test_chat_saves_memory_and_updates_original_answer(chat_memory_scenario):
     assert response.json() == {
         "conversation_id": "conversation-A",
         "answer": expected_answer,
+        "sources": [],
+        "invalid_citation_ids": [],
     }
     source_id = state["messages"][0][0]
     assistant_id = state["messages"][1][0]
@@ -162,6 +164,8 @@ def test_chat_isolates_memory_failure(
     assert response.json() == {
         "conversation_id": "conversation-A",
         "answer": expected_answer,
+        "sources": [],
+        "invalid_citation_ids": [],
     }
     # 检查主 model_call 仍只有一条 succeeded，且仍关联原助手消息。
     source_id = state["messages"][0][0]

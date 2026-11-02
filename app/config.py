@@ -17,6 +17,8 @@ class AppConfig(BaseModel):
     openai_api_key: str
     openai_base_url: str
     openai_model: str
+    # 由应用指定知识库索引；None 表示不向 Agent 提供语义检索能力。
+    rag_index_path: str | None = None
 
 
 def load_config() -> AppConfig:
@@ -31,6 +33,7 @@ def load_config() -> AppConfig:
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         openai_base_url=os.getenv("OPENAI_BASE_URL", ""),
         openai_model=os.getenv("OPENAI_MODEL", ""),
+        rag_index_path=os.getenv("RAG_INDEX_PATH") or None,
     )
 
 
