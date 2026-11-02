@@ -8,7 +8,11 @@ from app.services.rag import DocumentChunk, RetrievedChunk
 
 @dataclass(frozen=True)
 class RagContext:
-    """sources 为实际提供给模型的片段，不表示模型已经引用。"""
+    """content 为准备交给模型的参考，sources 为其中实际装入预算的片段。
+
+    构造对象不代表已发送模型；调用方负责传递，并保留 sources 作引用映射。
+    sources 不含因预算跳过的片段，也不表示模型已经引用其中全部资料。
+    """
 
     content: str
     sources: list[DocumentChunk]
