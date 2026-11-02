@@ -1,10 +1,11 @@
-"""显式运行的真实 RAG 联调探针；合成资料，不使用业务文档。
+"""2026-10-30 的历史 RAG 组件联调探针；合成资料，不使用业务文档。
 
 项目根目录运行：
 uv run --offline --no-sync --env-file .env python -m playground.rag_live_probe
 
 使用本地 Ollama、临时 Chroma 和现有聊天 API；最多两次聊天请求。
-Chroma 在本探针中直接调用，正式 vector_store.py 的学习占位仍待实现。
+本探针直接调用 Chroma，保留当时组件验证方式；不代表正式模块当前仍是占位。
+正式 /chat 路径与固定问题验收使用独立的 rag_acceptance_probe.py。
 默认 pytest 不会运行本脚本；结果仅证明本次合成场景联调。
 """
 

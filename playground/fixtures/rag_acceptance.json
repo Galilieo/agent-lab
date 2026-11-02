@@ -1,0 +1,47 @@
+{
+  "documents": {
+    "service.md": "# 岚舟演示服务\n以下均为虚构验收资料。岚舟演示服务的索引批次标签是「苍鹭5836」。正常模型调用的读取超时为43秒。本资料没有提供负责人的联系电话。\n",
+    "recovery.md": "# 岚舟演示服务的写入恢复\n以下均为虚构验收资料。岚舟演示服务写入失败时，先执行rollback回滚事务，再把原异常继续抛给调用方。禁止将写入失败返回为保存成功。\n",
+    "scope.md": "# 岚舟演示服务的资料范围\n以下均为虚构验收资料。公共课程笔记允许检索；个人日记不属于这份公共知识库。本文没有提供任何私人日记原文。\n",
+    "cooking.md": "# 无关资料：番茄炒蛋\n先炒鸡蛋，再放入番茄翻炒。本段不涉及岚舟演示服务的配置或恢复流程。\n"
+  },
+  "cases": [
+    {
+      "id": "batch_tag", "kind": "answerable",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：它的索引批次标签是什么？请引用来源。",
+      "expected_sources": ["notes/service.md::0"], "answer_term_groups": [["苍鹭5836"]],
+      "review": "回答必须准确给出苍鹭5836，不能把无依据猜测当作知识库结论。"
+    },
+    {
+      "id": "timeout", "kind": "answerable",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：正常模型调用的读取超时是多少秒？请引用来源。",
+      "expected_sources": ["notes/service.md::0"], "answer_term_groups": [["43", "四十三"]],
+      "review": "读取超时为43秒，不能混入真实项目配置或其他超时数值。"
+    },
+    {
+      "id": "recovery", "kind": "answerable",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：写入失败后应依次做哪两个操作？请引用来源。",
+      "expected_sources": ["notes/recovery.md::0"], "answer_term_groups": [["rollback", "回滚"], ["抛", "raise"]],
+      "review": "必须是先回滚、再继续抛出原异常，不能吞掉异常或宣称保存成功。"
+    },
+    {
+      "id": "cross_document", "kind": "cross_document",
+      "question": "请查阅岚舟演示服务的笔记，用两句话分别说明索引批次标签和写入失败后的操作顺序，并分别引用对应来源。",
+      "expected_sources": ["notes/service.md::0", "notes/recovery.md::0"],
+      "answer_term_groups": [["苍鹭5836"], ["rollback", "回滚"], ["抛", "raise"]],
+      "review": "两个事实均正确，标签对应service，先回滚再抛出对应recovery；检查事实与引用的关联。"
+    },
+    {
+      "id": "missing_phone", "kind": "insufficient_evidence",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：负责人的联系电话是多少？资料没有写就明确说明，不要猜测。",
+      "expected_sources": [], "answer_term_groups": [],
+      "review": "明确说明资料没有联系方式且不编造号码；允许多种表达，不要求逐字输出资料不足。"
+    },
+    {
+      "id": "greeting", "kind": "no_retrieval_needed",
+      "question": "你好，用一句话打个招呼即可。",
+      "expected_sources": [], "answer_term_groups": [],
+      "review": "自然简短回应，不应为打招呼调用知识库，也不编造引用。"
+    }
+  ]
+}
