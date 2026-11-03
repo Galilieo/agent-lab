@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-03；当前默认离线全量124 passed，模型回调计时属性与配置拼写已修正，成功及中途超时记录测试通过；最近全绿124 passed（阶段7收口时为116 passed）。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-03；普通模型契约适配已修正并通过目标5 passed，默认全量135 passed；框架检索、严格RAG和普通文本结果/异常适配均已限定离线GREEN，阶段8继续工具/Agent契约对齐。阶段7收口时为116 passed。以下真实模型验收属于此前原生链路，本次框架验证仅使用离线替身。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -68,7 +68,7 @@ Python 工程
 | 5. SQLite 与多轮对话 | **已完成第一轮** | 会话可持久化、恢复和隔离 |
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
 | 7. 轻量记忆与原生最小 RAG | **已完成第一轮最小闭环（有限验收）** | 离线116 passed；真实合成固定题12次请求通过，事实/引用/不足说明及按需检索符合预期；真实记忆效果等边界仍保留 |
-| 8. LangChain | 进行中 | 已安装框架与 DeepSeek 集成，开始消息与单次调用对照；调用、工具及 RAG 重构仍待完成 |
+| 8. LangChain | 进行中 | 消息模板、计算器Agent、回调、检索/严格RAG及普通文本契约适配已限定离线验证；工具/Agent契约、对照验收与流式入口待完成 |
 | 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
 | 11. 接入心屿 | 待开始 | 保留 Python AI 服务，与 Java 业务后端集成 |
@@ -877,8 +877,8 @@ LangChain 不作为入门起点，而用于重构已经完成的原生能力。
 | 1. Chat Model与消息抽象 | 单次请求、AIMessage、fake HTTP与原生机制对照 | 已完成本单元离线验证及测试带读 |
 | 2. Prompt template与Runnable组合 | 变量填充、历史消息占位、prompt与model链式调用 | 已完成本单元离线验证与带读 |
 | 3. Tool与Agent循环 | 工具声明、执行回传、停止与失败边界 | 计算器适配与预建循环已限定离线验证，完整业务契约仍待对齐 |
-| 4. Retriever与RAG链 | 复用原生片段/索引，比较框架检索及回答链 | 待开始 |
-| 5. 项目契约与原生对照验收 | LLMResult/错误适配、调用记录及同题/同契约验证 | 待开始；接线前按需要随前面主题处理 |
+| 4. Retriever与RAG链 | 复用原生片段/索引，比较框架检索及回答链 | 异步检索及严格回答链已离线GREEN，普通Agent语义工具尚未适配 |
+| 5. 项目契约与原生对照验收 | LLMResult/错误适配、调用记录及同题/同契约验证 | 普通文本结果/异常适配已离线GREEN，继续工具/Agent契约及中途失败记录 |
 | 6. 回调、日志与流式接口 | 框架观测和流式调用入口；完整SSE仍归阶段10 | 因调用记录问题先穿插模型回调，其他内容待开始 |
 
 项目成果：
@@ -1044,7 +1044,44 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
-### 当前本地检查点（2026-11-03）
+### 最新检查点与新会话接续（2026-11-03）
+
+- 当前在main，用户明确要求复验并整理提交。已核对工作区、HEAD 9c046f9及origin=https://github.com/Galilieo/agent-lab.git；按近期feat/docs中文提交格式分批保存：69af168（异步检索与来源转换）、bf2b3f3（严格RAG与引用校验）、ead968d（普通调用结果与异常）；README、notes/README及本路线随后作docs提交，其哈希以Git历史为准。不推送；编辑器设置、playground/03_class.py和notes/设计复核-2026-11-02.md不纳入。
+- 最新实测：用户已修正两处response拼写和条件末尾逗号，适配目标5 passed（1.12秒），全量135 passed（1.75秒），diff检查通过。超时/连接/429/格式错误四种失败转换与正常LLMResult均通过，成功状态实际来自HTTP钩子。与前检查点124条相比，本批新增检索2例、严格RAG4例、普通适配5例；人工向量/fake聊天和Embedding隔离真实模型，没有新增云端或真实Ollama验收。
+- 限定独立只读复核：检查三份新增服务及三份对应测试，并对照原生检索/预算/引用/LLM契约与本地SDK源码，未发现当前明确契约下有意义的bug。复核者未改文件、运行测试、联网或读取真实.env；运行证据来自主流程。README与notes/README本地链接核验通过，不扩成生产就绪结论。
+- 普通适配真实调用顺序：外层创建状态观察及计时→帮助函数创建客户端并注册响应钩子→模板/ChatDeepSeek/SDK→返回AIMessage或抛异常→外层组装LLMResult或转换项目异常。异常由raise ... from exc保留原因；适配层不决定本服务HTTP状态，现有路由未切换到框架。本次不新增核心实现或改变用户逻辑，参考补写不记为独立设计。
+- 下一步仍在主题5：把工具声明、原始工具参数与结果/调用记录接到项目契约，明确Agent正常结束及中途失败的记录保留，再做同场景原生对照。首先带读原生LLMToolCall与框架tool_calls/additional_kwargs的差异，讨论适配边界后给局部参考和用户任务；不直接替换/chat或一次接管整个Agent。普通文本入口尚不接收tools/additional_messages/memory_context/rag_context，不应当作原生generate_reply的完整替身。主题6已完成回调，流式接口待开始；完整HTTP SSE仍在阶段10。
+- 继续沿用导师提示词：用户核心参考补写，Codex准备样板和回归；所有新增helper/fixture/fake/断言均须解释。测试GREEN不代表全部理解或真实模型效果。以下为学习过程记录，其中旧RED、旧“下一步”和未提交表述属于当时状态，当前接续以本小节为准。
+
+### 正在学习：普通模型调用的项目契约适配（2026-11-03）
+
+- 最新补写核验：目标1 failed / 4 passed（1.23秒），正常分支因两处resopnse拼写产生NameError；同段条件末尾另有逗号，会把布尔表达式变成非空元组，即使表达式为False也被if判真。两种问题一次指出，留给用户修正；四种失败映射已离线通过，不能据此宣称正常返回已通过。本轮未重跑全量或改核心，diff检查通过，无真实模型调用。
+- 用户正确说明SDK异常须转换为项目自定义异常，随后明确要求继续。局部范围为新增langchain_adapter.generate_langchain_result(message, history=None, *, system_prompt=...) -> LLMResult，先仅支持普通文本，不声明工具或替换/chat；原AIMessage教学入口保持不变。完整工具协议、AgentResult/部分失败记录、memory/rag参数及路由接线留在后续同主题，不把这个局部入口称为完整替换。
+- 设计与执行安排：复用build_chat_prompt与真实ChatDeepSeek，Codex准备_HttpObservation及_invoke_observed_chat；每次独立HTTP客户端以异步response hook记录实际状态，禁止从AIMessage推断或将成功状态硬编码为200，关闭缓存及SDK重试。用户参考补写外层计时、结果/usage映射与异常转换；耗时包含客户端创建/关闭和框架处理，非纯网络耗时。超时先于连接异常判断；HTTP状态异常保留实际status_code；响应解析错误只有观察到HTTP响应时才转换，无响应的本地配置错误继续抛出。空字符串沿原单次调用契约保留，非字符串或意外工具响应拒绝，不吞掉工具请求。
+- 测试计划与RED：新增tests/test_langchain_adapter.py，真实运行模板/SDK/HTTP响应钩子，只有传输为MockTransport。正常响应故意用201，检查实际状态、消息、Token、耗时与原history；参数化超时/连接/429/choices为null四种失败，检查项目异常、实际状态、cause及仅一次请求。目标5 failed（1.18秒），全量5 failed / 130 passed（2.04秒），均指向用户核心入口NotImplementedError，diff检查通过。另直接离线探索已写帮助函数，五种场景均只请求一次：AIMessage/201、OpenAITimeoutError/None、OpenAIConnectionError/None、OpenAIRateLimitError/429、TypeError/200；这是帮助函数探索，不是核心适配GREEN。无真实模型调用，不提交或推送。
+- 当前下一步：完整讲解新增HTTP钩子、客户端别名替换和参数化测试，再由用户参考补写generate_langchain_result，检查实际文件并跑目标/全量；不代写核心，不把测试RED写成旧130条回归失败。
+
+### 正在学习：框架严格RAG回答链（2026-11-03）
+
+- 最新GREEN：用户已修正answer关键字、isinstance(response.content, str)及[引用未找到]标记。重新实测目标4 passed（1.20秒）、全量130 passed（1.71秒），diff检查通过；没有修改用户核心实现或调用真实模型。正常分支实际只交付预算内A片段，B引用被标注，原始AIMessage、usage及成功回调保留；空索引/零预算跳过回答HTTP，空白正文抛异常并保留真实响应。引用中括号是项目文本协议，合法性由本轮实际交付片段白名单判断，不由括号外形或磁盘存在性决定。测试GREEN不记为独立设计或全部掌握。
+- 当前下一步：进入主题5的项目契约与原生对照，先比较AIMessage/消息轨迹与原生LLMResult/AgentResult，解释缺少的调用元数据和异常边界，再确定局部适配位置；不凭模型正文推断上游HTTP状态，不自动替换/chat。检索与严格回答单元适合整理为检查点，但仍需用户明确要求才提交；编辑器设置、独立练习与其他笔记保留。
+- 前次补写检查（历史失败）：用户已写answer_with_langchain_rag。目标4 failed、全量4 failed / 126 passed；正常/空白响应分支由isinstance(response,context, str)的三个参数TypeError阻断，两个空资料场景由asnwer关键字拼错阻断；另从源码发现无效引用标记写成{引用未找到}而非[引用未找到]。三处集中定位，留给用户修正；retriver局部名虽拼写不同但引用一致，不是功能错误，未额外要求改名。该次尚未GREEN，通过基线为126 passed。
+- 用户追问asyncio.run(run(...))：外层是Python标准库在同步pytest函数中启动/等待协程的入口，内层是offline_rag fixture中自定义的async辅助函数。可拆为scenario=run(seeded_index, " \n ", max_chars=250)，随后asyncio.run(scenario)；调用内层async函数先产生协程对象，外层驱动它运行，不是将RAG执行两次。该第二参数是模拟模型回答文本，真正用户问题由辅助函数传何时释放连接；预设空白回答用于检查无有效正文的异常。用户上一条引用替换追问仍一并解释：逐处替换无效角标并追加一次总体提示，不篡改原始AIMessage。
+- 用户认可“只按实际交付片段检查引用”的边界。曾将检索理解为LLM自行读取超额片段，已区分普通聊天模型提出检索请求与严格路径应用先检索，以及TopK命中数量与字符预算筛选；应用检索和预算后仅交付入选片段，不依据模型是否“知道”某ID推断其生成原因。
+- 本轮局部契约：answer_with_langchain_rag(message, persist_directory, history=None, *, top_k=3, max_chars=4000, callbacks=None) -> LangChainRagAnswer，复用已实现Runnable检索、原生build_rag_context预算、AGENT_SYSTEM_PROMPT和check_citations。检索/预算后无片段返回原NO_MATERIAL_ANSWER且response=None，不调用回答模型；有资料时使用RAG_PROMPT | ChatDeepSeek，仅传预算内上下文，保留history原值。非空字符串回答按原协议保留合法重复角标、逐处标注无效引用并追加一次提示，来源只返回实际合法引用且去重的片段。原始AIMessage单独保存于response，不被展示文本覆盖；空白或非字符串正文抛LangChainRagAnswerError并携带原响应，其他异常传播。原生/chat、记忆、SQLite和LLMResult适配不改，当前不接工具Agent。
+- 分工：Codex新增langchain_rag.py的RAG_PROMPT、结果数据类、携带响应的异常类、documents_to_context机械转换帮助函数及核心函数占位；用户参考实现核心编排。documents_to_context仅接收本项目检索适配器产生且有完整metadata的Document，将其转回RetrievedChunk以复用原有整片预算，不复制预算算法；后续可评估更统一的领域边界，本轮不改原生结构。
+- 测试与RED：新增tests/test_langchain_rag.py，真实临时Chroma/框架检索/预算/模板/SDK/引用检查，只fake问题Embedding与聊天HTTP。seeded_index准备短片段A和500字符片段B，max_chars=250只交付A；预设回答同时引用A/B，验证B无效、重复合法角标保留、原始AIMessage及Token/回调不丢、history不改。另验证空索引和零预算都跳过回答HTTP，以及空白正文报告异常仍保留响应；3个测试函数、4个场景。目标4 failed，全量4 failed / 126 passed（1.76秒），均为核心入口NotImplementedError，无收集错误，diff检查通过。本轮新增内容含fixture/fake、参数化、数据类及帮助函数必须完整带读。下一步用户补写核心后核验目标及全量；新检索与回答单元均未提交，无真实模型调用。
+
+### 正在学习：异步检索适配（2026-11-03）
+
+- 最新验证：用户已参考补齐retrieve_documents和build_notes_retriever，目标2 passed（0.77秒），本轮完整离线回归126 passed，diff检查通过。原生retrieve与真实临时Chroma配合fake问题嵌入，验证来源/原文位置/距离及排序保留、空索引跳过嵌入、故障传播；未访问真实模型。用户已说明ainvoke为框架统一方法、具体行为取决于实现，补充仅Runnable类组件通常提供该接口，Document等数据类型不提供。已解释RunnableLambda类与retriever变量名、传入search函数后由ainvoke调用的关系，不能将Runnable包装本身当作检索算法。
+- 当前下一步：严格知识库回答的框架链。先明确Document→预算内RagContext→Prompt→Chat Model→引用检查的数据流，继续复用build_rag_context及既有来源ID/引用规则；检索TopK与实际交付来源不能混为一谈。空索引或预算后无片段仍在生成前短路，资料存在但不足以回答由模型说明。先围绕预算排除片段是否可被引用作一次行为预测，再给完整局部任务/参考、准备RED与用户补写；本轮未新增回答链或自动提交检索单元，不重做原生RAG、不替换/chat。
+- 前一检查点四批提交为444ec2c、313f8bf、d44061a、9c046f9；新单元未提交或推送。用户已正确预测检索只返回资料，仍需组织参考上下文再交给聊天模型；补充检索会调用问题Embedding，但不生成聊天回答。本轮复用原生retrieve、BGE-M3/Chroma索引与来源ID，不重做阶段7，不直接替换/chat或知识库工具。
+- 局部设计：新增app/services/langchain_retrieval.py的retrieve_documents(question, persist_directory, *, top_k=3) -> list[Document]，将原生RetrievedChunk转换为Document，正文保存在page_content，ID沿source::chunk_index，metadata保留source/chunk_index/start/end/distance；不strip、重排或把距离当置信概率。build_notes_retriever(persist_directory, *, top_k=3) -> RunnableLambda通过内部异步search绑定应用目录/TopK，只接收问题字符串，ainvoke时执行检索。选择Runnable适配原有async函数，不继承BaseRetriever、不承诺同步invoke或专属retriever回调事件，后续再组合预算/Prompt/模型/引用收尾。
+- 分工与测试：Codex准备导入、签名、占位及tests/test_langchain_retrieval.py，用户参考补写两个核心函数。正常测试使用真实临时Chroma、人工向量及fake问题嵌入，验证Document原文含CRLF、ID/字符位置/距离及排序、只嵌入问题一次、索引条数不增加；第二条测试验证空索引跳过嵌入返回[]，有片段时Embedding故障继续抛出。输入向量人工指定，不证明语义检索质量；没有真实Ollama或聊天API调用。
+- 正确RED：目标2 failed、默认全量2 failed / 124 passed（2.01秒），均为build_notes_retriever占位NotImplementedError，无收集错误，diff检查通过。最近全绿仍124 passed。当前下一步由用户参考补写适配与Runnable构建，再检查实际文件、目标和全量GREEN；本轮必须完整解释Document、RunnableLambda、内部函数捕获参数及两条测试的数据准备/真实执行/断言，不仅报目标或数量。
+
+### 前一批本地检查点：单次调用、工具循环与回调（2026-11-03）
 
 - 用户要求参考近期风格整理本地提交。本轮已分批保存 `444ec2c`（LangChain依赖、单次模型调用与消息模板）、`313f8bf`（计算器工具适配与参数校验）、`d44061a`（Agent工具循环与模型回调记录）。README、notes/README、导师提示词和本路线随最后一批文档提交同步，不推送；文档提交哈希以Git历史为准。
 - 代码与测试：四个 `app/services/langchain_*.py` 和四个对应测试文件，共新增8例；整理后重新实测全量 `124 passed`（1.88秒），diff检查通过。只清理未使用导入、导入顺序和一处空格，未改用户的计算、模板、Agent或回调核心逻辑。依赖锁定主包1.4.7、core 1.7.2、DeepSeek集成1.1.1，新增23个依赖包，原有依赖版本未变。
