@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度（2026-11-02）：阶段 5～7 已完成第一轮最小闭环，当前离线全量为 `116 passed`。轻量记忆已接通按需提取、分层选择、注入与管理；原生 RAG 已接通 Chroma、按需语义工具和引用来源响应，并通过小型合成题的真实模型验收。下一步进入 LangChain。真实记忆效果、知识权限及部署验证等边界仍保留；正式进度与新会话接续位置见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
+> 当前进度（2026-11-03）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 进行中，当前离线全量为 `124 passed`。已完成框架单次调用、消息模板、计算器适配、预建 Agent 循环及模型回调记录的独立离线验证，`/chat` 仍使用原生实现。下一主题为 Retriever 与 RAG 链；完整结果/异常/调用持久化适配仍待完成。真实记忆效果、知识权限及部署验证等边界仍保留；正式进度与新会话接续位置见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
 
 ## 为什么创建这个仓库
 
@@ -23,8 +23,9 @@
 - HTTPX 与 MCP SDK
 - Ollama / BGE-M3（本地 Embedding）
 - Chroma（本地向量存储）
+- LangChain / langchain-deepseek（独立机制对照）
 
-当前保留原生 Agent、记忆与 RAG 实现；LangChain、LangGraph 和 SSE 尚未开始。尚未接入登录认证，不将学习用 `user_id` 当作可信身份。
+当前保留原生 Agent、记忆与 RAG 实现；LangChain 已开始机制对照，LangGraph 专题与 SSE 待开始。LangGraph 随 LangChain 作为依赖安装，不等于已完成其学习阶段。尚未接入登录认证，不将学习用 `user_id` 当作可信身份。
 
 ## 项目结构
 
@@ -42,6 +43,10 @@ agent-lab/
 │       ├── __init__.py
 │       ├── agent.py
 │       ├── llm.py
+│       ├── langchain_llm.py
+│       ├── langchain_tools.py
+│       ├── langchain_agent.py
+│       ├── langchain_callbacks.py
 │       ├── mcp_tools.py
 │       ├── memory.py
 │       ├── embedding.py
@@ -71,6 +76,10 @@ agent-lab/
 │   ├── test_conversation_ownership.py
 │   ├── test_database.py
 │   ├── test_health.py
+│   ├── test_langchain_llm.py
+│   ├── test_langchain_prompts.py
+│   ├── test_langchain_tools.py
+│   ├── test_langchain_agent.py
 │   ├── test_mcp.py
 │   ├── test_memory.py
 │   ├── test_memory_extraction.py
@@ -106,6 +115,10 @@ agent-lab/
 | [app/config.py](app/config.py) | 从进程环境读取应用和模型配置，不直接解析 .env |
 | [app/services/agent.py](app/services/agent.py) | 多轮模型与工具循环、调用预算和中途失败边界 |
 | [app/services/llm.py](app/services/llm.py) | 单次模型 HTTP 请求、响应解析和结构化调用元数据 |
+| [app/services/langchain_llm.py](app/services/langchain_llm.py) | 独立的 ChatDeepSeek 调用、消息模板与 Runnable 组合 |
+| [app/services/langchain_tools.py](app/services/langchain_tools.py) | 将原生计算器包装为框架工具，复用参数校验和计算逻辑 |
+| [app/services/langchain_agent.py](app/services/langchain_agent.py) | 独立的框架工具循环、三次模型限额与消息轨迹返回 |
+| [app/services/langchain_callbacks.py](app/services/langchain_callbacks.py) | 回调采集成功/失败模型步骤的耗时、可用 Token 与异常类型 |
 | [app/tools.py](app/tools.py) | 工具声明、参数校验与本地工具执行 |
 | [app/services/mcp_tools.py](app/services/mcp_tools.py) | 将 Agent 的笔记工具请求接到 MCP Client |
 | [app/mcp_server.py](app/mcp_server.py) | 提供笔记 Tool 和学习路线 Resource，执行真实文件读取 |
@@ -158,7 +171,9 @@ curl -X POST http://127.0.0.1:8000/chat \
 uv run pytest
 ```
 
-2026-11-02 实际离线全量结果为 `116 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+2026-11-03 实际离线全量结果为 `124 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+
+LangChain 对照测试为 `tests/test_langchain_*.py`，只模拟外部模型 HTTP，真实运行模板、SDK、工具、Agent 与回调。回调计时覆盖模型步骤，不等同于纯网络耗时；当前未提供原生 `LLMResult` 的完整字段/持久化适配。框架模型限额在下一次模型请求前检查，最后一次工具可能已执行，与原生执行前预算保护不同；此处仅验证无外部副作用的计算器。
 
 固定合成题的真实模型验收需显式运行，会请求本机 Ollama 和已配置聊天 API：
 
@@ -206,7 +221,10 @@ uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_p
 - [x] `/chat` 按配置启用语义工具、Agent 按需调用和来源累积
 - [x] 引用 ID 白名单检查、无效引用标注及实际引用来源响应
 - [x] 固定合成题的真实模型对照与限定范围复验
-- [ ] LangChain、LangGraph、SSE 与心屿 Java + Python 接入
+- [x] LangChain 单次模型调用、模板与 Runnable 的独立离线对照
+- [x] 框架计算器、Agent 循环及成功/超时模型回调记录的独立离线验证
+- [ ] LangChain Retriever/RAG 链与完整业务契约适配
+- [ ] LangGraph、SSE 与心屿 Java + Python 接入
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
 
