@@ -1,0 +1,345 @@
+{
+  "checked_at": "2026-11-04T03:45:38.291711+00:00",
+  "status": "reviewed_pass_synthetic_scope",
+  "result_path": "/Users/jiangqiuyu/pre/agent-lab/agent-lab/playground/results/langchain_live_acceptance_2026-11-04.json",
+  "git_revision": "3f1804de0837f9daa163e5805a3009e1d2632329",
+  "source_sha256": {
+    "app/services/llm.py": "e252777917004d87892f51b196d9dbd41df5d00a6e4d6f59e989f08475846354",
+    "app/services/agent.py": "8a85ee718db156c75ee6b2046055b7b6ddc370dca89a7ae95cace05b536da313",
+    "app/services/langchain_adapter.py": "66711828dabe0d5b56cbc8add3f0d87f0509a4f14f13bb9901061bda8cf00523",
+    "app/services/langchain_agent.py": "091c54dc189ed1c5b11d686868c659180336f444cea0d2986a45f7b889defa55",
+    "playground/langchain_live_acceptance.py": "21188ec24e570d4628ccd45ca0a31852f965ff17fb36a9f2158540a5372206ff"
+  },
+  "versions": {
+    "langchain": "1.4.7",
+    "langchain-core": "1.7.2",
+    "langchain-deepseek": "1.1.1"
+  },
+  "scope": "Synthetic data; real configured model; native Agent + two model backends, plus one prebuilt Agent case. Shared prebuilt RAG context only, no retrieval/embedding/database/HTTP-route/deployment validation. No real notes or MCP access.",
+  "max_model_calls": 27,
+  "model_calls_attempted": 12,
+  "cases": [
+    {
+      "backend": "native",
+      "case_id": "history",
+      "question": "请只回答我之前提供的本次临时验收代号。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1646.7726250120904,
+          "total_tokens": 563,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "正确复述只在合成history中出现的青榆7314；不代表长期记忆持久化。"
+      },
+      "answer": "青榆7314",
+      "source_ids": [],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "history_code_recalled": true
+      }
+    },
+    {
+      "backend": "native",
+      "case_id": "calculator",
+      "question": "请务必调用calculator计算23乘以19，然后简短回答结果。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 2028.98787498998,
+          "total_tokens": 581,
+          "outcome": "succeeded",
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "call_id": "call_00_ET_RiVIZRehJnoULanZQ9HF5234",
+              "arguments": "{\"left\": 23, \"operator\": \"*\", \"right\": 19}"
+            }
+          ]
+        },
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1383.1818329927046,
+          "total_tokens": 602,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [
+        {
+          "name": "calculator",
+          "result": "437"
+        }
+      ],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "真实工具轨迹包含calculator，工具结果437与23乘19一致，最终回答正确。"
+      },
+      "answer": "23 × 19 = 437",
+      "source_ids": [],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "calculator_executed": true,
+        "correct_answer": true
+      }
+    },
+    {
+      "backend": "native",
+      "case_id": "rag_facts",
+      "question": "请查阅岚舟演示服务的笔记，用两句话分别说明索引批次标签和写入失败后的操作顺序，并分别引用对应来源。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1569.558125003823,
+          "total_tokens": 989,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "苍鹭5836对应service；先rollback再抛出原异常对应recovery；两条事实与各自引用均符合合成原文。"
+      },
+      "answer": "索引批次标签是「苍鹭5836」[notes/service.md::0]。写入失败时，应先执行 rollback 回滚事务，再把原异常继续抛给调用方；禁止把失败返回为保存成功 [notes/recovery.md::0]。",
+      "source_ids": [
+        "notes/service.md::0",
+        "notes/recovery.md::0"
+      ],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "facts_present": true,
+        "expected_cited_sources": true
+      }
+    },
+    {
+      "backend": "native",
+      "case_id": "missing_phone",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：负责人的联系电话是多少？资料没有写就明确说明，不要猜测。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 2320.572083001025,
+          "total_tokens": 901,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "明确说明资料未提供电话，未编造号码；service原文明示未提供联系电话，引用有据。"
+      },
+      "answer": "资料没有提供负责人的联系电话。[notes/service.md::0]",
+      "source_ids": [
+        "notes/service.md::0"
+      ],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "no_phone_number": true,
+        "missing_information_signal": true
+      }
+    },
+    {
+      "backend": "langchain_adapter",
+      "case_id": "history",
+      "question": "请只回答我之前提供的本次临时验收代号。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1575.6639169994742,
+          "total_tokens": 530,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "正确复述只在合成history中出现的青榆7314；不代表长期记忆持久化。"
+      },
+      "answer": "青榆7314",
+      "source_ids": [],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "history_code_recalled": true
+      }
+    },
+    {
+      "backend": "langchain_adapter",
+      "case_id": "calculator",
+      "question": "请务必调用calculator计算23乘以19，然后简短回答结果。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1901.4607080025598,
+          "total_tokens": 594,
+          "outcome": "succeeded",
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "call_id": "call_00_8syILc5uJG0iZP9pqz3J4166",
+              "arguments": "{\"left\": 23, \"operator\": \"*\", \"right\": 19}"
+            }
+          ]
+        },
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 3200.354000000516,
+          "total_tokens": 615,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [
+        {
+          "name": "calculator",
+          "result": "437"
+        }
+      ],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "真实工具轨迹包含calculator，工具结果437与23乘19一致，最终回答正确。"
+      },
+      "answer": "23 × 19 = 437",
+      "source_ids": [],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "calculator_executed": true,
+        "correct_answer": true
+      }
+    },
+    {
+      "backend": "langchain_adapter",
+      "case_id": "rag_facts",
+      "question": "请查阅岚舟演示服务的笔记，用两句话分别说明索引批次标签和写入失败后的操作顺序，并分别引用对应来源。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 1892.589290990145,
+          "total_tokens": 992,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "苍鹭5836对应service；先rollback再抛出原异常对应recovery；两条事实与各自引用均符合合成原文。两句要求被分号合并，记为表达格式观察，不影响本次事实与引用验收。"
+      },
+      "answer": "索引批次标签是「苍鹭5836」[notes/service.md::0]；写入失败时，先执行 rollback 回滚事务，再把原异常继续抛给调用方，禁止返回保存成功 [notes/recovery.md::0]。",
+      "source_ids": [
+        "notes/service.md::0",
+        "notes/recovery.md::0"
+      ],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "facts_present": true,
+        "expected_cited_sources": true
+      }
+    },
+    {
+      "backend": "langchain_adapter",
+      "case_id": "missing_phone",
+      "question": "请查阅岚舟演示服务的笔记，简短回答：负责人的联系电话是多少？资料没有写就明确说明，不要猜测。",
+      "model_calls": [
+        {
+          "model": "deepseek-flash",
+          "upstream_status": 200,
+          "latency_ms": 2351.464124993072,
+          "total_tokens": 915,
+          "outcome": "succeeded",
+          "tool_calls": []
+        }
+      ],
+      "tool_executions": [],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "明确说明资料未提供电话，未编造号码；service原文明示未提供联系电话，引用有据。"
+      },
+      "answer": "资料未提供负责人的联系电话，不能猜测。[notes/service.md::0]",
+      "source_ids": [
+        "notes/service.md::0"
+      ],
+      "invalid_ids": [],
+      "automatic_checks": {
+        "no_invalid_citations": true,
+        "no_phone_number": true,
+        "missing_information_signal": true
+      }
+    },
+    {
+      "backend": "prebuilt_agent",
+      "case_id": "calculator",
+      "model_calls": [
+        {
+          "outcome": "succeeded",
+          "latency_ms": 6626.951208992978,
+          "total_tokens": 457,
+          "error_type": null
+        },
+        {
+          "outcome": "succeeded",
+          "latency_ms": 648.6583340010839,
+          "total_tokens": 478,
+          "error_type": null
+        }
+      ],
+      "review": {
+        "reviewer": "Codex",
+        "status": "pass",
+        "note": "真实工具轨迹包含calculator，工具结果437与23乘19一致，最终回答正确。"
+      },
+      "answer": "23 × 19 = 437",
+      "requested_tools": [
+        "calculator"
+      ],
+      "tool_results": [
+        "437"
+      ],
+      "automatic_checks": {
+        "calculator_requested": true,
+        "tool_returned_437": true,
+        "correct_answer": true
+      }
+    }
+  ],
+  "phase": "prebuilt_agent:calculator",
+  "elapsed_seconds": 27.224343624999165,
+  "total_tokens": 8217,
+  "review": {
+    "reviewer": "Codex",
+    "method": "逐条对照固定合成原文、最终回答、来源ID与真实工具轨迹；非独立人工评审。",
+    "source_hashes_match_worktree": true,
+    "limits": "单轮小样本；共享上下文非检索验收；无数据库/HTTP路由/部署验证；未真实注入超时或非法参数；不证明等价、稳定准确率或性能。"
+  }
+}
