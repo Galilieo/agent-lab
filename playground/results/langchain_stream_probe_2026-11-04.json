@@ -1,0 +1,490 @@
+{
+  "checked_at": "2026-11-04T06:57:18.174089+00:00",
+  "result_path": "/Users/jiangqiuyu/pre/agent-lab/agent-lab/playground/results/langchain_stream_probe_2026-11-04.json",
+  "status": "reviewed_pass_synthetic_scope",
+  "git_revision": "f6153cb713d0a20d57ea2c2860c4633ed67dca50",
+  "source_sha256": {
+    "app/services/langchain_streaming.py": "05e36bbeb9f53f72c304904e4494d3b8f239573967bf55f289c545295e657a45",
+    "playground/langchain_stream_probe.py": "7cf70f3fe164ab43fecbdb9785968041a737f1d615b0ae62e27483e057cfa13f"
+  },
+  "scope": "One synthetic real model stream, Python consumer only. No tools, database, application SSE endpoint or deployment validation. No induced real interruption.",
+  "question": "请分三行输出：第一行青榆，第二行流式，第三行验收完成。除此之外不要输出任何内容。",
+  "http_requests": 1,
+  "chunks": [
+    {
+      "content": "",
+      "elapsed_ms": 1346.4724170044065,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 1972.6369999989402,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2176.7072079965146,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2178.1387499941047,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2178.7652079947293,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2179.3446249939734,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2180.0357079919195,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2180.7056669931626,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2181.3661249907454,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2181.8086249986663,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2182.2779170033755,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2182.744791993173,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2183.2192080037203,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2183.9092080044793,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2422.9142499971204,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2423.3346249966417,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2423.6037919908995,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2423.845083001652,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2424.0758329979144,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2424.3095830024686,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2424.6117919974495,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2424.851417003083,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2425.0757080008043,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2425.318541994784,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2425.5457499966724,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2425.852542000939,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2426.256624996313,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2426.5494999999646,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2426.8119170010323,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2427.131874996121,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2427.3808330035536,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2427.669041993795,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2427.925249998225,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2428.259791995515,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2428.6578750034096,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2428.965375002008,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2429.2572919948725,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2429.590707994066,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2429.8739999940153,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2430.1409579929896,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2430.4034579981817,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2430.709749998641,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2431.0319579963107,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2431.3049170013983,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2431.579333002446,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2431.9059169938555,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2432.2008750023087,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2432.4793749983655,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2432.7622919954592,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2433.0729999928735,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2433.3709999918938,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2433.765499998117,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2434.075124998344,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2434.4369579921477,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2434.7930420044577,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2435.147791999043,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2435.440542001743,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2435.7279169926187,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2436.0088749963325,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2436.2974999967264,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2436.621125001693,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2437.0156670047436,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2437.3453330044867,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "青",
+      "elapsed_ms": 2534.071916990797,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "榆",
+      "elapsed_ms": 2534.9952499964274,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "\n",
+      "elapsed_ms": 2535.6482079951093,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "流",
+      "elapsed_ms": 2536.1932499945397,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "式",
+      "elapsed_ms": 2536.687999992864,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "\n",
+      "elapsed_ms": 2537.1797080006218,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "验收",
+      "elapsed_ms": 2537.9225829965435,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "完成",
+      "elapsed_ms": 2538.5841249953955,
+      "finish_reason": null,
+      "usage": null
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2539.823500002967,
+      "finish_reason": "stop",
+      "usage": {
+        "input_tokens": 63,
+        "output_tokens": 71,
+        "total_tokens": 134,
+        "input_token_details": {
+          "cache_read": 0
+        },
+        "output_token_details": {
+          "reasoning": 62
+        }
+      }
+    },
+    {
+      "content": "",
+      "elapsed_ms": 2540.56516700075,
+      "finish_reason": null,
+      "usage": null
+    }
+  ],
+  "first_text_ms": 2534.071916990797,
+  "partial_answer": "青榆\n流式\n验收完成",
+  "answer": "青榆\n流式\n验收完成",
+  "finish_reason": "stop",
+  "usage": {
+    "input_tokens": 63,
+    "output_tokens": 71,
+    "total_tokens": 134,
+    "input_token_details": {
+      "cache_read": 0
+    },
+    "output_token_details": {
+      "reasoning": 62
+    }
+  },
+  "automatic_checks": {
+    "one_http_request": true,
+    "expected_synthetic_text": true,
+    "finish_stop_received": true,
+    "stream_ended_without_exception": true
+  },
+  "elapsed_seconds": 2.542018874999485,
+  "review": {
+    "reviewer": "Codex",
+    "note": "合成输出准确为青榆/流式/验收完成三行；一次HTTP请求逐片段消费，含空片段、stop及实际usage。已核对源码指纹；非独立人工评审。",
+    "limits": "真实服务只验证正常流，没有人为注入超时；前缀后失败与资源关闭由离线测试证明。片段到达时间是单轮观察，不是性能基准。"
+  }
+}
