@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-04；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、默认全量148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。下一主题为框架流式接口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-04；LangGraph最小顺序图已GREEN，目标1 passed、默认全量149 passed；下一步进入模型/工具节点与条件边；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -69,7 +69,7 @@ Python 工程
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
 | 7. 轻量记忆与原生最小 RAG | **已完成第一轮最小闭环（有限验收）** | 离线116 passed；真实合成固定题12次请求通过，事实/引用/不足说明及按需检索符合预期；真实记忆效果等边界仍保留 |
 | 8. LangChain | **已完成第一轮独立机制学习与验收** | 消息/模板、工具循环、检索/RAG、项目契约、回调及独立文本流；离线148 passed，非流式与流式真实合成验收通过，保留预建Agent业务差异 |
-| 9. LangGraph | 待开始 | 完成有状态、分支、循环和人工确认 |
+| 9. LangGraph | 模型/工具节点与条件边待开始 | 前置与最小顺序图已离线验证；真实Agent图、分支/循环、checkpoint及人工确认待实现 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
 | 11. 接入心屿 | 待开始 | 保留 Python AI 服务，与 Java 业务后端集成 |
 
@@ -1043,6 +1043,24 @@ agent-lab 中先理解
 6. 查询型 Tool Calling。
 
 ## 14. 当前下一步
+
+### 已验证：最小两节点顺序图；下一步模型/工具流程（2026-11-04）
+
+- 最新GREEN：用户已将两处trance改为trace、prepare_questrion标签改正，并将中间连线改为add_edge。核对实际文件后目标1 passed（0.75秒），默认全量149 passed（1.99秒），diff检查通过；参考补写及修正不记为独立设计。正常图依次运行两个节点，原question保留，normalized_question与preview正确，trace按input/prepare_question/render_preview追加，调用方输入与快照一致。没有实际问答/计算业务或真实模型请求。
+- 本地文本演示按当前范围收口，不继续增加预览功能。当前下一步转与Agent有关的模型调用/工具步骤及条件边，复用已验证的单次模型适配与计算器，先解释状态字段、路由选择和停止边界，再准备集中参考与用户任务；不一次迁移整个Agent，不把已有原生Agent成功记录误记为LangGraph图已具备。用户已明确要求整理提交后继续：提交前重跑全量149 passed（2.32秒），diff检查通过；已本地提交97a69f9（顺序图/状态合并示例及测试），前置笔记、索引、README和路线另作docs提交，其哈希以Git历史为准。不推送，编辑器设置/独立练习/其他设计笔记保留。以下占位及失败记录保留为历史。
+- 前次补写/注释核验：用户指出两个演示节点缺乏实际用途，并要求检查注释。已明确它们仅用于观察字段派生、跨节点读取及reducer，不承担问答/计算业务；Preview只是本地拼接输出。Codex按注释规范更新模块、状态类、三个函数和测试模块说明，不改用户核心语句，不把演示描述成实际业务能力。
+- 前次目标实测1 failed（0.81秒），由build_preview_graph把中间连线误写为add_node导致prepare_question重复注册。另集中发现两个返回键写成trance而非trace，及轨迹标签prepare_questrion拼错。三类问题一次指出留给用户修正，不自动接管核心；本轮不重跑全量。仅在临时内存图用正确连线运行现有两个节点，正文派生正确但trace仍为[input]，证明误写字段没有更新声明的trace；这不是修改源文件或GREEN。注释调整不宣称测试通过，当前下一步用户统一修正API调用和字段/标签后再验。
+- 用户前置反馈主干正确：节点便于复用/workflow；默认model_calls仍为1，未返回question保留。已澄清count只是中间业务节点、initial不是默认参数、Annotated元数据由LangGraph读取，以及调度/同次状态与跨次持久化的区别，不重考这些内容，进入实践。
+- 新增app/services/langgraph_basics.py，Codex准备PreviewState结构：question/normalized_question/preview/trace，调用方初始化全部字段，trace使用Annotated[list[str], operator.add]。prepare_question、render_preview、build_preview_graph留核心占位供用户参考补写。契约为START→prepare_question→render_preview→END，先去两端空白，再基于新状态生成预览；原question保持，轨迹只提交本步名称，不带旧列表重复追加。纯本地同步图，不调用模型或改原生Agent/HTTP/数据库。
+- 新增tests/test_langgraph_basics.py一条真实内存图测试，无fake模型/HTTP。输入question含两端空格、两个派生字段为空、trace=[input]；预期原问题保留、normalized_question清理、preview为预览：计算2+3、trace按input/prepare_question/render_preview追加，原始输入与deepcopy快照一致。测试通过最终状态检查节点执行顺序、部分合并、reducer及不直接修改输入；不为本单元加空输入/失败重试等新契约。
+- 正确RED：目标1 failed（1.01秒），明确由build_preview_graph的NotImplementedError失败，无收集错误；全量1 failed / 148 passed（2.17秒），diff检查通过。当前下一步完整讲清状态字段、两个节点分别读写什么、builder注册/连接/compile与实际invoke，再提供三个函数完整局部参考，由用户补写并统一核验。无真实模型调用或自动提交，编辑器设置/独立练习/其他设计笔记保留。
+
+### 当前主题：LangGraph前置知识（2026-11-04）
+
+- 用户要求先讲明白前置知识。本轮使用project-guide的源码带读方式，对照真实agent.run_agent的局部数据、模型/工具步骤、if/for与错误边界，解释State/Node/Edge；补充函数对象、字典、TypedDict与Annotated/reducer，并区分StateGraph构建器、compile生成可运行对象及invoke/ainvoke的执行职责。不直接迁移整个Agent或新增模型调用。
+- 本机安装langgraph 1.2.19，已读StateGraph的State→Partial<State>、默认LastValue字段更新、add_messages按ID合并等源码。纯内存探索实测：节点只返回model_calls更新时question保留、计数0→1，原输入字典仍为0；普通列表字段更新从旧列表替换为新列表，Annotated[list[str], operator.add]则追加。该节点只是演示计数，不算真实模型调用。并行写默认字段可能冲突，不将顺序更新规则推广为任意最后写入获胜。
+- 新增notes/LangGraph前置知识.md并加入索引，记录每个新API/类型的来源、输入输出、构建与执行顺序、状态/长期记忆/持久化边界；我的理解待用户补充。正式学习路线顶部一处旧的“下一主题流式”已同步为该批后已完成流式，当前仍从本小节接续。
+- 当前下一步：先完成前置讲解及一次默认字段更新的行为预测，再围绕不联网的最小顺序图给局部参考和用户任务；类型声明不冒充运行时Pydantic校验，compile不冒充执行或模型调用。先顺序图，后条件边/循环、checkpoint及人工确认。无新业务行为，不强造RED，本轮未重跑既有148 passed，不自动提交；编辑器设置、独立练习与其他设计笔记保留。
 
 ### 最新检查点：流式独立入口提交，接续LangGraph（2026-11-04）
 

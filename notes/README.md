@@ -28,6 +28,7 @@
 - [`Python函数参数与解包.md`](./Python函数参数与解包.md)：`*args`、`**kwargs`、单独的 `*`，以及调用时解包与装饰器参数转发。
 - [`Pydantic与schemas.md`](./Pydantic与schemas.md)：模型职责、常用方法的输入输出、校验链路与待补充的个人理解。
 - [`LangChain与原生实现对照.md`](./LangChain与原生实现对照.md)：三个入口的职责、共享场景验收、工具参数与失败记录，以及计时和预算的实际差异。
+- [`LangGraph前置知识.md`](./LangGraph前置知识.md)：State/Node/Edge、TypedDict、部分状态更新、图构建与执行，以及reducer的合并规则。
 
 知识笔记按“项目用途 → 常用写法与例子 → 我的理解 → 误区与验证”持续整理。个人原有表述可保留并注明校准；尚未由自己复述的内容写成待补充，不记为已经掌握。方法说明可由 Codex 整理，个人理解由学习者补写、Codex 协助核对。
 
