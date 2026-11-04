@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度（2026-11-03）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 进行中，当前离线全量为 `135 passed`。框架单次调用、模板、计算器 Agent、回调、检索和严格 RAG 已独立离线验证；新增普通文本调用的 `LLMResult` 与异常适配，`/chat` 仍使用原生实现。下一步继续工具协议、Agent 结果和中途失败记录的项目契约对齐，再做原生对照及框架流式接口。真实记忆效果、知识权限及部署验证等边界仍保留；正式进度与新会话接续位置见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
+> 当前进度（2026-11-04）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 进行中，当前离线全量为 `146 passed`。框架模型的工具请求、上下文、项目结果与异常适配及共享场景验收已通过；真实配置九组合成场景共12次模型调用，历史、计算器、资料事实/引用及不足说明均符合限定预期，另含预建Agent计算器。`/chat` 仍使用原生实现；下一步为框架流式接口。真实记忆效果、知识权限及部署验证等边界仍保留；正式进度与新会话接续位置见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
 
 ## 为什么创建这个仓库
 
@@ -70,6 +70,7 @@ agent-lab/
 │   ├── mcp_note_client.py
 │   ├── use_calculator.py
 │   ├── rag_acceptance_probe.py
+│   ├── langchain_live_acceptance.py
 │   ├── fixtures/
 │   └── results/
 ├── tests/
@@ -86,6 +87,7 @@ agent-lab/
 │   ├── test_langchain_retrieval.py
 │   ├── test_langchain_rag.py
 │   ├── test_langchain_adapter.py
+│   ├── test_model_backend_contract.py
 │   ├── test_mcp.py
 │   ├── test_memory.py
 │   ├── test_memory_extraction.py
@@ -180,9 +182,18 @@ curl -X POST http://127.0.0.1:8000/chat \
 uv run pytest
 ```
 
-2026-11-03 实际离线全量结果为 `135 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+2026-11-04 实际离线全量结果为 `146 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
 
-LangChain 对照测试为 `tests/test_langchain_*.py`，模拟聊天 HTTP 和问题 Embedding，真实运行模板、SDK、工具、Agent、回调及临时 Chroma 查询。严格 RAG 仅交付预算内片段，来源校验不证明语义忠实；人工向量不证明真实检索质量。普通文本适配已返回项目 `LLMResult` 并转换超时、连接、上游状态与解析异常，工具协议、Agent 记录与持久化接线仍待完成。适配计时覆盖客户端及框架处理，回调计时覆盖模型步骤，均不等同于纯网络耗时。框架模型限额在下一次模型请求前检查，最后一次工具可能已执行，与原生执行前预算保护不同；此处仅验证无外部副作用的计算器。
+LangChain 对照测试为 `tests/test_langchain_*.py` 及 `tests/test_model_backend_contract.py`，模拟聊天 HTTP 和问题 Embedding，真实运行模板、SDK、工具、Agent、回调及临时 Chroma 查询。严格 RAG 仅交付预算内片段，来源校验不证明语义忠实；人工向量不证明真实检索质量。适配器已返回项目 `LLMResult`、原始工具请求和调用元数据，接收历史/Memory/RAG及工具交互，转换既有项目异常；共享场景验证原生Agent组合的正常与中途失败记录。适配计时覆盖客户端及框架处理，回调计时覆盖模型步骤，均不等同于纯网络耗时。预建Agent的消息列表、预算与部分失败观察仍与完整业务契约有差异，未替换主路由或持久化接线，详见[对照笔记](notes/LangChain与原生实现对照.md)。
+
+真实模型对照必须显式运行，并选择新的报告名以保留既有记录：
+
+```bash
+uv run --offline --no-sync --env-file .env python -m playground.langchain_live_acceptance \
+  --output playground/results/langchain_live_acceptance_new.json
+```
+
+该脚本使用已配置聊天API，只发送固定合成数据；九组场景上限27次模型调用，现有[报告](playground/results/langchain_live_acceptance_2026-11-04.json)实际12次、8217 tokens，经逐题复核通过限定范围验收。RAG题直接提供相同上下文，未重复验证检索；未验证数据库、HTTP路由或部署，也不据单轮样本宣称等价、稳定准确率或性能。`--offline`只约束uv依赖获取，脚本仍会请求真实模型。
 
 固定合成题的真实模型验收需显式运行，会请求本机 Ollama 和已配置聊天 API：
 
@@ -234,7 +245,8 @@ uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_p
 - [x] 框架计算器、Agent 循环及成功/超时模型回调记录的独立离线验证
 - [x] LangChain 异步检索、严格 RAG 链及原始响应保留的独立离线验证
 - [x] 普通文本框架调用的项目结果与异常适配、实际 HTTP 状态观测
-- [ ] 框架工具/Agent 完整业务契约对齐、原生对照验收及流式接口
+- [x] 框架模型工具/上下文契约、原生循环组合的失败记录及共享离线/真实合成场景验收
+- [ ] 框架流式接口；预建Agent仍保留消息/预算等业务契约差异，主路由沿用原生实现
 - [ ] LangGraph、SSE 与心屿 Java + Python 接入
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。

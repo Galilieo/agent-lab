@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-03；普通模型契约适配已修正并通过目标5 passed，默认全量135 passed；框架检索、严格RAG和普通文本结果/异常适配均已限定离线GREEN，阶段8继续工具/Agent契约对齐。阶段7收口时为116 passed。以下真实模型验收属于此前原生链路，本次框架验证仅使用离线替身。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-04；共享场景6 passed、默认全量146 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。下一主题为框架流式接口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -878,8 +878,8 @@ LangChain 不作为入门起点，而用于重构已经完成的原生能力。
 | 2. Prompt template与Runnable组合 | 变量填充、历史消息占位、prompt与model链式调用 | 已完成本单元离线验证与带读 |
 | 3. Tool与Agent循环 | 工具声明、执行回传、停止与失败边界 | 计算器适配与预建循环已限定离线验证，完整业务契约仍待对齐 |
 | 4. Retriever与RAG链 | 复用原生片段/索引，比较框架检索及回答链 | 异步检索及严格回答链已离线GREEN，普通Agent语义工具尚未适配 |
-| 5. 项目契约与原生对照验收 | LLMResult/错误适配、调用记录及同题/同契约验证 | 普通文本结果/异常适配已离线GREEN，继续工具/Agent契约及中途失败记录 |
-| 6. 回调、日志与流式接口 | 框架观测和流式调用入口；完整SSE仍归阶段10 | 因调用记录问题先穿插模型回调，其他内容待开始 |
+| 5. 项目契约与原生对照验收 | LLMResult/错误适配、调用记录及同题/同契约验证 | 共享6场景与九组真实合成场景验收完成，预建Agent业务差异已记录，限定范围收口 |
+| 6. 回调、日志与流式接口 | 框架观测和流式调用入口；完整SSE仍归阶段10 | 模型回调已完成；当前下一步为框架流式调用、片段消费与失败边界 |
 
 项目成果：
 
@@ -1044,6 +1044,43 @@ agent-lab 中先理解
 
 ## 14. 当前下一步
 
+### 最新检查点：真实模型对照与本地提交（2026-11-04）
+
+- 用户明确要求使用.env中的配置跑真实模型测试，再整理提交。Codex新增playground/langchain_live_acceptance.py，通过uv --env-file加载进程环境，不读取/打印配置文件内容或密钥；原生与框架适配各跑history/calculator/rag_facts/missing_phone四类问题，另跑独立预建Agent计算器，共九组。只发送脚本及固定fixture中的合成数据，真实配置/数据库/索引不改，计算器限定与意外MCP调用阻断均落实在脚本；全局最多27次模型调用。
+- 实际运行一次完成，报告playground/results/langchain_live_acceptance_2026-11-04.json：12次模型调用、8217 tokens、约27.22秒。两种入口均准确复述青榆7314，实际请求calculator计算23*19并得到437；苍鹭5836及先rollback再继续抛出原异常分别引用service/recovery且ID合法；电话缺失均说明资料没有而未编造号码。预建Agent亦有真实工具请求和437结果。框架跨文档答案将两句合为分号表达，作为输出格式观察保留，不阻断事实/引用验收。
+- 已逐条对照合成原文、回答、来源ID、计算器参数/轨迹及调用元数据，由Codex将报告标记reviewed_pass_synthetic_scope；非独立人工评审。源码SHA256与执行时工作区一致，报告保留执行前基线HEAD 3f1804d，不倒写后续提交版本。报告未包含当前配置API Key。原生/框架各5次模型调用，预建Agent2次，所有调用成功；SDK重试关闭，本轮无额外真实复验。
+- 证据边界：RAG题共享由应用直接构造的上下文，此次未验证Embedding/检索、业务数据库、HTTP路由或部署；没有真实注入超时/非法参数，这些边界由已有离线测试证明。单轮小样本不证明所有输入等价、通用稳定性或性能。预建Agent仅单独计算器验证，未冒充项目AgentResult适配。新增脚本中make_cases负责合成输入，run及observed_generate执行并记录真实调用，calculator_only限定工具，预建Agent复用ModelCallRecorder；报告及笔记保留上述职责和边界。
+- 提交前验证：默认全量146 passed（2.12秒），脚本编译、diff检查通过；限定独立静态复核检查脚本/适配器/两份测试及调用路径，未发现当前契约下有意义的问题。复核者未读取.env、联网、运行测试或修改文件；真实运行和逐题复核由主流程完成。
+- 用户已授权本批本地提交：模型工具/上下文契约适配、共享离线验收、真实合成验收脚本/报告和文档分别保存，不推送。编辑器设置、playground/03_class.py及notes/设计复核-2026-11-02.md继续保留。已本地提交59df0e6（工具/上下文与Agent调用契约）、7c0e51e（共享离线场景验收）、d119fbe（真实验收脚本/报告）；本路线、README、索引及对照笔记另作docs提交，其哈希以Git历史为准。
+- 当前下一步仍为主题6的框架流式接口。先讲ainvoke与astream、异步迭代和消息片段/最终结果的关系，再用正常及中断场景给参考和用户任务；完整HTTP SSE归阶段10。继续保持用户核心参考补写、Codex样板/验证和完整新增内容带读，不将已验证记为独立设计或全部掌握。
+
+### 最新接续：共享场景对照完成，准备流式接口（2026-11-04）
+
+- 用户确认继续集中对照。Codex新增tests/test_model_backend_contract.py：一份场景测试由backend_run fixture的native/langchain参数分别运行，再组合success/second-timeout/invalid-arguments三个scenario，共6例。两种模型入口共用真实原生Agent及计算器，只fake外部HTTP；本轮验收已有行为，不修改业务核心或为形式强造RED。目标6 passed（1.27秒），全量146 passed（1.87秒），diff检查通过。
+- 同组验收检查输入参考顺序、历史/当前问题各一份、工具声明与call_id回传、原始工具参数、LLMResult元数据及AgentResult/部分失败异常。正常两次模型调用/两条成功记录；第二次超时两次请求/一条成功记录及LLMTimeoutError；参数非法一次请求/一条成功记录及JSONDecodeError。耗时只检查非负，不比较性能；底层SDK异常链与JSON序列化空白不要求逐字等同。预设响应不能证明真实模型选择能力或输出质量。
+- 测试新增fixture的SimpleNamespace只替换原生llm模块引用的httpx对象，保留需要的异常类，避免修改SDK使用的全局AsyncClient。模型入口选择只在测试替换agent.generate_reply；同一run_agent管理循环，不将本轮验收写成预建create_agent已适配项目业务。每次真实HTTP请求才消费pending下一项，不由预设列表长度驱动循环。
+- 已新增notes/LangChain与原生实现对照.md并加入notes/README索引，明确正式原生链路、原生循环+框架模型组合、预建Agent三种入口，以及工具JSON、计时、异常原因链、预算停止时机和非流式aread缓冲边界。主题5按本阶段独立机制对照及可复用模型适配的有限范围收口，不宣称所有输入等价、主路由已迁移、预建Agent业务契约已全量对齐或生产就绪。用户个人理解仅保留已有实际回答，其余待补，不把Codex验收记为用户独立测试设计。
+- 当前下一步是主题6剩余的框架流式接口：先比较ainvoke一次返回与astream逐段产出，说明异步迭代、消息片段及最终结果的区别，预测产生部分内容后失败能保留什么；再核验本机接口、准备一个正常和一个中断场景、给局部参考供用户补写。完整HTTP SSE仍归阶段10。当前适配器aread会缓冲整段响应，流式入口应单独处理，不能套用后声称已有实时输出。本轮未调用真实模型，不自动提交或推送。
+
+### 当前主题：Agent契约验证与参考上下文对齐（2026-11-04）
+
+- 最新GREEN：用户已补齐memory_context/rag_context签名、参数转发及参考消息构造，实测目标10 passed（1.12秒）、全量140 passed（2.06秒），diff检查通过。两轮真实原生循环调用框架入口均携带同一份参考消息，返回两条LLMResult；第二次模型超时由AgentRunError保留第一条成功调用及LLMTimeoutError原因，参数非法由AgentToolError保留一次成功调用及JSONDecodeError。全部外部HTTP仍为fake，未读取真实记忆数据库或调用模型；参考输入不记为独立设计，测试通过不记为全部掌握。
+- LangChain剩余范围明确为：主题5做共享固定场景的原生/框架结果与失败契约对照并解释已知差异；主题6完成框架流式调用入口与分块消费（回调已做）；随后整理阶段结论进入LangGraph。预计约2～3个集中单元，非固定对话轮数或截止承诺。完整HTTP SSE仍归阶段10；预建Agent的工具预算时机与业务返回结构差异需在对照结论保留，不将本轮原生循环组合写成预建Agent已完全迁移。用户本轮只要求核验与剩余量说明，不自动提交或新增下一主题代码。
+- 用户已正确补写parse_tool_calls、原始content/工具请求读取及LLMResult返回。重新实测目标7 passed（1.21秒）、全量137 passed（1.88秒），diff检查通过；原始参数空白与None正文保留、工具声明/回传、非法参数留给工具层均已GREEN。未改用户核心，仅观察到错误文案Mssing少字母但不影响行为，不要求额外修正轮次；未提交推送。
+- 下一小单元先验证原生run_agent与框架单次入口组合的项目契约。只在测试用monkeypatch.setattr(agent, "generate_reply", generate_langchain_result)替换模型入口，生产原生Agent、/chat及此前create_agent实现均不改。本轮不将该组合称为预建框架Agent的业务适配；预建Agent仍保留独立机制对照及预算差异。原生Agent已有AgentResult、AgentRunError及AgentToolError负责正常与部分失败记录，无需先复制循环。
+- 新局部任务：用户给generate_langchain_result的keyword-only参数补memory_context=""及rag_context=""并转交帮助函数；帮助函数已添加这两个参数及reference_messages占位，用户参考构造Memory→RAG两条独立user参考消息。Codex已在新建模板的system后插入可选reference_messages占位，并在ainvoke传入；history/当前问题/额外交互的顺序保持，空参考不增加消息。参考内容由调用方准备，此单元不读取记忆数据库或执行RAG检索。
+- 新增测试为同文件两个函数、三个场景，复用现有真实SDK与fake HTTP fixture。正常原生循环调用框架模型两次，真实计算器执行，检查每次模型请求均带Memory/RAG、历史/当前问题各一份，返回AgentResult含两条真实LLMResult。失败参数化分别预设第二次模型超时或第一次工具参数非法：预期AgentRunError携带一条成功调用及LLMTimeoutError原因，或AgentToolError携带一条成功调用及JSONDecodeError；分别仅有2/1次HTTP。不新增数据库或预建Agent断言，也不把预设工具请求视为模型选择能力。
+- 前次正确RED：目标3 failed / 7 passed（1.14秒），三个新场景均由缺少memory_context参数的TypeError阻断，无收集错误；全量3 failed / 137 passed（1.86秒），diff检查通过。旧工具转换已通过，不能把新RED倒写为此前工具单元未完成。该次下一步完整带读临时入口替换、参考消息插入及三个场景，再提供签名/转发/参考列表三处局部修改供用户补写。无真实模型调用、不自动提交。
+
+### 当前主题：工具请求与交互消息契约适配（2026-11-04）
+
+- 用户正确预测：HTTP响应整体协议合法但工具arguments中的JSON非法，应保留一次成功模型调用，错误由工具处理层承接。继续主题5，不把框架invalid_tool_calls直接等同于HTTP模型调用失败，也不忽略这些工具请求。
+- 本轮局部范围：generate_langchain_result新增tools及additional_messages，与原生单次调用前四个参数位置对应；本轮不新增memory_context/rag_context、不改原生Agent或/chat、不运行自动Agent循环。Codex机械接通输入参数、bind_tools(tool_choice="auto")、在新建模板末尾append可选MessagesPlaceholder；原始工具响应在现有HTTP钩子中aread缓冲并提取message字典，存入本次_HttpObservation.raw_message，SDK仍解析同一响应。原始消息不写日志/完整响应持久化；HTTP错误或畸形正文的提取失败不在钩子中向SDK伪装连接故障。
+- 核心分工：已添加parse_tool_calls(message_data) -> list[LLMToolCall]占位，用户参考提取id、function.name及原始function.arguments，不调用json.loads；同时用户替换generate_langchain_result原文本限制，按raw_message转换工具请求、保留原始content（含None），返回真实tool_calls。未提供tools却收到工具请求仍拒绝；缺少协议字段仍按LLMResponseError处理。未自动替换用户核心判断或结果组装。
+- 新增两条测试及RED：tests/test_langchain_adapter.py现有fixture支持按实际HTTP请求消费预设message迭代器。正常场景由测试显式调用两次适配器，中间真实execute_tool计算2+3，检查原参数空白保留、声明与auto传递、回传call_id、历史/当前问题各一份、输入列表不变；这不是框架或原生Agent自动循环。失败参数场景返回整体合法的HTTP200响应、arguments="{bad json"，预期先得到带usage的LLMResult，随后execute_tool真实抛JSONDecodeError；不在本轮声称已验证AgentToolError或中途失败记录封装。目标2 failed / 5 passed（1.25秒），全量2 failed / 135 passed（1.90秒）；两例均由现有普通文本检查抛LLMResponseError，属于新工具契约尚未接通的正确RED，diff检查通过。
+- 帮助函数离线探索：仅直接运行已写帮助函数，正常工具请求→回传→最终文本的两次请求均完成，原始参数空白保留；非法参数时框架tool_calls为0、invalid_tool_calls为1，而观察对象保留HTTP200和原字符串。探索不是核心转换GREEN。无真实模型调用、自动提交或推送。
+- 当前下一步：完整带读新增raw_message、aread/缓冲、模板append与optional、bind_tools及新增两条测试，提供三个明确修改位置供用户参考补写，再核验实际文件和目标/全量。GREEN后继续Agent结果与中途失败记录对齐，不重考已答对的模型/工具失败归属。
+
 ### 最新检查点与新会话接续（2026-11-03）
 
 - 当前在main，用户明确要求复验并整理提交。已核对工作区、HEAD 9c046f9及origin=https://github.com/Galilieo/agent-lab.git；按近期feat/docs中文提交格式分批保存：69af168（异步检索与来源转换）、bf2b3f3（严格RAG与引用校验）、ead968d（普通调用结果与异常）；README、notes/README及本路线随后作docs提交，其哈希以Git历史为准。不推送；编辑器设置、playground/03_class.py和notes/设计复核-2026-11-02.md不纳入。
@@ -1051,6 +1088,7 @@ agent-lab 中先理解
 - 限定独立只读复核：检查三份新增服务及三份对应测试，并对照原生检索/预算/引用/LLM契约与本地SDK源码，未发现当前明确契约下有意义的bug。复核者未改文件、运行测试、联网或读取真实.env；运行证据来自主流程。README与notes/README本地链接核验通过，不扩成生产就绪结论。
 - 普通适配真实调用顺序：外层创建状态观察及计时→帮助函数创建客户端并注册响应钩子→模板/ChatDeepSeek/SDK→返回AIMessage或抛异常→外层组装LLMResult或转换项目异常。异常由raise ... from exc保留原因；适配层不决定本服务HTTP状态，现有路由未切换到框架。本次不新增核心实现或改变用户逻辑，参考补写不记为独立设计。
 - 下一步仍在主题5：把工具声明、原始工具参数与结果/调用记录接到项目契约，明确Agent正常结束及中途失败的记录保留，再做同场景原生对照。首先带读原生LLMToolCall与框架tool_calls/additional_kwargs的差异，讨论适配边界后给局部参考和用户任务；不直接替换/chat或一次接管整个Agent。普通文本入口尚不接收tools/additional_messages/memory_context/rag_context，不应当作原生generate_reply的完整替身。主题6已完成回调，流式接口待开始；完整HTTP SSE仍在阶段10。
+- 工具适配源码带读（提交后开始）：当前已安装集成的_convert_dict_to_message会将合法工具arguments字符串解析到AIMessage.tool_calls的args字典，将解析失败项放入invalid_tool_calls，并将content=None归一为""；该实现没有在additional_kwargs中保存原始tool_calls。因此不能照搬旧版本示例从additional_kwargs取原始调用，也不能只读合法tool_calls后丢掉解析失败项。先比较LLMToolCall的JSON文本与框架规范化结构，再预测“HTTP响应整体合法但工具arguments非法JSON”应归属的调用/工具失败边界。为保持原生原始参数及失败归属，后续考虑在已有HTTP观察处保留本次原始工具请求，只在内存转换，不记录正文或扩大日志。本轮只读源码和同步路线，未新增行为/测试，也未重跑135条既有基线，不提交新改动。
 - 继续沿用导师提示词：用户核心参考补写，Codex准备样板和回归；所有新增helper/fixture/fake/断言均须解释。测试GREEN不代表全部理解或真实模型效果。以下为学习过程记录，其中旧RED、旧“下一步”和未提交表述属于当时状态，当前接续以本小节为准。
 
 ### 正在学习：普通模型调用的项目契约适配（2026-11-03）
