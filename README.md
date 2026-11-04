@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度（2026-11-04）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 进行中，当前离线全量为 `146 passed`。框架模型的工具请求、上下文、项目结果与异常适配及共享场景验收已通过；真实配置九组合成场景共12次模型调用，历史、计算器、资料事实/引用及不足说明均符合限定预期，另含预建Agent计算器。`/chat` 仍使用原生实现；下一步为框架流式接口。真实记忆效果、知识权限及部署验证等边界仍保留；正式进度与新会话接续位置见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
+> 当前进度（2026-11-04）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 独立机制学习与验收已完成第一轮，当前离线全量为 `148 passed`。模型/工具/上下文契约、RAG、回调、原生对照及独立文本流均已验证；真实非流式九组共12次调用，另一次真实流式请求验证片段、结束和usage。流式入口已调用真实模型，当前供Python消费者使用，尚未接入 `/chat`、浏览器展示或流式持久化；`/chat` 仍用原生实现。下一步进入 LangGraph 的 State、Node 与 Edge。正式进度与边界见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
 
 ## 为什么创建这个仓库
 
@@ -50,6 +50,7 @@ agent-lab/
 │       ├── langchain_retrieval.py
 │       ├── langchain_rag.py
 │       ├── langchain_adapter.py
+│       ├── langchain_streaming.py
 │       ├── mcp_tools.py
 │       ├── memory.py
 │       ├── embedding.py
@@ -71,6 +72,7 @@ agent-lab/
 │   ├── use_calculator.py
 │   ├── rag_acceptance_probe.py
 │   ├── langchain_live_acceptance.py
+│   ├── langchain_stream_probe.py
 │   ├── fixtures/
 │   └── results/
 ├── tests/
@@ -87,6 +89,7 @@ agent-lab/
 │   ├── test_langchain_retrieval.py
 │   ├── test_langchain_rag.py
 │   ├── test_langchain_adapter.py
+│   ├── test_langchain_streaming.py
 │   ├── test_model_backend_contract.py
 │   ├── test_mcp.py
 │   ├── test_memory.py
@@ -129,7 +132,8 @@ agent-lab/
 | [app/services/langchain_callbacks.py](app/services/langchain_callbacks.py) | 回调采集成功/失败模型步骤的耗时、可用 Token 与异常类型 |
 | [app/services/langchain_retrieval.py](app/services/langchain_retrieval.py) | 将原生异步检索包装为 Runnable，保留 Document 原文与来源 |
 | [app/services/langchain_rag.py](app/services/langchain_rag.py) | 预算内片段到模板与模型，再校验实际交付来源；保留原始响应 |
-| [app/services/langchain_adapter.py](app/services/langchain_adapter.py) | 普通文本单次调用转项目结果与异常，以 HTTP 响应钩子记录实际状态 |
+| [app/services/langchain_adapter.py](app/services/langchain_adapter.py) | 单次调用转项目结果、原始工具请求与异常，以 HTTP 响应钩子记录实际状态 |
+| [app/services/langchain_streaming.py](app/services/langchain_streaming.py) | 独立异步文本流，逐片段转发、保留结束/usage并传播中断异常 |
 | [app/tools.py](app/tools.py) | 工具声明、参数校验与本地工具执行 |
 | [app/services/mcp_tools.py](app/services/mcp_tools.py) | 将 Agent 的笔记工具请求接到 MCP Client |
 | [app/mcp_server.py](app/mcp_server.py) | 提供笔记 Tool 和学习路线 Resource，执行真实文件读取 |
@@ -182,7 +186,7 @@ curl -X POST http://127.0.0.1:8000/chat \
 uv run pytest
 ```
 
-2026-11-04 实际离线全量结果为 `146 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+2026-11-04 实际离线全量结果为 `148 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
 
 LangChain 对照测试为 `tests/test_langchain_*.py` 及 `tests/test_model_backend_contract.py`，模拟聊天 HTTP 和问题 Embedding，真实运行模板、SDK、工具、Agent、回调及临时 Chroma 查询。严格 RAG 仅交付预算内片段，来源校验不证明语义忠实；人工向量不证明真实检索质量。适配器已返回项目 `LLMResult`、原始工具请求和调用元数据，接收历史/Memory/RAG及工具交互，转换既有项目异常；共享场景验证原生Agent组合的正常与中途失败记录。适配计时覆盖客户端及框架处理，回调计时覆盖模型步骤，均不等同于纯网络耗时。预建Agent的消息列表、预算与部分失败观察仍与完整业务契约有差异，未替换主路由或持久化接线，详见[对照笔记](notes/LangChain与原生实现对照.md)。
 
@@ -194,6 +198,8 @@ uv run --offline --no-sync --env-file .env python -m playground.langchain_live_a
 ```
 
 该脚本使用已配置聊天API，只发送固定合成数据；九组场景上限27次模型调用，现有[报告](playground/results/langchain_live_acceptance_2026-11-04.json)实际12次、8217 tokens，经逐题复核通过限定范围验收。RAG题直接提供相同上下文，未重复验证检索；未验证数据库、HTTP路由或部署，也不据单轮样本宣称等价、稳定准确率或性能。`--offline`只约束uv依赖获取，脚本仍会请求真实模型。
+
+独立流式探针为 `playground/langchain_stream_probe.py`，使用相同的显式环境加载方式及 `--output` 另存报告，最多一次HTTP请求。现有[流式报告](playground/results/langchain_stream_probe_2026-11-04.json)验证一次真实请求收到73个片段、正确合成文本、stop与134 tokens统计；中途失败由离线流测试验证。该入口只在Python中消费模型流，完整服务SSE接线仍在阶段10。
 
 固定合成题的真实模型验收需显式运行，会请求本机 Ollama 和已配置聊天 API：
 
@@ -246,7 +252,7 @@ uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_p
 - [x] LangChain 异步检索、严格 RAG 链及原始响应保留的独立离线验证
 - [x] 普通文本框架调用的项目结果与异常适配、实际 HTTP 状态观测
 - [x] 框架模型工具/上下文契约、原生循环组合的失败记录及共享离线/真实合成场景验收
-- [ ] 框架流式接口；预建Agent仍保留消息/预算等业务契约差异，主路由沿用原生实现
+- [x] 框架独立文本流、结束/usage元数据及中断前缀的离线验证与一次真实正常流验收
 - [ ] LangGraph、SSE 与心屿 Java + Python 接入
 
 阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
@@ -267,6 +273,7 @@ uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_p
 - V0.4 轻量记忆
 - V0.5 RAG
 - 接下来：LangChain → LangGraph → SSE、评测与工程化
+- 当前接续：LangChain第一轮限定实现/验收已完成，进入LangGraph；预建Agent仍保留消息/预算等业务契约差异，主路由沿用原生实现。
 - 最后：保留 Python AI 服务，与心屿 Java 业务后端集成
 
 每个阶段都应先理解并验证核心机制，再决定是否重构或迁移到正式项目。
