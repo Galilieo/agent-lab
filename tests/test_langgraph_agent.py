@@ -1,6 +1,7 @@
 """真实LangGraph、框架模型适配和计算器，外部模型HTTP使用预设响应。
 
-验证条件分支、工具循环、执行前预算与部分失败记录，不证明真实模型工具选择。
+验证条件分支、工具循环、预算、检查点读回和人工确认，SQLite用临时文件。
+不证明真实模型工具选择、进程重启恢复或身份权限。
 """
 
 import asyncio
@@ -8,15 +9,21 @@ import json
 
 import httpx
 import pytest
+from langgraph.types import Command
 
-from app.services import langchain_adapter, langgraph_agent
+from app.services import (
+    langchain_adapter,
+    langgraph_agent,
+    langgraph_approval,
+    langgraph_checkpoint,
+)
 from app.services.agent import (
     AgentModelCallLimitError,
     AgentResult,
     AgentRunError,
     AgentToolError,
 )
-from app.services.llm import LLMTimeoutError
+from app.services.llm import LLMResult, LLMTimeoutError, LLMToolCall
 
 
 @pytest.fixture
@@ -142,3 +149,200 @@ def test_graph_preserves_calls_and_checks_budget_before_tools(offline_graph, fai
     else:
         assert len(observed["requests"]) == 1
         assert observed["tool_attempts"] == []
+
+
+def test_checkpoint_reads_saved_calls_and_isolates_independent_tasks(offline_graph):
+    """同存储重建图可读回真实记录；新任务隔离，读取和结束后继续不重跑模型。"""
+    prepare, observed = offline_graph
+    prepare([
+        calculator_request(),
+        {"role": "assistant", "content": "任务A：结果是5。"},
+        {"role": "assistant", "content": "任务B：你好。"},
+    ])
+
+    async def scenario():
+        saver = langgraph_agent.create_calculator_checkpointer()
+        graph = langgraph_agent.build_calculator_graph(checkpointer=saver)
+        config_a = {"configurable": {"thread_id": "calculator-task-A"}}
+        config_b = {"configurable": {"thread_id": "calculator-task-B"}}
+
+        await graph.ainvoke({
+            "question": "计算2+3", "history": [],
+            "additional_messages": [], "model_calls": [], "max_model_calls": 3,
+        }, config=config_a)
+        assert len(observed["requests"]) == 2
+
+        # 换编译图但复用同一个saver，检查数据来自检查点存取而非返回值变量。
+        rebuilt = langgraph_agent.build_calculator_graph(checkpointer=saver)
+        snapshot_a = await rebuilt.aget_state(config_a)
+        calls = snapshot_a.values["model_calls"]
+        assert snapshot_a.values["question"] == "计算2+3"
+        assert snapshot_a.next == ()
+        assert len(calls) == 2
+        assert all(isinstance(call, LLMResult) for call in calls)
+        assert isinstance(calls[0].tool_calls[0], LLMToolCall)
+        assert calls[0].tool_calls[0].call_id == "call_graph"
+        assert calls[0].tool_calls[0].arguments == '{"left":2,"operator":"+","right":3}'
+        assert calls[-1].answer == "任务A：结果是5。"
+        assert snapshot_a.values["additional_messages"][-1] == {
+            "role": "tool", "tool_call_id": "call_graph", "content": "5",
+        }
+        assert len(observed["requests"]) == 2
+
+        # 正常结束的任务没有待执行节点；None继续只返回已有结果。
+        finished = await rebuilt.ainvoke(None, config=config_a)
+        assert finished["model_calls"][-1].answer == "任务A：结果是5。"
+        assert len(observed["requests"]) == 2
+
+        before_b = await rebuilt.aget_state(config_b)
+        assert before_b.values == {}
+        await rebuilt.ainvoke({
+            "question": "你好", "history": [],
+            "additional_messages": [], "model_calls": [], "max_model_calls": 3,
+        }, config=config_b)
+        snapshot_b = await rebuilt.aget_state(config_b)
+        assert snapshot_b.values["question"] == "你好"
+        assert len(snapshot_b.values["model_calls"]) == 1
+        assert snapshot_b.values["model_calls"][0].answer == "任务B：你好。"
+        after_b = await rebuilt.aget_state(config_a)
+        assert after_b.values == snapshot_a.values
+        assert len(observed["requests"]) == 3
+        assert observed["tool_attempts"] == ["call_graph"]
+
+        # 即使任务编号相同，新的内存saver也没有原实例的检查点。
+        empty_graph = langgraph_agent.build_calculator_graph(
+            checkpointer=langgraph_agent.create_calculator_checkpointer(),
+        )
+        missing = await empty_graph.aget_state(config_a)
+        assert missing.values == {}
+        assert len(observed["requests"]) == 3
+
+    asyncio.run(scenario())
+
+
+def test_sqlite_checkpoint_survives_connection_reopen(offline_graph, tmp_path):
+    """真实临时文件关闭后用新连接读回；读取不请求模型，其他任务仍隔离。"""
+    prepare, observed = offline_graph
+    prepare([
+        calculator_request(),
+        {"role": "assistant", "content": "结果是5。"},
+    ])
+    database_path = tmp_path / "graph-checkpoints.sqlite3"
+
+    async def scenario():
+        config = {"configurable": {"thread_id": "persistent-task-A"}}
+        async with langgraph_checkpoint.open_calculator_checkpointer(
+            str(database_path),
+        ) as first_saver:
+            graph = langgraph_agent.build_calculator_graph(checkpointer=first_saver)
+            await graph.ainvoke({
+                "question": "计算2+3", "history": [],
+                "additional_messages": [], "model_calls": [], "max_model_calls": 3,
+            }, config=config)
+            before = await graph.aget_state(config)
+
+        # 退出第一个上下文后，重新打开相同文件，不复用旧连接或旧saver。
+        assert database_path.is_file()
+        async with langgraph_checkpoint.open_calculator_checkpointer(
+            str(database_path),
+        ) as second_saver:
+            assert second_saver is not first_saver
+            assert second_saver.conn is not first_saver.conn
+            rebuilt = langgraph_agent.build_calculator_graph(checkpointer=second_saver)
+            after = await rebuilt.aget_state(config)
+            assert after.values == before.values
+            assert after.next == ()
+            assert after.values["question"] == "计算2+3"
+            calls = after.values["model_calls"]
+            assert len(calls) == 2
+            assert isinstance(calls[0], LLMResult)
+            assert isinstance(calls[0].tool_calls[0], LLMToolCall)
+            assert calls[0].tool_calls[0].call_id == "call_graph"
+            assert calls[-1].answer == "结果是5。"
+            missing = await rebuilt.aget_state({
+                "configurable": {"thread_id": "independent-task-B"},
+            })
+            assert missing.values == {}
+
+        assert len(observed["requests"]) == 2
+        assert observed["tool_attempts"] == ["call_graph"]
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("approved", [True, False], ids=["approve", "reject"])
+def test_approval_pauses_before_tools_and_resumes_after_reopen(
+    offline_graph, tmp_path, monkeypatch, approved,
+):
+    """暂停后重开SQLite，同意才执行一次工具，拒绝不执行且保留成功模型记录。"""
+    prepare, observed = offline_graph
+    responses = [calculator_request()]
+    if approved:
+        responses.append({"role": "assistant", "content": "结果是5。"})
+    prepare(responses)
+    database_path = str(tmp_path / "approval-checkpoints.sqlite3")
+    approval_entries = []
+    real_approval = langgraph_approval.request_tool_approval
+
+    def observed_approval(state):
+        approval_entries.append("entered")
+        return real_approval(state)
+
+    monkeypatch.setattr(langgraph_approval, "request_tool_approval", observed_approval)
+
+    async def scenario():
+        config = {"configurable": {"thread_id": "approval-task-A"}}
+        async with langgraph_checkpoint.open_calculator_checkpointer(
+            database_path,
+        ) as first_saver:
+            graph = langgraph_approval.build_approval_calculator_graph(
+                checkpointer=first_saver,
+            )
+            paused = await graph.ainvoke({
+                "question": "计算2+3", "history": [],
+                "additional_messages": [], "model_calls": [],
+                "max_model_calls": 3, "tool_approved": None,
+            }, config=config)
+            assert len(paused["__interrupt__"]) == 1
+            assert paused["__interrupt__"][0].value == {
+                "question": "是否允许执行本次工具请求？",
+                "tool_calls": [{
+                    "call_id": "call_graph", "name": "calculator",
+                    "arguments": '{"left":2,"operator":"+","right":3}',
+                }],
+            }
+            pending = await graph.aget_state(config)
+            assert pending.next == ("approval",)
+            assert pending.values["tool_approved"] is None
+            assert len(pending.values["model_calls"]) == 1
+            assert pending.values["additional_messages"] == []
+            assert len(observed["requests"]) == 1
+            assert observed["tool_attempts"] == []
+            assert len(approval_entries) == 1
+
+        # 恢复时换连接与编译图，但保持数据库文件和任务编号相同。
+        async with langgraph_checkpoint.open_calculator_checkpointer(
+            database_path,
+        ) as second_saver:
+            rebuilt = langgraph_approval.build_approval_calculator_graph(
+                checkpointer=second_saver,
+            )
+            final = await rebuilt.ainvoke(Command(resume=approved), config=config)
+            snapshot = await rebuilt.aget_state(config)
+            assert snapshot.next == ()
+            assert final["tool_approved"] is approved
+            assert len(approval_entries) == 2
+            assert len(final["model_calls"]) == (2 if approved else 1)
+            assert len(observed["requests"]) == (2 if approved else 1)
+            assert observed["tool_attempts"] == (["call_graph"] if approved else [])
+            if approved:
+                assert final["model_calls"][-1].answer == "结果是5。"
+                assert observed["requests"][-1]["messages"][-1] == {
+                    "role": "tool", "tool_call_id": "call_graph", "content": "5",
+                }
+            else:
+                assert final["additional_messages"] == []
+                assert final["model_calls"][0].answer is None
+                assert final["model_calls"][0].tool_calls[0].call_id == "call_graph"
+
+    asyncio.run(scenario())

@@ -1,12 +1,15 @@
 """用状态图编排单次模型调用与计算器，复用项目结果和异常契约。
 
 模型节点提交调用记录，工具节点提交交互消息，条件边决定继续或结束。
-仅提供计算器；不接入HTTP、记忆/检索或数据库，不在这里执行流式输出。
+仅提供计算器；可接收调用方提供的检查点组件，不管理其连接。
+不接入HTTP路由、记忆/检索或业务数据库，不在这里执行流式输出。
 """
 
 from operator import add
 from typing import Annotated, TypedDict
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -19,6 +22,7 @@ from app.services.agent import (
     AgentToolError,
 )
 from app.services.langchain_adapter import generate_langchain_result
+from app.services.langgraph_checkpoint import create_checkpoint_serializer
 from app.services.llm import LLMRequestError, LLMResult
 from app.tools import CALCULATOR_TOOL, execute_tool
 
@@ -108,8 +112,20 @@ def choose_next(state: CalculatorState) -> str:
     return "use_tools"
 
 
-def build_calculator_graph() -> CompiledStateGraph:
-    """编译模型/工具循环，model后由条件边选路，tools后固定回model。"""
+def create_calculator_checkpointer() -> InMemorySaver:
+    """创建由调用方复用的内存存取组件，明确支持本图的自定义记录类型。
+
+    序列化保存字段，反序列化还原LLMResult及其嵌套LLMToolCall。
+    这里只在内存保存检查点，不连接业务SQLite；新实例不共享旧实例的数据。
+    """
+    return InMemorySaver(serde=create_checkpoint_serializer())
+
+
+def build_calculator_graph(
+    *,
+    checkpointer: BaseCheckpointSaver | None = None,
+) -> CompiledStateGraph:
+    """编译模型/工具循环，可由调用方提供检查点组件保存流程状态。"""
     builder = StateGraph(CalculatorState)
     builder.add_node("model", call_model)
     builder.add_node("tools", call_tools)
@@ -122,7 +138,7 @@ def build_calculator_graph() -> CompiledStateGraph:
     )
     builder.add_edge("tools", "model")
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
 
 
 async def run_calculator_graph(
