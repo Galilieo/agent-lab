@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-04；LangGraph最小顺序图已GREEN，目标1 passed、默认全量149 passed；下一步进入模型/工具节点与条件边；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-05；用户已修正并完成LangGraph模型/工具节点、条件边与执行前预算，目标5 passed（1.10秒）、默认离线全量154 passed（1.97秒），diff检查通过。模型/工具图及测试已本地提交f9b9a20，配套文档随本检查点另作docs提交；下一主题为checkpoint与跨次状态恢复，先讲清与当前单次运行状态的区别。最小顺序图此前已GREEN；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -69,7 +69,7 @@ Python 工程
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
 | 7. 轻量记忆与原生最小 RAG | **已完成第一轮最小闭环（有限验收）** | 离线116 passed；真实合成固定题12次请求通过，事实/引用/不足说明及按需检索符合预期；真实记忆效果等边界仍保留 |
 | 8. LangChain | **已完成第一轮独立机制学习与验收** | 消息/模板、工具循环、检索/RAG、项目契约、回调及独立文本流；离线148 passed，非流式与流式真实合成验收通过，保留预建Agent业务差异 |
-| 9. LangGraph | 模型/工具节点与条件边待开始 | 前置与最小顺序图已离线验证；真实Agent图、分支/循环、checkpoint及人工确认待实现 |
+| 9. LangGraph | 模型/工具图已离线验证 | State、顺序图、模型/计算器循环、条件边与执行前预算已验证；checkpoint、人工确认及失败恢复待实现 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
 | 11. 接入心屿 | 待开始 | 保留 Python AI 服务，与 Java 业务后端集成 |
 
@@ -1043,6 +1043,24 @@ agent-lab 中先理解
 6. 查询型 Tool Calling。
 
 ## 14. 当前下一步
+
+### 当前实现任务：模型/计算器图与条件边（2026-11-05）
+
+- 最新GREEN：用户修正两处后，实际文件确认call_tools使用AgentToolError，langchain_adapter恢复parse_tool_calls调用且已无该文件diff。目标5 passed（1.10秒），默认离线全量154 passed（1.97秒），diff检查通过。验证直接结束、计算器执行后回模型、后续模型超时、非法工具参数及预算耗尽前零工具执行；图/SDK/适配器/计算器真实运行，仅模型HTTP使用预设响应，无真实模型请求。参考补写及修正不记为独立设计；用户随后明确授权整理提交；提交前全量154 passed（2.35秒），diff检查通过，代码及测试已本地提交f9b9a20，文档另作docs提交，不推送；编辑器设置、独立练习及其他设计笔记保留。下一主题按阶段9学习checkpoint/跨次状态恢复，先解释单次State、检查点与业务会话历史的区别，再安排局部实践。以下失败记录保留为历史。
+- 补写后核验：用户已写四个核心函数；目标测试5 failed（1.33秒）。集中发现两处：langchain_adapter将parse_tool_calls(message_data)误改为(message_data)，导致tool_calls成为整条消息字典、直接回答也误走工具分支；call_tools将工具异常包装为AgentRunError，应为AgentToolError。已给出具体位置与修正参考，留用户修改；目标未通过，暂不重跑全量、不记GREEN、不提交。CalculatorState名称说明本例范围，现有字段可复用于多工具Agent；仅计算器限制来自工具声明和执行分发，不来自类名，暂不扩大架构。
+- 用户已正确解释finish是路径标签而非State字段，path_map将其映射END；trace需要节点主动返回更新而非框架自动日志。两点不再重考，进入实际模型/工具图。
+- 新增app/services/langgraph_agent.py。CalculatorState由入口初始化question/history、additional_messages与model_calls两个Annotated列表追加字段，以及max_model_calls。模型节点复用generate_langchain_result+CALCULATOR_TOOL及AGENT_SYSTEM_PROMPT，工具节点执行真实计算器并提交assistant/tool消息；不存重复last_result，使用model_calls[-1]作为最新结果。
+- 分工：Codex已写_execute_calculator_requests机械执行/消息转换帮助函数，仅允许calculator，保留原始arguments/call_id；已写run_calculator_graph入口校验、状态初始化、graph.ainvoke及AgentResult映射。图调度保护recursion_limit=2*max_model_calls+1留足模型/工具交替步骤，模型次数预算仍由条件路由判断，不能把图步数当作模型请求数。用户参考补写call_model、call_tools、choose_next、build_calculator_graph四个核心函数，沿用AgentRunError/AgentToolError/AgentModelCallLimitError及成功调用快照。
+- 设计要求：START→model；model后条件边根据最新工具请求走finish→END或use_tools→tools，tools固定回model。无工具请求即使达到模型次数上限也允许正常结束；有请求且预算耗尽则在工具执行前抛预算异常。首次模型失败原样传播，后续失败携带之前成功调用；工具失败保留本次成功模型调用，不虚构失败模型调用。正式/chat、原生Agent、检索/记忆和持久化不改，不运行真实模型。
+- 新增tests/test_langgraph_agent.py，真实图/SDK/适配器/计算器配合fake HTTP。两个测试函数参数化为直接结束、计算器两轮、第二次超时、非法参数、仅一次预算五个场景。fixture只替HTTP客户端，execute_tool观察包装仍调用原函数，tool_attempts记录执行尝试而非成功结果；预设响应由真实HTTP请求到来时消费，不按列表长度驱动图。检查声明/历史/当前问题、call_id回传、model_calls累计、异常原因/成功快照及预算不足时零工具尝试。
+- 正确RED：目标5 failed（1.45秒），均指向build_calculator_graph的NotImplementedError，无收集错误；全量5 failed / 149 passed（2.34秒），diff检查通过。当前下一步完整带读状态、两个帮助函数、图步数限制及五种测试，再给四个函数连贯参考供用户补写；核心占位不代写，不自动提交新单元。
+
+### 当前设计带读：模型/工具节点与条件边（2026-11-04）
+
+- 顺序图已本地提交97a69f9，配套前置笔记/索引/路线提交12bb0e5，不推送。提交前全量149 passed（2.32秒），当前开始下一主题，不自动提交新单元。
+- 设计复用langchain_adapter.generate_langchain_result返回项目LLMResult、现有CALCULATOR_TOOL及execute_tool；模型节点实际调用模型入口并提交本次model_calls更新，工具节点执行计算器并提交assistant请求/tool结果消息。State保留question/history、additional_messages及model_calls追加字段、max_model_calls；不再引入纯演示preview/trace。model_calls最后一项可作为最新结果，不需要额外重复保存last_result。
+- 计划结构START→model，条件边在model后读取最新tool_calls，无请求映射END，有请求且预算允许映射tools，tools完成后固定边回model；应用路由函数选择流程，不让模型直接提供图节点名。预算在执行工具前检查，避免用尽最后模型预算后继续执行无法回传的动作。图调度限制不等于模型次数预算，后续实现须区分。不改/chat、不接检索或持久化；先讲路由函数/返回标签/path_map，再准备局部核心及针对性验证。
+- 当前先检查新增概念：条件边函数返回路由标签，与节点返回State更新字典不同；path_map将标签映射到节点或END。本轮仅设计带读，不新增生产图或测试、没有真实模型请求，前一检查点149 passed不记作新图验证。
 
 ### 已验证：最小两节点顺序图；下一步模型/工具流程（2026-11-04）
 

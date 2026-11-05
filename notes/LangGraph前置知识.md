@@ -125,3 +125,29 @@ prepare_question只做strip，render_preview只拼接预览字符串。这两步
 真正业务节点可以先请求模型、执行工具或完成其他处理，再把结果作为State更新交给后续节点。演示节点的工作简单，不意味着LangGraph节点只能赋值；本例跑通后回到与Agent相关的流程，不继续扩展纯预览功能。
 
 首次顺序图的预期已由[真实内存图测试](../tests/test_langgraph_basics.py)验证：原问题保留，派生字段更新，下游读取上游结果，轨迹仅追加本步标签，原始调用输入未变。该结果证明本例状态协议，不等于已实现真实Agent图。
+
+## 模型与工具循环怎样落到图中
+
+[计算器Agent图](../app/services/langgraph_agent.py)将已有Agent循环拆为两个有业务动作的节点：
+
+```text
+START → model → 条件判断 → END
+          ↑       ↓ 有工具请求且仍有模型预算
+          └──── tools
+```
+
+`call_model`读取问题、历史和已有工具交互，通过框架适配器请求模型，只返回本次新增的`model_calls`记录。`call_tools`读取最新模型记录，调用`_execute_calculator_requests`执行真实计算器，只返回新增的`additional_messages`。两字段用`add`合并，因此不能把旧列表再一起返回。工具帮助函数保留原始参数及调用ID，生成assistant工具请求消息和对应tool结果，供下一次模型调用读取。
+
+`choose_next`只返回路由标签：没有工具请求时返回`finish`，由路径映射送到`END`；有请求时先检查模型调用预算，再返回`use_tools`进入工具节点。`finish`既不是额外节点，也不增加State字段。即使恰好用完模型预算，只要当前响应没有工具请求，仍可正常结束。
+
+`build_calculator_graph`注册两个函数、固定边与条件边，再编译。`run_calculator_graph`初始化全部状态，调用编译图的`ainvoke`，最后将成功调用和最终回答转为项目`AgentResult`。`recursion_limit`是图调度步数保护，`max_model_calls`是应用的模型请求预算，两者分别计数。
+
+模型后续失败用`AgentRunError`携带此前成功调用；工具处理失败用`AgentToolError`保留本次已经成功的模型调用；预算失败用`AgentModelCallLimitError`携带预算内调用。首次模型失败直接传播，不能虚构成功记录。
+
+`CalculatorState`这个名字说明当前用途；问题、历史、模型记录、交互消息和预算可用于更多工具。实际的计算器限制在模型工具声明及帮助函数的分发检查。只有需要在节点之间传递新数据时才增加字段，不为每种工具自动建立一套State。
+
+[对应测试](../tests/test_langgraph_agent.py)中的`offline_graph`用HTTPX的`MockTransport`替换外部模型HTTP响应，图、SDK、适配器和计算器仍真实运行。`prepare`将预设消息变成迭代器，真实HTTP请求到来时`respond`才取下一条；列表本身不控制图执行次数。`observed_execute`记录尝试后仍调用原工具，非法参数也计入尝试。
+
+两个测试函数参数化为五种场景：直接结束只请求模型一次；计算后回答请求两次且第二次携带工具结果；第二次超时只保留首次成功记录；非法参数属于工具错误；模型预算为一次且响应请求工具时，工具尝试为零。检查出站消息及调用ID可证明历史和工具结果实际传入，预设正文不能证明真实模型会正确选择工具。
+
+当前入口每次重新初始化State，没有配置checkpointer。图里的状态合并已经验证，跨调用找回状态仍是下一主题；已有SQLite业务会话与图检查点应分别设计。
