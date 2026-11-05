@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-05；用户已修正并完成LangGraph模型/工具节点、条件边与执行前预算，目标5 passed（1.10秒）、默认离线全量154 passed（1.97秒），diff检查通过。模型/工具图及测试已本地提交f9b9a20，配套文档随本检查点另作docs提交；下一主题为checkpoint与跨次状态恢复，先讲清与当前单次运行状态的区别。最小顺序图此前已GREEN；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-05；内存/SQLite检查点及工具前人工确认已离线验证，目标9 passed（1.15秒）、默认全量158 passed（2.25秒），diff及离线锁检查通过。暂停时零工具执行，重开SQLite同任务恢复后同意执行、拒绝结束，确认节点重入而旧模型不重跑；进程重启与故障恢复尚未验证。检查点/确认功能已本地提交8876380，配套文档随本检查点另作docs提交，不推送；下一小主题为失败后的恢复执行。模型/工具图及测试已提交f9b9a20，配套文档95e16fb。最小顺序图此前已GREEN；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -69,7 +69,7 @@ Python 工程
 | 6. 原生 Tool Calling 与 Agent 循环 | **已完成第一轮** | 三工具、原生循环和失败边界已验证；完成 Pydantic 参数校验、MCP 接线与 Tool / Resource / Prompt 职责复述 |
 | 7. 轻量记忆与原生最小 RAG | **已完成第一轮最小闭环（有限验收）** | 离线116 passed；真实合成固定题12次请求通过，事实/引用/不足说明及按需检索符合预期；真实记忆效果等边界仍保留 |
 | 8. LangChain | **已完成第一轮独立机制学习与验收** | 消息/模板、工具循环、检索/RAG、项目契约、回调及独立文本流；离线148 passed，非流式与流式真实合成验收通过，保留预建Agent业务差异 |
-| 9. LangGraph | 模型/工具图已离线验证 | State、顺序图、模型/计算器循环、条件边与执行前预算已验证；checkpoint、人工确认及失败恢复待实现 |
+| 9. LangGraph | 模型/工具图、检查点及人工确认已离线验证 | 条件边/循环与预算、SQLite重开连接、同意/拒绝已验证；失败恢复待实践 |
 | 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
 | 11. 接入心屿 | 待开始 | 保留 Python AI 服务，与 Java 业务后端集成 |
 
@@ -1043,6 +1043,56 @@ agent-lab 中先理解
 6. 查询型 Tool Calling。
 
 ## 14. 当前下一步
+
+### 已整理提交；下一主题失败恢复前置（2026-11-05）
+
+- 用户明确要求先整理提交。核验main、HEAD 95e16fb、origin及全部工作区后，仅收本批内存/SQLite检查点、共用序列化、人工确认、测试和依赖，已本地提交8876380；README/笔记/路线另作docs提交，不推送。提交前全量158 passed（2.34秒），diff和离线锁检查通过。编辑器设置、playground/03_class.py及其他设计笔记保留。
+- README及索引同步158 passed与实际边界，清理模块及测试说明中不适合当前接线的旧描述；历史RED保留。内存/SQLite同进程重开连接与人工确认均为离线验证，不改成真实模型、进程重启或生产权限验收。
+- 当前下一步按阶段9带读失败恢复：工具节点完成并保存后，第二次模型超时，再由调用方用原文件/原thread_id执行graph.ainvoke(None, config)，不加历史checkpoint_id，不当作Command人工回答或新任务输入。先解释失败节点重入、已提交步骤复用、外部动作幂等及成功model_calls与HTTP尝试计数的区别，给一次行为预测，再准备集中失败恢复测试；不提前实现自动RetryPolicy或重复模型预算。
+- 已读官方checkpointers与fault-tolerance对应说明，结合本机已有节点/异常契约整理到notes/LangGraph检查点与恢复.md；没有新增失败恢复生产实现、测试或运行证据。当前预测场景应保留一个成功记录和工具结果，恢复只重试后续模型；通过前不记故障恢复GREEN，也不将max_model_calls按成功结果计数描述为跨恢复的所有HTTP尝试限额。
+
+### 当前局部实践：工具前人工确认与SQLite恢复（2026-11-05）
+
+- 最新GREEN：用户已将is None改为is True，核对实际函数后目标9 passed（1.15秒），全量158 passed（2.25秒），diff及离线锁检查通过。同意/拒绝两例均验证暂停前一次HTTP零工具，重开SQLite后确认节点进入两次，原模型不重跑；同意追加一次工具和模型请求，拒绝保留原工具请求记录、零工具且无伪造回答。真实图/SDK/适配器/SQLite/计算器与预设HTTP，不证明真实模型行为、生产权限或进程重启。路线已同步，本批未提交；下一步可整理检查点/人工确认批次，后续失败恢复先解释重试节点/已保存状态与外部副作用边界，未自动新增代码。以下失败记录保留为历史。
+- 补写后核验：request_tool_approval已完整补写；choose_after_approval把is True误写为is None，导致同意/拒绝均走finish、未决定反而会选工具标签。已解释None不是False，指出应只允许明确True进入工具，并留用户修改。人工确认定向1 failed / 1 passed / 7 deselected（1.18秒），拒绝通过，同意在成功调用应为2但实际1处失败；未重跑全量、不记GREEN。以下占位RED为历史。
+- 用户预测正确：暂停前不执行计算器，恢复从被中断确认节点开始；已补准恢复时节点从头执行，但再次遇到该interrupt取到本次resume值，不会因同一确认自动无限暂停。不给相同概念重复出题，进入局部接线。
+- 新增langgraph_approval.py：ApprovalCalculatorState继承当前图字段/reducer，只新增tool_approved为最近一次人工决定（初始None）。Codex已写build_approval_calculator_graph机械连线，要求调用方提供checkpointer；复用call_model/call_tools/choose_next，模型后预算允许才走approval，同意才走tools，拒绝映射END。不替换原图、run入口或/chat，不将暂停/拒绝原始状态转成正常AgentResult。
+- 用户参考补写request_tool_approval与choose_after_approval：从最新模型调用整理全部工具请求的call_id/name/原始arguments，interrupt展示问题及请求列表；恢复值必须为bool，再更新tool_approved；路由返回use_tools或finish。确认本步请求整体，不沿用上一工具轮的决定，拒绝不执行工具/不重调模型/不虚构最终回答。
+- 新增一个参数化测试（approve/reject两例）到现有test_langgraph_agent.py，复用offline_graph及calculator_request，无新fake；observed_approval仅记录进入次数后调用真实确认函数。第一次暂停验证一次HTTP、零工具、确认负载/待执行approval及原模型记录；关闭SQLite连接后重开同文件/同thread，用Command(resume=approved)恢复。同意共两次HTTP和一次工具，拒绝仍一次HTTP和零工具，两者确认节点进入两次且最终next为空，保留真实成功记录。
+- 正确RED：目标2 failed / 7 passed（1.84秒），两例均为request_tool_approval的NotImplementedError，无收集错误，diff检查通过。当前等待用户补两处核心，随后目标/全量；最近全绿156 passed仍为本主题新增测试前基线。没有真实模型请求、没有进程重启/权限前端验收，不自动提交。新增State、构建函数、观察包装、参数化与断言均须带读。
+
+### 当前前置：人工确认与动态interrupt（2026-11-05）
+
+- 用户修复yield缩进后，核对SQLite连接范围及旧占位注释已清理；目标7 passed（1.24秒），默认全量156 passed（2.21秒），diff与离线锁检查通过。证明真实临时SQLite文件关闭连接后新连接/新saver可读回完整状态及记录类型，任务隔离与读取不新增模型请求成立；同进程测试不记为进程重启或故障恢复验收。当前检查点批次未提交。
+- 下一主题按阶段9进入human-in-the-loop，先解释interrupt负载、暂停返回、Command(resume=...)、同存储同thread恢复及中断节点从头执行，再安排工具执行前确认的局部图/测试。计算器仅作为无外部副作用的教学载体，不据此要求普通计算都人工审批；用户同意/拒绝通过调用方提供，不交给模型自行决定。
+- 已读本机langgraph.types.interrupt/Command与官方interrupt文档，并运行一次纯本地单节点探索（不加入产品源码或pytest）：第一次ainvoke返回__interrupt__中的问题，snapshot.next为approval；Command(resume=True)使interrupt取得True，节点入口执行计数由1变2，最终next为空。没有模型、工具、HTTP或数据库调用；不冒充现有计算器图已接入人工确认。
+- 当前先给工具前确认的流程与两个API示意，并让用户预测暂停时工具尝试次数、恢复时从哪个节点开始；随后再设计局部核心和正常同意/拒绝验证，不一次引入前端、身份鉴权、并行审批或SSE。尚未修改图核心或新增该主题测试，不自动提交。
+
+### 当前局部实践：SQLite检查点与重开连接（2026-11-05）
+
+- 最新GREEN：yield saver已移入内部async with，与saver赋值同级，旧占位注释已移除。目标7 passed（1.24秒），全量156 passed（2.21秒），diff及离线锁检查通过。此处以下失败记录保留为历史；下一步人工确认的前置见本节最新条目。
+- 补写后核验：用户已正确概括serde是把序列化/反序列化组件交给saver。实际文件已构造SQLite saver，但yield saver缩进在内部async with之外，先关闭连接才交给调用方；旧占位注释也尚未移除。目标1 failed / 6 passed（1.44秒），首次graph.ainvoke在读取检查点时触发已关闭连接重启工作线程，报RuntimeError: threads can only be started once。根因是资源范围而非图节点或线程策略；已提供将yield移入连接块并删除旧注释的完整局部参考，核心留用户修正，目标未通过暂不跑全量，不进入下一机制。
+- 用户表示完成并继续，不再纠结prepare/fixture。核对实际文件后目标6 passed（1.12秒）、全量155 passed（2.02秒）。内存接线保留，未自动提交。
+- 下一主题为持久化与连接生命周期：复用当前图及一轮任务一个编号，使用独立SQLite检查点文件，不迁移业务数据库。已核验官方扩展及本机安装源码，新增langgraph-checkpoint-sqlite 3.1.3、aiosqlite 0.22.1及其sqlite-vec 0.1.9依赖，更新pyproject/uv.lock，既有包未升级，离线锁检查通过。
+- Codex新增langgraph_checkpoint.py中的共用create_checkpoint_serializer，将原内存工厂配置原样抽出供两种存储复用；准备open_calculator_checkpointer的导入、装饰器/类型与核心占位。用户参考补写打开连接→构造AsyncSqliteSaver并传serde→yield saver。完整解释async with资源范围、asynccontextmanager、AsyncIterator、yield交出资源与退出清理；本机saver会按需setup，不新增业务建表SQL。
+- 新增一条集中测试，复用已有假HTTP/真实图和计算器：pytest临时文件写入A任务两次模型结果，退出上下文后用新连接/新saver重建图并读回相同快照、嵌套类型/调用ID/最终回答；新任务B读取为空，总HTTP两次且计算器一次。仅验证同进程重开连接，不能写成进程重启或故障恢复已通过。
+- 目标RED：1 failed / 6 passed（1.57秒），唯一失败为open_calculator_checkpointer的NotImplementedError，无收集错误；diff及锁检查通过。数据库核心未代写，尚未新增全量GREEN，最近全量155 passed为该新增场景前的基线。当前下一步提供完整局部参考、解释辅助函数及测试，再核验用户补写与目标/全量回归；无真实模型请求、不提交。
+
+### 当前局部实践：内存checkpoint接线与任务隔离（2026-11-05）
+
+- 最新GREEN：用户表示误撤diff，检查确认图的checkpointer参数及compile接线已由用户补好，saver工厂仍在；仅新增测试及相关导入丢失。Codex恢复原测试和LLMResult/LLMToolCall导入，保留用户核心及导入排版。目标6 passed（1.17秒），全量155 passed（1.94秒），diff检查通过。真实图/SDK/适配器/计算器与内存存取验证，HTTP响应预设；没有真实模型请求。未提交本单元。以下RED记录保留为历史，下一步可复述读回/隔离主链后进入数据库持久化前置与实践。
+- 用户已正确解释新内存saver没有旧状态、读取不执行节点，并强调新任务分配新编号、同任务内部和恢复沿用原编号。已校准同存储内编号误复用对内存和数据库均有影响，不一定是重复键异常；本例一条thread对应一轮任务，不混用会话与单轮预算。
+- Codex新增create_calculator_checkpointer机械配置：JsonPlusSerializer显式支持LLMResult/LLMToolCall，InMemorySaver由调用方持有并复用；已导入BaseCheckpointSaver供参数类型标注。一次性序列化往返确认两个类型和值完整还原且未再有未注册类型提示，不冒充图接线GREEN。
+- 用户任务：仅给build_calculator_graph增加可选关键字参数checkpointer，并传入builder.compile；原节点/路由复用，默认不配置时原run_calculator_graph独立入口保持现有行为。完整参考及新类型、serde参数、生命周期和测试步骤须解释，核心两处不代写。
+- 新增一个集中测试到tests/test_langgraph_agent.py，复用已有HTTP fixture与工具请求函数：A计算两次HTTP后同saver重建图可读取嵌套记录/工具结果；读取及已结束图None继续不新增请求；B独立编号只有一次调用且不污染A；新saver同A编号读取为空。目标1 failed / 5 passed（1.04秒），明确是build_calculator_graph不接受checkpointer关键字，无收集错误。全量最近全绿仍为前单元154 passed，本轮待用户补写后再跑目标及全量，不记155 passed。
+- 本轮不安装依赖、不改/chat、不接数据库或人工确认，不验证进程重启或失败恢复，不自动提交。接线验证后再进入数据库持久化、人工确认和失败恢复的后续边界。
+
+### 当前带读：checkpoint与跨次状态（2026-11-05）
+
+- 用户要求整理提交后进入下一步，并明确先讲前置知识。已完成本地提交f9b9a20（模型/工具图与测试）及95e16fb（说明/笔记/路线），提交前默认全量154 passed（2.35秒），diff检查通过，不推送，保留无关工作。
+- 新增notes/LangGraph检查点与恢复.md并加入索引：先解释State/检查点/存取组件/thread_id、StateSnapshot.values与next、内存与业务SQLite的区别，再区分读状态、新输入、None继续及后续人工确认。新输入仍按reducer合并，[]不能清空add列表；下一实践以一条thread对应一轮任务，不将现有model_calls预算跨聊天轮次直接累积。
+- 核验本机langgraph 1.2.19相关源码及官方检查点文档。一次性内联探索复用当前State/节点/路由，仅模型入口替为预设LLMResult：同saver同thread重建图可读回问题/调用，结束快照next为空，读取及已结束图None继续均不增加模型次数；不同thread或新InMemorySaver读取values为空。自定义LLMResult反序列化出现未显式注册类型提示，下一接线需讲序列化并明确支持LLMResult/LLMToolCall，不放开任意类型。
+- 本轮没有修改图核心、安装依赖、真实模型请求或新增pytest；不把探索计为正式接线、持久化/重启恢复或失败恢复已完成。当前下一步先让用户预测同thread但换新内存saver、以及读取快照会不会请求模型；然后设计checkpointer参数传递/复用与序列化，解释全部辅助代码和测试，再给局部核心参考完成RED→GREEN。
 
 ### 当前实现任务：模型/计算器图与条件边（2026-11-05）
 
