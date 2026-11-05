@@ -1,14 +1,14 @@
 # LangGraph 检查点与恢复
 
-> 当前检查点（2026-11-05）：内存/SQLite存取及工具前人工确认已离线验证，全量158 passed；功能提交8876380，文档随本检查点另作docs提交。以下保留概念探索、RED和修正过程，以最新核验段落为准。下一主题为错误退出后的恢复，尚未完成该场景验证。
+> 当前检查点（2026-11-05）：内存/SQLite存取、工具前人工确认及后续模型超时后恢复已离线验证，目标10 passed、全量159 passed。检查点/确认功能提交8876380、文档408fce3；恢复测试已本地提交38527e6，阶段总结及说明随收口docs检查点提交。以下保留概念探索、RED和修正过程，以最新核验段落为准。恢复场景仅覆盖同进程关闭/重开连接，进程重启与外部写入幂等仍未验证。
 
-本笔记承接[模型/工具图](../app/services/langgraph_agent.py)，先解释跨次状态需要的概念。正式进度以[路线第14节](./agent-lab总体学习路线.md#14-当前下一步)为准；阅读和一次探索不记为已完成应用接线、持久化或故障恢复。
+本笔记承接[模型/工具图](../app/services/langgraph_agent.py)，解释跨次状态需要的概念并记录逐步验证。正式进度以[路线第14节](./agent-lab总体学习路线.md#14-当前下一步)为准；概念探索与正式离线测试分别记录。
 
 2026-11-05核验本机`langgraph==1.2.19`，并阅读本机`StateGraph.compile`、`InMemorySaver.get_tuple`、`StateSnapshot`及[官方检查点文档](https://docs.langchain.com/oss/python/langgraph/checkpointers)。
 
-## 当前代码缺少什么
+## 最初的问题：接线前缺少什么
 
-当前`run_calculator_graph`每次构建图并提供初始状态，`build_calculator_graph`以`builder.compile()`编译，没有配置checkpointer。节点之间可以沿同一次运行传递State，但入口没有跨调用查找已存状态的机制。
+接线前`build_calculator_graph`以`builder.compile()`编译，没有配置checkpointer；节点之间可以沿同一次运行传递State，但没有跨调用查找已存状态的机制。后续已增加可选checkpointer参数，调用方可持有带存储的图；原`run_calculator_graph`仍每次构建未配置检查点的独立图，不自动恢复。
 
 设想模型已经给出工具请求，流程暂时停止，稍后还要继续：只存最终聊天正文不足以知道原始工具请求、已有调用记录和下一步应运行的节点。检查点要保留流程可恢复的数据和调度信息。
 
@@ -279,3 +279,23 @@ model_calls当前记录成功且可用的模型结果；超时尝试不新增成
 检查点不保存任意Python执行行，也不替外部系统回滚副作用。若某工具已发送消息或写库，却在节点提交状态前失败，重新执行该节点可能重复动作。幂等表示重复提交同一业务操作仍只产生一次效果，常见做法是让外部系统按稳定业务编号去重；本项目当前没有此类外部写入保障，不宣称框架已提供。计算器无外部写入，用它验证先前已完成工具节点不重跑；不能外推为所有工具都能无条件重试。
 
 下一步预测：计算器结果已写入检查点、第二次模型超时后，显式恢复是否应重新执行计算器，以及恢复成功后HTTP尝试数与成功模型记录数。随后准备真实图/临时SQLite/预设模型HTTP的集中失败恢复验证；此处不强造新生产代码。
+
+## 已验证：后续模型超时，重开连接后继续
+
+用户确认失败节点重入范围；已解释历史重放从所选旧检查点重新执行其后节点，最新错误恢复则复用较新的已提交进度。用户认为失败也应留日志，已区分State的成功LLMResult列表与业务model_call表的成功/失败日志：当前独立图未接入原生/chat的persist_agent_run_error，不能把成功列表当完整调用尝试审计。
+
+新增[恢复测试](../tests/test_langgraph_agent.py)中的`test_model_timeout_resumes_saved_tool_result_after_reopen`，不修改业务核心、State或框架接口。现有checkpointer及ainvoke(None, config)已具备目标能力，因此新增的是已有能力的回归证明，没有人为制造占位RED。
+
+复用原offline_graph、calculator_request及pytest的tmp_path，没有新fixture/fake/辅助函数；测试内scenario仍只是把异步顺序操作放入同一事件循环。prepare依次配置工具请求、字符串timeout、最终回答；已有respond遇到timeout抛httpx.ReadTimeout，实际SDK/适配器将其转为LLMTimeoutError，实际call_model再包装AgentRunError。
+
+测试关键步骤和证据：
+
+1. 打开临时SQLite，以原图执行初始输入；`pytest.raises(AgentRunError) as caught`要求该段确实抛出预期异常，退出with后可从caught.value检查异常实例。检查cause为LLMTimeoutError、异常携带记录与State成功列表一致；不是捕获后伪装正常完成。
+2. graph.aget_state读失败进度：next为model，成功记录1条，已存tool结果5、调用ID关联正确，HTTP两次、工具尝试一次。
+3. 退出第一连接，重开同文件并重建图，读到同样的State与待执行model；读取期间HTTP仍两次。
+4. `await rebuilt.ainvoke(None, config=config)`继续未完成工作；最终next为空、回答为预设最终正文，成功记录2条，第一条记录和已存工具交互不变。
+5. HTTP累计三次、工具仍一次；第三次和第二次的实际出站messages完全相同，证明使用了相同问题/工具结果，未重跑前面的模型及计算器。
+
+恢复定向1 passed / 9 deselected（1.28秒）；图模块目标10 passed（1.16秒）；默认全量159 passed（2.04秒）；diff及离线锁检查通过。真实图/SDK/适配器/计算器/SQLite，仅模型HTTP预设。未验证真实服务可用性、进程重启、崩溃窗口、历史重放、外部动作幂等、自动重试或生产审计。此次测试与说明未提交。
+
+阶段收口（2026-11-05）：用户要求整理提交后，LangGraph相关11 passed（1.20秒）、全量159 passed（2.11秒），diff及离线锁检查通过。恢复测试本地提交38527e6；第一轮核心机制范围、验证及边界统一见[阶段总结](./LangGraph阶段总结.md)。下一步阶段10先讲SSE事件与HTTP流前置，未自动新增接口或迁移主路由。
