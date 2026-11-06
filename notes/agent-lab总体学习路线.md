@@ -4,7 +4,7 @@
 >
 > 维护位置：本文件是 agent-lab 项目路线的唯一正式版本，与代码和测试一起更新。
 >
-> 最近核验：2026-11-05；阶段9 LangGraph第一轮核心机制学习与离线验证已收口，相关11 passed（1.20秒）、全量159 passed（2.11秒），diff及离线锁检查通过。覆盖独立计算器图、检查点、人工确认和后续模型超时恢复，正式/chat仍用原生实现；真实模型图联调、进程重启/崩溃及外部动作幂等未验证。失败恢复测试提交38527e6，阶段总结及接续文档随本检查点另作docs提交，不推送；下一主题为阶段10 SSE事件与HTTP流前置。已有图f9b9a20、文档95e16fb、检查点/确认8876380与408fce3。最小顺序图此前已GREEN；LangChain独立机制学习与验收已完成第一轮，流式目标2 passed、阶段8收口基线148 passed；一次真实流式请求收到73个片段（8个含正文）、stop及134 tokens。下一阶段进入LangGraph的State/Node/Edge；流式本批按用户要求保存本地检查点，不推送。此前共享场景6 passed；用户授权真实.env配置后，九组合成场景12次模型调用/8217 tokens，经逐题复核通过有限验收。原生与框架适配的历史、计算器、资料事实/引用和不足说明均符合预期，独立预建Agent计算器亦通过。该批后已完成独立流式入口，正式/chat未迁移。阶段7收口时为116 passed。以下阶段7的12次HTTP记录是此前原生RAG验收，与本次九组模型对照分别记录。用户澄清工具引用说明后，同组合成6题分别关闭/开启知识库，经进程内正式 /chat、真实BGE-M3/Chroma和聊天API完成12次HTTP请求、17次模型调用、16172 tokens。4道可答题事实及对应引用均正确，5道资料题无无效ID；电话未编造、问候不检索，来源快照与原文位置及实际检索一致。原生最小RAG第一轮在该有限范围内收口，首次引用失败和一次连接中断记录保留；不据单轮小样本证明因果或通用可靠性。功能基线c71a713及本次引用说明/验收材料a00e874已本地提交；路线和入口文档随本检查点同步，不推送。关键词工具竞争、部署网络路径及真实记忆效果未验证。
+> 最近核验：2026-11-06；阶段7原生记忆/RAG、阶段8 LangChain、阶段9 LangGraph均按各自限定范围完成第一轮，正式/chat保留原生实现。阶段10的独立文本SSE单元已收口：模型流转delta/done/error、POST /stream、真实回环HTTP交付/断开清理、真实Edge逐段显示/模拟超时/停止均经验证，上游模型HTTP预设。提交前Python167 passed（2.30秒）、Node4 passed、diff和离线锁检查通过，功能本地提交cc19585；文档另作docs提交，不推送。完整会话/工具RAG流式、供应商取消计算/计费及部署仍未验。本轮接续固定评测：复用已有六道合成题与历史报告，先理解正确性/引用/延迟/失败率口径，不自动运行真实模型。此前各阶段的真实模型验收及保留边界见对应历史记录；当前正式接续以第14节最新段落为准。
 
 > 阶段 7 记忆完整设计基线：[`Memory V1.1：轻量分层长期记忆方案`](./Memory-V1.1轻量分层长期记忆方案.md)。本路线仍是进度和下一步的唯一正式版本，方案确定不代表功能完成。
 
@@ -70,7 +70,7 @@ Python 工程
 | 7. 轻量记忆与原生最小 RAG | **已完成第一轮最小闭环（有限验收）** | 离线116 passed；真实合成固定题12次请求通过，事实/引用/不足说明及按需检索符合预期；真实记忆效果等边界仍保留 |
 | 8. LangChain | **已完成第一轮独立机制学习与验收** | 消息/模板、工具循环、检索/RAG、项目契约、回调及独立文本流；离线148 passed，非流式与流式真实合成验收通过，保留预建Agent业务差异 |
 | 9. LangGraph | **已完成第一轮核心机制学习与离线验证** | 独立计算器图的State/条件边/循环与预算、内存及SQLite读回、同意/拒绝及后续模型超时恢复已验证；正式/chat未迁移 |
-| 10. SSE、评测与工程化 | 待开始 | 可流式、可测、可追踪、可部署 |
+| 10. SSE、评测与工程化 | 独立文本SSE与浏览器消费已收口，进入固定评测 | HTTP增量交付、已知错误、断开清理及浏览器停止已验证；会话/完整Agent流式未接，评测与工程化继续 |
 | 11. 接入心屿 | 待开始 | 保留 Python AI 服务，与 Java 业务后端集成 |
 
 ### 当前测试策略
@@ -1045,6 +1045,69 @@ agent-lab 中先理解
 6. 查询型 Tool Calling。
 
 ## 14. 当前下一步
+
+### 独立文本SSE收口提交；接续固定评测（2026-11-06）
+
+- 用户准确说明reader.done只代表响应体结束，不代表SSE正常终态，响应可能提前或在事件未完整时结束；已补充读取故障也可能抛异常。核心边界理解收口，不重复同一道预测或要求闭卷重写。
+- 用户明确要求整理提交并继续。核验main、HEAD11a323c、origin、普通工作区及近期中文feat/docs风格；本地功能提交cc19585包含SSE转换/路由、静态页面/消费者、Node/Python测试、显式HTTP/浏览器探针及四份原始报告。仅整理一处赋值空格、JS空行尾空格和Python文件结尾换行，不改业务算法；旧报告源码指纹保留为验证时快照，不倒写成提交时重新实测浏览器。
+- 提交前最新Python167 passed（2.30秒）、Node4 passed、暂存diff与离线锁检查通过，未新增真实模型请求。文档同步另作docs提交，实际哈希见Git；不推送，.vscode/settings.json、playground/03_class.py和notes/设计复核-2026-11-02.md保持未提交。
+- 本次只收口阶段10的独立文本SSE单元，不宣称整个阶段10、会话持久化或工具/RAG流式完成。按第12节下一项进入固定评测题集及正确性/引用/延迟/失败率，复用现有rag_acceptance六题、原生/RAG历史报告，不另建题库或立刻重跑云端模型；具体工程化在心屿业务场景落地的约定保持。
+- 新增固定评测与结果判读笔记：先带读现有fixture/automatic_signals和结果，区分请求成功、语义质量、引用合法/支持、耗时与用量。当前下一步用without_knowledge组的False自动信号但pass复核结果核对判断口径，再安排离线汇总的局部参考/测试；尚未新增汇总实现或质量提升完成标志。此为新主题前置带读，不强造RED。
+
+### 最新验证：浏览器逐段显示与停止（2026-11-06）
+
+- 用户已补写readSseResponse/stopStream，核对真实文件后Node 4 passed、Python全量167 passed（2.48秒）、tracked diff检查通过。核心复用TextDecoder增量解码，按空行缓冲完整事件，EOF检查协议终态/残片，finally清理读取器；停止调用同一fetch控制器的abort。未替换用户实现，不把通过记为独立掌握。
+- 新增显式playground/sse_browser_probe.py，临时Uvicorn仅监听127.0.0.1动态端口、lifespan=off，不访问业务DB；模型HTTP通过MockTransport预设，浏览器/SDK/转换器/路由真实运行。测试进程的观察/放行端点不进入正式main路由。源码、函数职责与执行步骤均整理在SSE浏览器消费笔记，讲解收口时带读。
+- 真实Edge依次验证：normal在上游未放行时显示首段，放行后显示首段后段/已完成；timeout保留首段并显示失败：模型响应超时；stop首段后点停止，保留正文并显示已取消。终态后输入/开始恢复、停止禁用。服务仍运行时断言三例各模型请求一次且均退出迭代/关闭，stop未放行且未完成，读取取消True；随后临时服务已退出。
+- playground/results/sse_browser_probe_2026-11-06.json保存源码指纹、浏览器AX快照转录观察与Python断言的合成后台状态，不冒充全自动浏览器测试/截图/独立人工评审。不是供应商取消计算/计费、真实模型质量、部署代理或业务保存验收。初次沙箱读取回环被PermissionError拒绝，受限命令允许本地访问后验证通过，不改代理或模型配置。
+- 当前下一步：结合用户核心与新增探针解释结果，简短核对事件缓冲/HTTP EOF与协议done的区别，再整理独立文本SSE单元检查点；未提交，不自动推送。后续会话保存/工具RAG流式及评测工程化按正式路线另行确定，不扩本次取消接口。无关编辑器设置/独立练习/设计笔记保留。
+
+### 当前局部实践：浏览器增量消费与停止（2026-11-06）
+
+- 用户同意进入浏览器逐段显示/停止操作。采用FastAPI同源/static提供原生HTML和JS，复用POST /stream，不新增框架、npm依赖、任务取消接口或持久化任务状态。Codex准备页面、fetch/DOM连接、两行事件帧机械解析；用户参考补写readSseResponse和stopStream，当前仍是占位，不能记为完成。
+- 新增notes/SSE浏览器消费.md记录选择、数据流、所有样板/测试带读与完整局部参考。重点区分字节块、UTF-8字符、完整事件及HTTP EOF/协议done；停止通过同一个AbortController的signal与abort传递，页面保留前缀并标取消，不等待断开后SSE发送cancelled。
+- Node内置测试使用真实Response/ReadableStream、内存字节替换网络，覆盖合包/逐字节拆中文及事件、error前缀、缺终态/残缺事件、停止异常传播。初始RED实测4 failed，均因核心占位，无导入/语法错误；不混入pytest数，不冒充浏览器验收。
+- 样板接线后两个JS模块语法检查通过，默认Python全量167 passed（2.30秒）、diff检查通过；进程内TestClient读取三个静态文件均200且响应类型正确，无模型调用或浏览器运行，不能据此记核心GREEN。
+- 当前下一步：解释本轮新增代码/测试，用户补两个核心后核对真实文件，运行Node目标、Python全量和diff检查，再用预设模型上游实际验证浏览器。尚无浏览器/真实模型证据，不提交；已有后端Python167 passed基线保留，无关编辑器设置/独立练习/设计笔记保持原状。
+
+### 最新验证：SSE客户端断开取消与上游清理（2026-11-06）
+
+- 用户要求以正式规划控制范围，未要求的取消扩展快速带过。核对第12节只有“用户中断和断开检测”，没有要求独立task取消接口、cancelled任务状态持久化或供应商专用取消API。这些仅保留概念边界，本轮不实现、不作为SSE收口门槛；现有断开→取消上游读取→关闭资源的验证保留，接续浏览器逐段消费和停止操作。文档范围澄清无新业务代码，不重复测试或请求真实模型。
+- 用户询问此前本地探针真实性，并正确预测主动断开后不等完整回答、不标done，建议专用取消标记。已明确真实的是客户端↔Uvicorn的HTTP；模型上游HTTP预设，无真实模型/浏览器。取消标记应在前端状态或后端运行记录中区分，断开后不依赖同一SSE送达新cancelled事件；当前未实现持久化任务状态，不宣称探针字段即生产状态。
+- 复用并扩展playground/sse_http_probe.py：run_case增加disconnect，首delta后真实关闭响应，不放行上游；记录CancelledError后重新抛出、迭代finally退出、aclose及upstream_closed事件。在服务器仍运行时等待清理，不靠探针最终停止服务补救。新报告sse_http_probe_2026-11-06_disconnect.json三例passed，正常/超时仍成立；断开时只收到delta、请求一次、上游读取取消/迭代退出/关闭均True、finished=False，临时服务器已退出，旧报告原样保留。
+- 新增一条offline_stream回归例，prepare只加wait_after_first，复用真实SDK与假HTTP；先anext读取delta，再create_task请求下项，确认进入waiting后cancel，await必须抛CancelledError，检查无finish和上游关闭。现有业务核心满足目标未修改，属于既有行为验证，不强造RED。新增Event字段、anext/create_task/cancel/await和探针观察逻辑须带读。
+- 流目标10 passed（1.31秒）、全量167 passed（2.11秒），diff及离线锁检查通过。真实本地HTTP不等于真实模型、浏览器/部署、供应商取消计算/计费或业务状态入库验收；未提交SSE批次。当前下一步浏览器增量读取、事件缓冲解析与停止操作，先讲数据解码/事件边界/AbortController，再安排局部参考及验证；会话保存、工具/RAG流式与其他工程化主线保留。
+
+### 当前已验证：独立SSE路由与真实本地HTTP逐段读取（2026-11-05）
+
+- 用户修正media_type后，实际文件为text/event-stream，流目标9 passed（1.07秒）、默认全量166 passed（2.38秒），diff及离线锁检查通过。普通文本/stream正常、超时error、空输入422与上游关闭均通过；不接会话、工具/RAG或业务保存，done只说明模型流正常完成。
+- Codex新增显式playground/sse_http_probe.py与合成报告：真实Uvicorn只监听127.0.0.1临时socket，lifespan=off避免业务DB，真实HTTPX客户端trust_env=False走回环，上游仍假HTTP，SDK/模型流/转换器/路由/服务器真实运行。asyncio.Event将上游卡在首段之后，客户端收到完整delta才放行；不靠耗时阈值猜及时性。
+- 首次环境权限限制为PermissionError，保留sse_http_probe_2026-11-05.json；允许本地监听后相同源码复验sse_http_probe_2026-11-05_recheck.json两例passed。两例首delta均在上游放行前收到，上游请求各一次且closed；正常delta/delta/done及usage12，模拟超时delta/error且无done。探针finally已停止服务，不计入pytest数量，不是浏览器、代理/部署或真实模型验收。
+- 新增探针函数/嵌套类、Event等待/放行、client.stream与aiter_lines、MockTransport、server任务/短轮询/finally退出和报告指纹均需解释。没有修改用户核心，也不自动提交当前SSE单元。
+- 当前下一步断开/取消前置：区分模型超时与下游取消，首段后客户端关闭应停止上游读取并清理，不标正常done；已读本机CancelledError继承BaseException及Starlette断开监听，但尚未测试实际断开清理。先行为预测，再真实连接验证与必要局部修正；客户端/浏览器、业务保存、完整Agent流式及工程化后续保持既定路线，不自动扩架构。
+
+### 当前局部实践：独立POST /stream的HTTP接线（2026-11-05）
+
+- 路由补写核验：source→events→StreamingResponse接线已写，media_type误拼为type/event-stream，应为规范的text/event-stream。目标2 failed / 7 passed（1.15秒），正常/超时两例均在实际响应Content-Type断言失败，其他七例通过；未跑全量。已给具体字符串修正，留用户修改，不自动接管核心；当前先修响应类型再验，不提前进入网络及时性验证。
+- 用户已补写stream_sse_events。核心逻辑正确，首个正常用例失败来自Codex的usage精确字典断言过严，SDK实际附带空明细字段；已将断言改为检查三个核心Token计数并允许额外明细，未改用户核心。初次目标1 failed / 5 passed（1.20秒），先前误启动的全量1 failed / 162 passed（2.25秒）；修正后目标6 passed（1.14秒）、全量163 passed（2.01秒），diff通过。
+- 下一步新增独立普通文本POST /stream，先打通HTTP事件契约，不改原生/chat、不绑定会话或落库，也不宣称Agent/工具/RAG全链路流式完成。Codex已写TextStreamRequest(message, min_length=1)、导入和路由注册占位；用户补source=stream_langchain_reply→events=stream_sse_events→return StreamingResponse，media_type为text/event-stream、Cache-Control:no-cache。两个生成器创建时不用await，实际响应消费时才读模型；完整解释参数和返回类。
+- 新增实际app的TestClient正常/超时两例及空输入422一例，复用已有offline_stream。端点不依赖DB，测试不进入TestClient上下文以不运行lifespan，finally关闭client，避免触碰运行者业务库。验证HTTP200+SSE头/缓存头/事件顺序、超时error无done、实际出站问题、一次模型请求和上游关闭；422在路由前拒绝且零模型请求。TestClient完整缓冲不能证明网络及时性或浏览器半包解析。
+- 正确RED：流测试目标2 failed / 7 passed（1.49秒），失败均为stream_text占位，无收集错误；旧六例和输入校验通过，diff通过。最近全量163 passed是本新增前基线，不据此记当前全绿。下一步给路由完整参考和测试带读，核验用户补写后目标/全量，再实际验证HTTP逐段消费与取消/保存边界。不新增依赖、不运行真实模型、不提交。
+
+### 当前局部实践：模型流转SSE事件（2026-11-05）
+
+- 用户正确预测中途失败发error、半条事件不能直接解析；已补充连接断开时error也可能无法交付。进入正常/失败事件转换，本次不新增HTTP路由/浏览器/数据库接线。
+- 新增app/services/sse.py，Codex已写InvalidStreamError、encode_sse及stream_error_payload：只允许三种事件名，JSON编码转义换行并保留中文，已知错误映射固定code/message。stream_sse_events的核心由用户参考补写，接收现有AIMessageChunk异步生成器，用aclosing关闭上游、先合并正文/finish/usage再及时发delta，完整且stop才done；已知APIError或协议错误发error后return，未知异常及取消继续传播。done限定本单元模型流完成，不宣称业务保存成功。
+- 本机探索确认AIMessageChunk加法保留空片段的stop/usage、APITimeoutError属于APIError。原流测试fixture仅增加include_finish开关，复用真实SDK与假HTTP；新增换行/事件注入编码测试和normal/timeout/missing-finish参数化转换测试，检查finish前正文可见、唯一终态、usage/错误分类、前缀及上游关闭。完整编码帧的拆分不冒充浏览器半包解析。
+- 正确RED：tests/test_langchain_streaming.py目标3 failed / 3 passed（1.46秒），失败均指向stream_sse_events占位，无收集错误；原两例及编码例通过，diff检查通过。全量最近全绿159 passed为本单元新增前基线，本轮未跑全量、不计新增通过。当前下一步完整解释所有辅助定义、生成器类型及测试，再给核心连贯参考，核验用户补写后目标/全量回归；不安装依赖、不运行真实模型、不提交。
+
+### 当前前置：模型流到HTTP SSE事件（2026-11-05）
+
+- 用户要求进入SSE。已核验main及源码，LangGraph收口提交38527e6和11a323c已由用户同步origin；无关编辑器设置/独立练习/设计笔记保留。读取stream_langchain_reply、现有离线流测试、原生/chat及schemas/依赖配置，不默认迁移/chat到框架。
+- 新增notes/SSE前置知识.md并加入索引，先讲AIMessageChunk、异步生成器、StreamingResponse及SSE事件四层：现有Python流不自动发HTTP，/chat仍等完整业务处理后返回JSON；两段HTTP链分别为模型→Python、Python→浏览器。拟以delta/done/error表达增量/正常收尾/失败，具体接口及负载待预测后确定，done不能冒充数据库保存已成功。
+- 核验本机FastAPI 0.115.14/Starlette 0.46.2源码及WHATWG规范；StreamingResponse先发状态头，再迭代内容。纯本地一次性探索先yield delta再抛RuntimeError，收集到200头及more_body=True正文，无正常结束消息；没有网络/模型/浏览器、没有新增pytest，不能当作HTTP联调或应用自动error/done已实现。
+- 当前先解释event/data/空行、UTF-8与网络块不等于事件、POST可用fetch读流且原生EventSource构造不提供POST body、响应开始后状态不可改与发送前校验仍可HTTP拒绝。给一次中途超时和事件拆包的行为预测，再准备局部协议/事件转换参考及测试，随后HTTP接线。暂不安装/升级依赖，不新增路由或改持久化；不把本轮纯带读强造成RED。
+- 当前全量基线仍为前单元159 passed，本轮未重跑既有测试或运行真实模型，不提交新单元。阶段10其余取消/断开、评测工程化、部署以及开源产品设计对照继续保留，不据独立文本SSE规划宣称完整Agent/RAG流式已接入。
 
 ### 阶段9第一轮收口；接续阶段10 SSE前置（2026-11-05）
 

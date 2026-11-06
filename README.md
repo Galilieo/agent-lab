@@ -4,7 +4,7 @@
 
 > agent-lab 是学习与验证仓库，xinyu 是后续承接成熟能力的正式项目。这里优先保证理解原理，不追求一开始就做成完整产品。
 >
-> 当前进度（2026-11-05）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 独立机制学习与验收已完成第一轮，当前离线全量为 `159 passed`。模型/工具/上下文契约、RAG、回调、原生对照及独立文本流均已验证；真实非流式九组共12次调用，另一次真实流式请求验证片段、结束和usage。流式入口已调用真实模型，当前供Python消费者使用，尚未接入 `/chat`、浏览器展示或流式持久化；`/chat` 仍用原生实现。阶段9 LangGraph第一轮核心机制学习与离线验证已收口，覆盖模型/工具图、条件边与预算、检查点、人工确认及后续模型超时恢复；下一步阶段10先学习SSE事件协议与HTTP流边界。阶段结论见[LangGraph总结](notes/LangGraph阶段总结.md)。正式进度与边界见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
+> 当前进度（2026-11-06）：阶段 5～7 已完成第一轮最小闭环，阶段 8 LangChain 独立机制学习与验收已完成第一轮，当前离线全量为 `167 passed`。模型/工具/上下文契约、RAG、回调、原生对照及独立文本流均已验证；真实非流式九组共12次调用，另一次真实流式请求验证片段、结束和usage。流式入口已调用真实模型，当前供Python消费者使用，尚未接入 `/chat` 或流式持久化；`/chat` 仍用原生实现。阶段9 LangGraph第一轮核心机制学习与离线验证已收口，覆盖模型/工具图、条件边与预算、检查点、人工确认及后续模型超时恢复；当前阶段10已接独立文本POST /stream，模型片段转SSE、正常/超时事件和真实本地HTTP首段交付已验证；客户端断开后的上游取消清理及真实Edge逐段显示/错误/停止也已验证，Node消费测试4条通过，模型HTTP仍预设。本单元功能已本地提交cc19585，下一步复用现有题集学习固定评测。阶段结论见[LangGraph总结](notes/LangGraph阶段总结.md)。正式进度与边界见 [agent-lab 总体学习路线](notes/agent-lab总体学习路线.md#14-当前下一步)。
 
 ## 为什么创建这个仓库
 
@@ -25,7 +25,7 @@
 - Chroma（本地向量存储）
 - LangChain / langchain-deepseek（独立机制对照）
 
-当前保留原生 Agent、记忆与 RAG 实现；LangChain独立机制对照、LangGraph核心机制学习已完成第一轮限定验证，完整服务SSE接线待开始。LangGraph结论限定为独立计算器图的离线验证，未迁移正式聊天链路。尚未接入登录认证，不将学习用 `user_id` 当作可信身份。
+当前保留原生 Agent、记忆与 RAG 实现；LangChain独立机制对照、LangGraph核心机制学习已完成第一轮限定验证，独立文本SSE入口已接线，完整会话/Agent流式仍待后续。LangGraph结论限定为独立计算器图的离线验证，未迁移正式聊天链路。尚未接入登录认证，不将学习用 `user_id` 当作可信身份。
 
 ## 项目结构
 
@@ -195,7 +195,7 @@ curl -X POST http://127.0.0.1:8000/chat \
 uv run pytest
 ```
 
-2026-11-05 实际离线全量结果为 `159 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+2026-11-06 实际离线全量结果为 `167 passed`。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
 
 LangChain 对照测试为 `tests/test_langchain_*.py` 及 `tests/test_model_backend_contract.py`，模拟聊天 HTTP 和问题 Embedding，真实运行模板、SDK、工具、Agent、回调及临时 Chroma 查询。严格 RAG 仅交付预算内片段，来源校验不证明语义忠实；人工向量不证明真实检索质量。适配器已返回项目 `LLMResult`、原始工具请求和调用元数据，接收历史/Memory/RAG及工具交互，转换既有项目异常；共享场景验证原生Agent组合的正常与中途失败记录。适配计时覆盖客户端及框架处理，回调计时覆盖模型步骤，均不等同于纯网络耗时。预建Agent的消息列表、预算与部分失败观察仍与完整业务契约有差异，未替换主路由或持久化接线，详见[对照笔记](notes/LangChain与原生实现对照.md)。
 
@@ -210,7 +210,11 @@ uv run --offline --no-sync --env-file .env python -m playground.langchain_live_a
 
 该脚本使用已配置聊天API，只发送固定合成数据；九组场景上限27次模型调用，现有[报告](playground/results/langchain_live_acceptance_2026-11-04.json)实际12次、8217 tokens，经逐题复核通过限定范围验收。RAG题直接提供相同上下文，未重复验证检索；未验证数据库、HTTP路由或部署，也不据单轮样本宣称等价、稳定准确率或性能。`--offline`只约束uv依赖获取，脚本仍会请求真实模型。
 
-独立流式探针为 `playground/langchain_stream_probe.py`，使用相同的显式环境加载方式及 `--output` 另存报告，最多一次HTTP请求。现有[流式报告](playground/results/langchain_stream_probe_2026-11-04.json)验证一次真实请求收到73个片段、正确合成文本、stop与134 tokens统计；中途失败由离线流测试验证。该入口只在Python中消费模型流，完整服务SSE接线仍在阶段10。
+独立流式探针为 `playground/langchain_stream_probe.py`，使用相同的显式环境加载方式及 `--output` 另存报告，最多一次HTTP请求。现有[流式报告](playground/results/langchain_stream_probe_2026-11-04.json)验证一次真实请求收到73个片段、正确合成文本、stop与134 tokens统计；中途失败由离线流测试验证。该探针只在Python中消费模型流；阶段10现有独立文本SSE路由与浏览器消费者，完整会话/Agent流式仍待后续。
+
+新增 `POST /stream` 接收 `{"message":"你好"}`，返回 `text/event-stream`：delta为新增正文，done为本模型流正常完整，error为已知模型/流协议失败；尚未绑定会话或写聊天数据库。流目标10 passed、全量167 passed；[显式本地HTTP探针](playground/sse_http_probe.py)及[复验记录](playground/results/sse_http_probe_2026-11-05_recheck.json)验证真实Uvicorn/HTTPX回环首事件早于上游放行，正常/模拟超时均按契约收尾。[断开复验记录](playground/results/sse_http_probe_2026-11-06_disconnect.json)另验证主动关闭客户端后上游读取取消、迭代退出且流关闭，无done。该HTTP探针的上游模型HTTP预设，不包含真实模型、浏览器、供应商计算取消或部署验证；运行时必须用新的 `--output` 路径，不需加载.env。
+
+浏览器页面由同源 `/static/stream-demo.html` 提供，核心消费测试运行 `node --test tests/test_sse_client.mjs`，当前4 passed。[浏览器探针](playground/sse_browser_probe.py)配合真实Edge验证上游暂停时首段可见、正常完成、超时保留正文及按钮停止，记录见[浏览器报告](playground/results/sse_browser_probe_2026-11-06.json)。浏览器与本地HTTP真实，模型上游仍预设，未验证业务保存或供应商停止计算；临时服务已退出。
 
 固定合成题的真实模型验收需显式运行，会请求本机 Ollama 和已配置聊天 API：
 
@@ -287,7 +291,7 @@ uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_p
 - V0.4 轻量记忆
 - V0.5 RAG
 - 接下来：LangChain → LangGraph → SSE、评测与工程化
-- 当前接续：LangChain与LangGraph第一轮限定学习已收口，下一步阶段10的SSE；预建Agent仍保留消息/预算等业务契约差异，主路由沿用原生实现。
+- 当前接续：LangChain与LangGraph第一轮限定学习已收口，当前阶段10独立文本SSE及浏览器消费已收口，接续固定评测；预建Agent仍保留消息/预算等业务契约差异，主路由沿用原生实现。
 - 最后：保留 Python AI 服务，与心屿 Java 业务后端集成
 
 每个阶段都应先理解并验证核心机制，再决定是否重构或迁移到正式项目。
