@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent-Lab 流式文本演示</title>
+  <style>
+    body { max-width: 760px; margin: 48px auto; padding: 0 20px; font: 16px/1.6 system-ui, sans-serif; }
+    textarea { box-sizing: border-box; width: 100%; padding: 12px; font: inherit; }
+    button { margin: 12px 8px 0 0; padding: 8px 20px; font: inherit; }
+    pre { min-height: 160px; padding: 16px; background: #f4f6f8; white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h1>流式文本演示</h1>
+  <p>输入问题后逐段显示回答，停止后保留已收到的内容。</p>
+  <form id="stream-form">
+    <label for="message">问题</label>
+    <textarea id="message" rows="4" required>用三句话介绍什么是 Agent。</textarea>
+    <button id="start" type="submit">开始</button>
+    <button id="stop" type="button" disabled>停止</button>
+  </form>
+  <p role="status" id="status">未开始</p>
+  <pre id="output" aria-label="回答正文"></pre>
+  <script type="module" src="./stream-demo.mjs"></script>
+</body>
+</html>

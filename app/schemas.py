@@ -19,6 +19,12 @@ class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
 
 
+class TextStreamRequest(BaseModel):
+    """独立普通文本流输入，尚不绑定业务会话或声明工具。"""
+
+    message: str = Field(min_length=1)
+
+
 # 聊天输入契约；user_id 可省略，归属是否一致由业务链路验证。
 class ChatRequest(BaseModel):
     conversation_id: str = Field(min_length=1)

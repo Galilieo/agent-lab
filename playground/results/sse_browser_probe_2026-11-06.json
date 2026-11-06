@@ -1,0 +1,81 @@
+{
+  "checked_at": "2026-11-06T05:51:18.335999+00:00",
+  "status": "passed_browser_synthetic_scope",
+  "scope": "Real Edge UI and loopback Uvicorn; real app, SDK and SSE consumer. Fake upstream model HTTP; lifespan off, no business DB or real model/provider compute verification.",
+  "observation_method": "Codex CUA browser accessibility snapshots; UI observations transcribed after each action, backend assertions checked by Python.",
+  "source_sha256": {
+    "app/main.py": "22940193928a501f93cae168813e7adc7899da948319c87e46b8c544521474d1",
+    "app/static/sse-client.mjs": "62e331beb61ae94e25bc5eb3575ee9dec21802bbcae5c18c64c414be5105c4a8",
+    "app/static/stream-demo.html": "1647a01123eaa6b7116829e1634600cff16254764b6d133680c0a3db09a3b94f",
+    "app/static/stream-demo.mjs": "eee44f53dca7e1efd5a2cae80f2314135f3b5ca686c963491387c16a368fe916",
+    "app/services/sse.py": "8eda301ed8557f602bc02094e68b6ef3c0de464ae345a7af0480905df8754f1d",
+    "app/services/langchain_streaming.py": "05e36bbeb9f53f72c304904e4494d3b8f239573967bf55f289c545295e657a45",
+    "playground/sse_browser_probe.py": "b320640d271af7a46be62020f02b25967038273b0c4f89b99084f5bf0b74133e"
+  },
+  "browser_observations": {
+    "normal": {
+      "before_release": {
+        "status": "正在接收…",
+        "text": "首段",
+        "start_enabled": false,
+        "stop_enabled": true
+      },
+      "after_release": {
+        "status": "已完成",
+        "text": "首段后段",
+        "start_enabled": true,
+        "stop_enabled": false
+      }
+    },
+    "timeout": {
+      "before_release": {
+        "status": "正在接收…",
+        "text": "首段"
+      },
+      "after_release": {
+        "status": "失败：模型响应超时。",
+        "text": "首段",
+        "start_enabled": true,
+        "stop_enabled": false
+      }
+    },
+    "stop": {
+      "before_click": {
+        "status": "正在接收…",
+        "text": "首段"
+      },
+      "after_click": {
+        "status": "已取消",
+        "text": "首段",
+        "start_enabled": true,
+        "stop_enabled": false
+      }
+    }
+  },
+  "backend_states_before_shutdown": {
+    "normal": {
+      "requests": 1,
+      "released": true,
+      "finished": true,
+      "cancelled": false,
+      "iterator_stopped": true,
+      "closed": true
+    },
+    "timeout": {
+      "requests": 1,
+      "released": true,
+      "finished": false,
+      "cancelled": false,
+      "iterator_stopped": true,
+      "closed": true
+    },
+    "stop": {
+      "requests": 1,
+      "released": false,
+      "finished": false,
+      "cancelled": true,
+      "iterator_stopped": true,
+      "closed": true
+    }
+  }
+}

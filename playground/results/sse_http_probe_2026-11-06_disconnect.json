@@ -1,0 +1,94 @@
+{
+  "checked_at": "2026-11-06T04:50:25.153821+00:00",
+  "scope": "Real loopback HTTP via Uvicorn/HTTPX, including client disconnect; fake upstream model HTTP. No real model, browser, proxy/deployment, provider-side compute cancellation or database validation.",
+  "source_sha256": {
+    "app/main.py": "b49ecb5ef9abac511f1fc292c99583220613cbaec7776cbd066a1aa99e62cdae",
+    "app/schemas.py": "d20413fb1d88cbd8ecb74fe799d406b4da2ad0505c1d125c83242adf93ea993e",
+    "app/services/sse.py": "8eda301ed8557f602bc02094e68b6ef3c0de464ae345a7af0480905df8754f1d",
+    "app/services/langchain_streaming.py": "05e36bbeb9f53f72c304904e4494d3b8f239573967bf55f289c545295e657a45",
+    "playground/sse_http_probe.py": "b91aef3e15539e7dec2730cb4fcb425eb514922b69358a8df9134b470679503a"
+  },
+  "status": "passed",
+  "cases": [
+    {
+      "case": "normal",
+      "http_status": 200,
+      "first_delta_received_while_upstream_blocked": true,
+      "upstream_requests": 1,
+      "finished": true,
+      "closed": true,
+      "upstream_read_cancelled": false,
+      "upstream_iterator_stopped": true,
+      "events": [
+        {
+          "event": "delta",
+          "data": {
+            "text": "首段"
+          }
+        },
+        {
+          "event": "delta",
+          "data": {
+            "text": "后段"
+          }
+        },
+        {
+          "event": "done",
+          "data": {
+            "finish_reason": "stop",
+            "usage": {
+              "input_tokens": 8,
+              "output_tokens": 4,
+              "total_tokens": 12,
+              "input_token_details": {},
+              "output_token_details": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "timeout",
+      "http_status": 200,
+      "first_delta_received_while_upstream_blocked": true,
+      "upstream_requests": 1,
+      "finished": false,
+      "closed": true,
+      "upstream_read_cancelled": false,
+      "upstream_iterator_stopped": true,
+      "events": [
+        {
+          "event": "delta",
+          "data": {
+            "text": "首段"
+          }
+        },
+        {
+          "event": "error",
+          "data": {
+            "code": "model_timeout",
+            "message": "模型响应超时。"
+          }
+        }
+      ]
+    },
+    {
+      "case": "disconnect",
+      "http_status": 200,
+      "first_delta_received_while_upstream_blocked": true,
+      "upstream_requests": 1,
+      "finished": false,
+      "closed": true,
+      "upstream_read_cancelled": true,
+      "upstream_iterator_stopped": true,
+      "events": [
+        {
+          "event": "delta",
+          "data": {
+            "text": "首段"
+          }
+        }
+      ]
+    }
+  ]
+}

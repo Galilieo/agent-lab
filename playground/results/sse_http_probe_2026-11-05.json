@@ -1,0 +1,13 @@
+{
+  "checked_at": "2026-11-05T11:38:50.584236+00:00",
+  "scope": "Real loopback HTTP via Uvicorn/HTTPX; fake upstream model HTTP. No real model, browser, proxy/deployment, disconnect or database validation.",
+  "source_sha256": {
+    "app/main.py": "b49ecb5ef9abac511f1fc292c99583220613cbaec7776cbd066a1aa99e62cdae",
+    "app/schemas.py": "d20413fb1d88cbd8ecb74fe799d406b4da2ad0505c1d125c83242adf93ea993e",
+    "app/services/sse.py": "8eda301ed8557f602bc02094e68b6ef3c0de464ae345a7af0480905df8754f1d",
+    "app/services/langchain_streaming.py": "05e36bbeb9f53f72c304904e4494d3b8f239573967bf55f289c545295e657a45",
+    "playground/sse_http_probe.py": "d546d99c0ea35a4be19207b0abdc690a8a5d5da388d1f23201d2e510e0a22dec"
+  },
+  "status": "failed",
+  "error_type": "PermissionError"
+}

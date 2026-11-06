@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import (
@@ -33,6 +35,7 @@ from app.schemas import (
     ChatResponse,
     ChatSource,
     HealthResponse,
+    TextStreamRequest,
     MemoryQueryRequest,
     MemoryQueryResponse,
     MemoryDeleteRequest,
@@ -61,6 +64,8 @@ from app.services.memory import (
     build_memory_context,
 )
 from app.services.rag_answer import RagAnswerError, finalize_rag_answer
+from app.services.langchain_streaming import stream_langchain_reply
+from app.services.sse import stream_sse_events
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +91,27 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# 与API同源提供学习演示页和模块，不依赖启动命令所在目录。
+app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
+
 
 # 只检查 HTTP 应用能否响应，不执行模型调用或数据库业务查询。
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse()
+
+
+@app.post("/stream", response_class=StreamingResponse)
+async def stream_text(request: TextStreamRequest) -> StreamingResponse:
+    """逐段返回普通文本模型流；终态不承诺会话保存或Agent任务完成。"""
+    source = stream_langchain_reply(request.message)
+    events = stream_sse_events(source)
+
+    return StreamingResponse(
+        events,
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @app.post("/memories/query", response_model=MemoryQueryResponse)
