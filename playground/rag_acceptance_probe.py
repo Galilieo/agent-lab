@@ -56,22 +56,49 @@ def snapshot_hits(hits):
     } for hit in hits]
 
 
-def automatic_signals(case, body, model_calls):
+def review_rubric_for(case, *, mode):
+    """按组别选择复核标准；无资料的虚构资料题检查不足说明与不编造。"""
+    if mode not in {"without_knowledge", "with_knowledge"}:
+        raise ValueError("Unsupported evaluation mode.")
+
+    if (
+        mode == "without_knowledge"
+        and case["kind"] != "no_retrieval_needed"
+    ):
+        return "未提供知识资料，应说明无法确定，不编造资料事实或来源。"
+
+    return case["review"]
+
+
+def automatic_signals(case, body, model_calls, *, mode):
+    """记录适用于当前组别的辅助信号；不适用为None，不自动判定语义通过。"""
+    if mode not in {"without_knowledge", "with_knowledge"}:
+        raise ValueError("Unsupported evaluation mode.")
+
     answer = body.get("answer", "")
     expected = set(case["expected_sources"])
     cited = {source["id"] for source in body.get("sources", [])}
+    check_reference_answer = mode == "with_knowledge"
     return {
         "expected_terms_present": all(
             any(term.casefold() in answer.casefold() for term in group)
             for group in case["answer_term_groups"]
-        ) if case["answer_term_groups"] else None,
-        "expected_cited_sources_present": expected <= cited if expected else None,
+        ) if check_reference_answer and case["answer_term_groups"] else None,
+        "expected_cited_sources_present": (
+            expected <= cited
+            if check_reference_answer and expected else None
+        ),
         "no_invalid_citation_ids": body.get("invalid_citation_ids") == [],
         "knowledge_search_count": sum(
-            call["tool_names"].count("search_knowledge") for call in model_calls
+            call["tool_names"].count("search_knowledge")
+            for call in model_calls
         ),
-        "phone_like_number_present": bool(re.search(r"(?<!\d)(?:1[3-9]\d{9}|\d{3,4}[- ]\d{7,8})(?!\d)", answer))
-        if case["kind"] == "insufficient_evidence" else None,
+        "phone_like_number_present": bool(
+            re.search(
+                r"(?<!\d)(?:1[3-9]\d{9}|\d{3,4}[- ]\d{7,8})(?!\d)",
+                answer,
+            )
+        ) if case["kind"] == "insufficient_evidence" else None
     }
 
 
@@ -165,7 +192,7 @@ def run(report):
                 for case in fixture["cases"]:
                     record = {
                         "mode": mode, "case_id": case["id"], "kind": case["kind"],
-                        "question": case["question"], "review_rubric": case["review"],
+                        "question": case["question"], "review_rubric": review_rubric_for(case, mode=mode),
                         "model_calls": [], "tool_retrievals": [], "manual_review": None,
                     }
                     report["cases"].append(record)
@@ -181,7 +208,9 @@ def run(report):
                     record["http_status"] = response.status_code
                     if response.status_code == 200:
                         record["response"] = response.json()
-                        record["automatic_signals"] = automatic_signals(case, response.json(), record["model_calls"])
+                        record["automatic_signals"] = automatic_signals(
+                            case, response.json(), record["model_calls"], mode=mode,
+                        )
                     else:
                         # 不记录潜在敏感上游异常正文；合成回答仅在成功结果中保存。
                         record["error"] = "HTTP request did not succeed."
