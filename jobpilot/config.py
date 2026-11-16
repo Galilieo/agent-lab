@@ -34,9 +34,7 @@ class Settings(BaseSettings):
     postgres_user: str = Field(validation_alias="POSTGRES_USER")
     postgres_password: SecretStr = Field(validation_alias="POSTGRES_PASSWORD")
     postgres_db: str = Field(validation_alias="POSTGRES_DB")
-    postgres_host: str = Field(
-        default="127.0.0.1", validation_alias="POSTGRES_HOST"
-    )
+    postgres_host: str = Field(default="127.0.0.1", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(
         default=5432, validation_alias="POSTGRES_PORT", ge=1, le=65535
     )
@@ -44,15 +42,14 @@ class Settings(BaseSettings):
         default="jobpilot_test", validation_alias="POSTGRES_TEST_DB"
     )
 
-    deepseek_api_key: SecretStr = Field(
-        default="", validation_alias="OPENAI_API_KEY"
-    )
+    deepseek_api_key: SecretStr = Field(default="", validation_alias="OPENAI_API_KEY")
     deepseek_base_url: str = Field(
         default="https://api.deepseek.com",
         validation_alias="OPENAI_BASE_URL",
     )
     cookie_name: str = "jobpilot_session"
     cookie_max_age_seconds: int = Field(default=604800, gt=0)
+    database_connect_timeout_seconds: int = Field(default=5, gt=0)
 
     extract_facts: ModelSettings = Field(default_factory=ModelSettings)
     parse_jd: ModelSettings = Field(default_factory=ModelSettings)

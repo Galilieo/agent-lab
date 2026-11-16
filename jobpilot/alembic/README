@@ -1,0 +1,19 @@
+JobPilot 数据库迁移
+
+在 jobpilot/ 目录运行：
+
+    uv run alembic upgrade head
+    uv run alembic current
+    uv run alembic revision --autogenerate -m "describe schema change"
+    uv run alembic check
+
+默认使用 config.py 中的开发库 URL；-x database=test 显式选择测试库。
+在确认没有需要保留的测试数据后，可在测试库验证首次迁移回退：
+
+    uv run alembic -x database=test upgrade head
+    uv run alembic -x database=test downgrade base
+    uv run alembic -x database=test upgrade head
+
+生成迁移后必须审阅 upgrade/downgrade，再执行。
+首次迁移回退会删除 user_session 和 user 表，但保留可能已由容器初始化的 vector 扩展。
+不要对已有业务数据的开发库或其他数据库执行回退验收。

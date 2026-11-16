@@ -1,25 +1,25 @@
-"""提供 JobPilot HTTP 入口和真实查询数据库的健康检查。"""
+"""提供 JobPilot HTTP 入口，管理数据库生命周期并检查连通性。"""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Request
-from sqlalchemy import text
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from jobpilot.config import settings
+from jobpilot.db.session import check_database, create_database_engine, get_session
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """应用启动时创建连接池，退出时释放；实际连接在请求时获取。"""
-    engine = create_async_engine(
+    """启动时准备连接池与 session 工厂，退出时释放连接池。"""
+    engine = create_database_engine(
         settings.database_url,
-        pool_pre_ping=True,
-        connect_args={"connect_timeout": 5},
+        connect_timeout_seconds=settings.database_connect_timeout_seconds,
     )
-    app.state.db_engine = engine
+    app.state.db_session_factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
         yield
     finally:
@@ -30,14 +30,13 @@ app = FastAPI(title="JobPilot", lifespan=lifespan)
 
 
 @app.get("/api/health")
-async def health(request: Request) -> dict[str, str]:
-    """执行一次数据库查询，确认当前服务能够访问 PostgreSQL。"""
+async def health(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, str]:
+    """通过请求专属的 session 执行查询，检查 PostgreSQL 连通性。"""
     try:
-        async with request.app.state.db_engine.connect() as connection:
-            await connection.execute(text("SELECT 1"))
+        await check_database(session)
     except SQLAlchemyError:
         # 不把连接信息、驱动异常或数据库内部细节返回给浏览器。
-        raise HTTPException(
-            status_code=503, detail="数据库暂不可用"
-        ) from None
+        raise HTTPException(status_code=503, detail="数据库暂不可用") from None
     return {"status": "ok", "database": "ok"}
