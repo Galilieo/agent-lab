@@ -2,11 +2,11 @@
 
 面向 AI 应用 / Agent 开发实习求职的个人项目：**实习求职助手 Agent**（开发中）。
 
-> 当前状态（2026-11-16）：**设计完成并冻结，尚未开始实现。** 设计文档见 [notes/求职助手Agent](notes/求职助手Agent/README.md)。
+> 当前状态（2026-11-16）：**设计已冻结，第 0 周骨架开发中。** 实际进度见 [06 V1 实施任务书](notes/求职助手Agent/06-V1实施任务书.md)，设计文档见 [notes/求职助手Agent](notes/求职助手Agent/README.md)。
 
 ## 求职助手 Agent 是什么
 
-帮正在找技术类实习的学生完成「看 JD → 对照简历 → 按岗位改简历 → 准备面试 → 跟踪投递」。
+通过对话提供简历和岗位资料，帮正在找技术类实习的学生完成「看 JD → 对照简历 → 按岗位改简历 → 准备面试 → 跟踪投递」。
 
 核心约束是**改写简历时不编造经历**：简历先拆成用户确认过的「经历事实」，改写的每一条都必须引用事实，再经过三层依据检查（引用合法性、数字与实体比对、语义支持判断）。效果用自建评测集和对照实验衡量。
 
@@ -23,8 +23,8 @@ V1 定位为个人学习项目，本人求职时在本地使用；暂不上线�
 
 ### 计划技术栈
 
-- 前端：React + Vite + TypeScript + Ant Design
-- 后端：Python 3.12、FastAPI（异步）、SQLAlchemy 2.0 + Alembic
+- 前端：React + Vite + TypeScript + Ant Design + Ant Design X（展示组件）
+- 后端：Python 3.12、FastAPI（异步）、SQLAlchemy 2.1 + Alembic
 - 数据库：PostgreSQL + pgvector（本地用 Docker 启动）
 - Agent：LangGraph 编排，自写模型调用网关（DeepSeek）
 - 评测：自建评测集与对照实验
@@ -35,6 +35,8 @@ V1 定位为个人学习项目，本人求职时在本地使用；暂不上线�
 agent-lab/
 ├── app/          # 早期机制实验：原生 Agent、工具、Memory、RAG、MCP、LangChain / LangGraph 对照、SSE
 ├── tests/        # 早期实验的自动化测试
+├── jobpilot/     # 求职助手后端，独立 uv 项目
+├── web/          # 求职助手前端，独立 pnpm 项目
 ├── playground/   # Python 练习、真实模型验收脚本与结果
 ├── notes/
 │   ├── 求职助手Agent/   # 当前项目的设计文档
@@ -43,7 +45,7 @@ agent-lab/
 └── README.md
 ```
 
-求职助手的代码将放在新目录 `jobpilot/`（后端）和 `web/`（前端），与 `app/` 分开管理、依赖独立。
+求职助手的代码位于 `jobpilot/`（后端）和 `web/`（前端），与 `app/` 分开管理、依赖独立。前端启动与目录说明见 [web/README.md](web/README.md)。
 
 ## 早期机制实验（app/）
 
