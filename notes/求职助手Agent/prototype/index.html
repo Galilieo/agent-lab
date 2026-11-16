@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobPilot 原型</title>
+<style>
+:root {
+  --primary: #50687F; --primary-hover: #3F566C; --primary-bg: #DCE3EA; --primary-text: #3B5268;
+  --bg-layout: #F4F2EE; --bg-sider: #ECE9E3; --bg-container: #FFFFFF; --bg-subtle: #F8F7F4;
+  --text: #2E2E2C; --text-2: #6B6A66; --text-3: #8A8984;
+  --border: #E2DFD8; --border-2: #EAE7E1;
+  --success: #5B8A4A; --success-bg: #E6EEDF; --success-text: #3F6130;
+  --warning: #B9842F; --warning-bg: #F5ECDA; --warning-text: #7A5618;
+  --error: #B5534A; --error-bg: #F5E3E0; --error-text: #8A3A33;
+  --radius: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--font); font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg-layout); }
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-hover); }
+h1 { font-size: 20px; font-weight: 600; margin: 0; }
+h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-2); }
+.faint { color: var(--text-3); font-size: 13px; }
+
+/* 布局 */
+.app { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100vh; }
+.sider { background: var(--bg-sider); padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; }
+.logo { font-size: 17px; font-weight: 600; padding: 4px 12px 18px; letter-spacing: 0.2px; }
+.logo span { color: var(--primary); }
+.nav { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius); color: var(--text-2); cursor: pointer; }
+.nav:hover { background: rgba(80, 104, 127, 0.07); color: var(--text); }
+.nav.active { background: var(--primary-bg); color: var(--primary-text); font-weight: 500; }
+.nav.disabled { color: var(--text-3); cursor: default; }
+.nav.disabled:hover { background: none; }
+.nav .badge { margin-left: auto; font-size: 11px; color: var(--text-3); }
+.sider .spacer { flex: 1; }
+.ico { width: 16px; height: 16px; flex: none; }
+.main { padding: 24px 32px 48px; min-width: 0; }
+.container { max-width: 1200px; margin: 0 auto; }
+.topbar { display: none; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.page-head .sub { color: var(--text-2); margin-top: 4px; }
+.breadcrumb { color: var(--text-3); font-size: 13px; margin-bottom: 6px; }
+.breadcrumb a { color: var(--text-2); }
+
+/* 组件 */
+.card { background: var(--bg-container); border: 1px solid var(--border-2); border-radius: 8px; padding: 20px; }
+.card + .card { margin-top: 16px; }
+.btn { font: inherit; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 15px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-container); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.btn.small { height: 26px; padding: 0 10px; font-size: 13px; }
+.btn.text { border-color: transparent; background: none; color: var(--text-2); padding: 0 8px; }
+.btn.text:hover { color: var(--primary); }
+.btn.danger { color: var(--error); border-color: #E7C9C5; }
+.btn.danger:hover { color: #fff; background: var(--error); border-color: var(--error); }
+.btn.on-accept { background: var(--success-bg); border-color: #C9DABD; color: var(--success-text); }
+.btn.on-reject { background: var(--bg-subtle); color: var(--text-2); }
+.tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--border-2); background: var(--bg-subtle); color: var(--text-2); white-space: nowrap; }
+.tag.success { background: var(--success-bg); border-color: #D3E2C9; color: var(--success-text); }
+.tag.warning { background: var(--warning-bg); border-color: #EBDBBA; color: var(--warning-text); }
+.tag.error { background: var(--error-bg); border-color: #ECCDC8; color: var(--error-text); }
+.tag.primary { background: var(--primary-bg); border-color: #C9D4DF; color: var(--primary-text); }
+.alert { display: flex; gap: 10px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid; margin-bottom: 16px; }
+.alert.warning { background: var(--warning-bg); border-color: #EBDBBA; color: var(--warning-text); }
+.alert.info { background: #EAEFF3; border-color: #D2DCE5; color: var(--primary-text); }
+.alert.error { background: var(--error-bg); border-color: #ECCDC8; color: var(--error-text); }
+.alert b { font-weight: 600; }
+input, textarea, select { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); background: #fff; padding: 5px 10px; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(80, 104, 127, 0.15); }
+textarea { width: 100%; resize: vertical; line-height: 1.7; }
+label.field { display: block; margin-bottom: 14px; }
+label.field span { display: block; color: var(--text-2); margin-bottom: 6px; }
+label.field input { width: 100%; height: 36px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--bg-container); border: 1px solid var(--border-2); border-radius: 8px; padding: 14px 16px; }
+.stat .label { color: var(--text-2); font-size: 13px; }
+.stat .value { font-size: 22px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat .value small { font-size: 13px; font-weight: 400; color: var(--text-3); }
+.tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tabs a { padding: 8px 0 10px; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs a.active { color: var(--primary-text); border-bottom-color: var(--primary); font-weight: 500; }
+table.data { width: 100%; border-collapse: collapse; }
+table.data th { text-align: left; font-weight: 500; color: var(--text-2); background: var(--bg-subtle); padding: 10px 12px; border-bottom: 1px solid var(--border-2); font-size: 13px; }
+table.data td { padding: 12px; border-bottom: 1px solid var(--border-2); vertical-align: top; }
+table.data tr:last-child td { border-bottom: none; }
+.table-wrap { border: 1px solid var(--border-2); border-radius: 8px; overflow-x: auto; background: #fff; }
+.prose { font-size: 15px; line-height: 1.7; }
+details summary { cursor: pointer; color: var(--primary); font-size: 13px; list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details[open] summary { margin-bottom: 6px; }
+.fact-ref { background: var(--bg-subtle); border: 1px solid var(--border-2); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; color: var(--text-2); margin-top: 4px; }
+.fact-ref b { color: var(--text); font-weight: 500; }
+.empty { text-align: center; padding: 36px 16px; }
+.empty .title { font-size: 15px; font-weight: 500; margin: 10px 0 4px; }
+.empty .ico-lg { width: 40px; height: 40px; color: var(--text-3); }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.spacer-x { flex: 1; }
+.hidden { display: none !important; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* 事实库 */
+.upload { border: 1px dashed #CFCBC2; border-radius: 8px; background: var(--bg-subtle); padding: 22px; text-align: center; color: var(--text-2); }
+.exp { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; margin-top: 16px; overflow: hidden; }
+.exp-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-subtle); border-bottom: 1px solid var(--border-2); flex-wrap: wrap; }
+.exp-head .name { font-weight: 600; }
+.fact { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-2); align-items: start; }
+.fact:last-child { border-bottom: none; }
+.fact.needs-check { background: #FBF7EE; }
+.fact .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+.fact select { height: 26px; padding: 0 6px; font-size: 13px; }
+.fact input[type=checkbox] { width: 16px; height: 16px; margin-top: 4px; accent-color: var(--primary); }
+
+/* 改写审阅 */
+.review { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; overflow: hidden; }
+.review-head, .bullet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.review-head > div { padding: 10px 16px; background: var(--bg-subtle); color: var(--text-2); font-size: 13px; border-bottom: 1px solid var(--border-2); }
+.review-head > div + div, .bullet > div + div { border-left: 1px solid var(--border-2); }
+.bullet { border-bottom: 1px solid var(--border-2); }
+.bullet:last-child { border-bottom: none; }
+.bullet > div { padding: 14px 16px; }
+.bullet .exp-label { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
+.bullet .actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.bullet .reason { color: var(--error-text); font-size: 13px; }
+.bullet.reverted .rewrite-text { color: var(--text-2); }
+.diff-add { background: #E8EEF3; border-radius: 3px; padding: 0 2px; }
+
+/* 进度 */
+.steps { display: flex; gap: 0; margin: 8px 0 20px; }
+.step { flex: 1; display: flex; align-items: center; gap: 10px; }
+.step .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; border: 1px solid var(--border); color: var(--text-3); background: #fff; flex: none; }
+.step.done .dot { background: var(--primary-bg); border-color: var(--primary-bg); color: var(--primary-text); }
+.step.current .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+.step .line { flex: 1; height: 1px; background: var(--border); margin-right: 10px; }
+.step.done .line { background: var(--primary); }
+.step .txt { white-space: nowrap; }
+.step.current .txt { font-weight: 500; }
+.log li { margin-bottom: 6px; color: var(--text-2); }
+.log li b { color: var(--text); font-weight: 500; }
+
+/* 登录 */
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.auth .card { width: 100%; max-width: 380px; padding: 32px 28px; }
+
+/* 弹窗 */
+.mask { position: fixed; inset: 0; background: rgba(46, 46, 44, 0.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.modal { background: #fff; border-radius: 10px; width: 100%; max-width: 440px; padding: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16); }
+.modal h2 { margin-bottom: 8px; }
+.modal ul { padding-left: 18px; color: var(--text-2); margin: 10px 0 16px; }
+
+/* 标注 */
+.anno { display: none; border: 1px dashed #A7B6C4; background: #EEF2F6; color: var(--primary-text); border-radius: var(--radius); padding: 6px 10px; font-size: 12px; line-height: 1.6; margin: 8px 0; }
+body.show-anno .anno { display: block; }
+.anno-toggle { position: fixed; right: 16px; bottom: 16px; z-index: 10; background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--text-2); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+body.show-anno .anno-toggle { color: var(--primary-text); border-color: var(--primary); }
+
+/* 窄屏：导航收起，审阅改为上下排列 */
+@media (max-width: 991px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sider { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; z-index: 30; transform: translateX(-100%); transition: transform 0.2s; box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08); }
+  body.nav-open .sider { transform: none; }
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: -16px -16px 16px; background: var(--bg-sider); position: sticky; top: 0; z-index: 5; }
+  .main { padding: 16px 16px 40px; }
+  .review-head { display: none; }
+  .bullet { grid-template-columns: minmax(0, 1fr); }
+  .bullet > div + div { border-left: none; border-top: 1px dashed var(--border-2); }
+  .bullet > div:first-child::before { content: "原文"; display: block; font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
+  .bullet > div + div::before { content: "改写"; display: block; font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
+  .steps { flex-direction: column; gap: 10px; }
+  .step .line { display: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-facts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-jobs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-runs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+</svg>
+
+<!-- 登录页：没有侧栏 -->
+<section class="page" id="page-login">
+  <div class="auth">
+    <div class="card">
+      <div class="logo" style="padding:0 0 4px; font-size:20px">Job<span>Pilot</span></div>
+      <p class="muted" style="margin-bottom:24px">改简历不编造，每一句都有依据</p>
+      <label class="field"><span>邮箱</span><input type="email" placeholder="name@example.com"></label>
+      <label class="field"><span>密码</span><input type="password" placeholder="至少 8 位"></label>
+      <button class="btn primary" style="width:100%; justify-content:center; height:36px" onclick="go('facts')">登录</button>
+      <p class="faint" style="text-align:center; margin-top:16px">还没有账号？<a href="#login">注册</a></p>
+      <div class="anno">登录成功后后端写入 HttpOnly Cookie，前端不保存 token。错误提示统一为「邮箱或密码不正确」，不区分是哪一项错。未登录访问其他页面时跳到这里，登录后回到原页面。</div>
+    </div>
+  </div>
+</section>
+
+<div class="app" id="app">
+  <aside class="sider">
+    <div class="logo">Job<span>Pilot</span></div>
+    <a class="nav" data-nav="facts" href="#facts"><svg class="ico"><use href="#i-facts"/></svg>经历事实库</a>
+    <a class="nav" data-nav="jobs" href="#jobs"><svg class="ico"><use href="#i-jobs"/></svg>岗位</a>
+    <a class="nav" data-nav="runs" href="#runs"><svg class="ico"><use href="#i-runs"/></svg>改写记录</a>
+    <span class="nav disabled"><svg class="ico"><use href="#i-chat"/></svg>模拟面试<span class="badge">V2</span></span>
+    <div class="spacer"></div>
+    <a class="nav" data-nav="account" href="#account"><svg class="ico"><use href="#i-user"/></svg>账号</a>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="btn text" onclick="document.body.classList.toggle('nav-open')" aria-label="打开导航"><svg class="ico"><use href="#i-menu"/></svg></button>
+      <div class="logo" style="padding:0">Job<span>Pilot</span></div>
+    </div>
+    <div class="container">
+
+    <!-- 经历事实库 -->
+    <section class="page" id="page-facts">
+      <div class="page-head">
+        <div>
+          <h1>经历事实库</h1>
+          <p class="sub">改写只会引用你确认过的事实。当前版本 <span class="num">v3</span>，<span class="num">12</span> 条已确认，<span class="num">2</span> 条待确认</p>
+        </div>
+        <div class="row">
+          <button class="btn">补充事实</button>
+          <button class="btn primary">提交为 v4</button>
+        </div>
+      </div>
+      <div class="anno">页面主要操作只有一个（提交新版本）。提交时只包含已确认的事实；旧版本保留，已有的改写结果仍然指向生成它的版本。</div>
+
+      <div class="upload">
+        <svg class="ico-lg" style="width:28px;height:28px"><use href="#i-upload"/></svg>
+        <p style="margin-top:6px">把简历拖到这里，或 <a href="#facts">选择文件</a>　·　支持 PDF、DOCX，也可以 <a href="#facts">直接粘贴文本</a></p>
+        <p class="faint" style="margin-top:4px">上传的文件解析后不保存，只保留文字</p>
+      </div>
+      <div class="anno">Upload.Dragger。解析中显示「正在拆分事实…」和骨架屏；扫描版 PDF 提取不到文字时用 Alert 提示改用文字版或粘贴。</div>
+
+      <div class="exp">
+        <div class="exp-head">
+          <span class="name">Agent 机制实验项目</span><span class="faint">个人项目 · 2026.09–2026.11</span>
+        </div>
+        <div class="fact">
+          <input type="checkbox" checked aria-label="已确认">
+          <div>
+            <div class="prose">使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div>
+            <div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span>
+              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
+          </div>
+          <button class="btn text small">编辑</button>
+        </div>
+        <div class="fact">
+          <input type="checkbox" checked aria-label="已确认">
+          <div>
+            <div class="prose">模型调用失败时按指数退避重试，最多 3 次</div>
+            <div class="meta"><span class="tag">做了什么</span><span class="tag primary">含数字</span><span class="tag">来自简历</span>
+              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
+          </div>
+          <button class="btn text small">编辑</button>
+        </div>
+        <div class="fact needs-check">
+          <input type="checkbox" aria-label="已确认">
+          <div>
+            <div class="prose">参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div>
+            <div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span>
+              <select aria-label="职责程度"><option>参与</option><option>负责</option><option>主导</option><option>不适用</option></select>
+              <span class="tag warning">请核对职责程度</span></div>
+          </div>
+          <button class="btn text small">编辑</button>
+        </div>
+        <div class="fact">
+          <input type="checkbox" checked aria-label="已确认">
+          <div>
+            <div class="prose">使用 LangGraph 检查点实现中断后恢复执行</div>
+            <div class="meta"><span class="tag">技术</span><span class="tag primary">用户补充</span>
+              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
+          </div>
+          <button class="btn text small">编辑</button>
+        </div>
+      </div>
+      <div class="anno">按经历分组。职责程度用 Select：模型初判，原文没写清时默认「参与」并标黄提示核对。来源分「来自简历」「用户补充」两种，后者在匹配报告里会产生「表达缺口」。勾选框即确认；删除事实放在「编辑」里，需要二次确认。</div>
+
+      <div class="exp">
+        <div class="exp-head"><span class="name">技能</span></div>
+        <div class="fact">
+          <input type="checkbox" checked aria-label="已确认">
+          <div>
+            <div class="prose">熟悉 Python、FastAPI；了解 React</div>
+            <div class="meta"><span class="tag">技术</span><span class="tag">来自简历</span><span class="tag">职责程度：不适用</span></div>
+          </div>
+          <button class="btn text small">编辑</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 岗位列表 -->
+    <section class="page" id="page-jobs">
+      <div class="page-head">
+        <div><h1>岗位</h1><p class="sub">粘贴一份 JD，解析出要求后就能生成匹配报告</p></div>
+        <button class="btn primary" onclick="go('job-new')">添加岗位</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>岗位</th><th>公司</th><th>硬性要求覆盖</th><th>最近改写</th><th style="width:90px"></th></tr></thead>
+          <tbody>
+            <tr><td><a href="#job-match">Agent 应用开发实习</a></td><td>示例科技</td><td class="num">3 / 4</td><td><span class="tag warning">待审阅 2 条</span></td><td><a href="#job-match">查看</a></td></tr>
+            <tr><td><a href="#job-match">大模型应用后端实习</a></td><td>样例智能</td><td class="num">2 / 3</td><td><span class="tag success">已导出</span></td><td><a href="#job-match">查看</a></td></tr>
+            <tr><td><a href="#job-parse">AI 产品工程实习</a></td><td>演示数据</td><td class="faint">尚未生成匹配报告</td><td class="faint">—</td><td><a href="#job-parse">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="anno">Table。列表加载时用骨架屏。删除岗位放在详情页，用 Popconfirm 二次确认（02 第 5.3 节：直接删除）。不显示百分比匹配度，只显示硬性要求覆盖条数。</div>
+    </section>
+
+    <!-- 添加岗位 -->
+    <section class="page" id="page-job-new">
+      <div class="breadcrumb"><a href="#jobs">岗位</a> / 添加岗位</div>
+      <div class="page-head"><div><h1>添加岗位</h1><p class="sub">把招聘页面上的岗位描述整段粘贴进来</p></div></div>
+      <div class="card">
+        <label class="field"><span>岗位描述</span>
+          <textarea rows="12" placeholder="岗位职责：&#10;1. 参与大模型应用的后端开发……&#10;&#10;任职要求：&#10;1. 熟悉 Python……"></textarea>
+        </label>
+        <div class="row"><span class="spacer-x"></span><button class="btn" onclick="go('jobs')">取消</button><button class="btn primary" onclick="go('job-parse')">解析岗位</button></div>
+      </div>
+      <div class="anno">JD 原文只作为数据交给模型，不会当作指令执行；解析出可疑指令时在解析结果页顶部提示。</div>
+    </section>
+
+    <!-- 岗位详情：解析结果 -->
+    <section class="page" id="page-job-parse">
+      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
+      <div class="page-head">
+        <div><h1>Agent 应用开发实习</h1><p class="sub">示例科技 · 上海 · 每周 4 天，至少 3 个月</p></div>
+        <div class="row"><button class="btn danger">删除岗位</button><button class="btn primary" onclick="go('job-match')">生成匹配报告</button></div>
+      </div>
+      <div class="tabs"><a href="#job-parse" class="active">岗位解析</a><a href="#job-match">匹配报告</a><a href="#tailor-review">改写结果</a></div>
+      <div class="alert warning"><b>注意</b><span>岗位描述中有一段像是写给 AI 的指令（「忽略之前的要求……」），已当作普通文字处理，不会执行。</span></div>
+      <div class="anno">注入检测命中时才显示这条 Alert。</div>
+      <div class="card">
+        <h2>硬性要求</h2>
+        <ul style="margin:0; padding-left:18px; line-height:2">
+          <li>本科及以上在读，计算机相关专业</li>
+          <li>熟悉 Python，有 Web 后端开发经验</li>
+          <li>了解大模型应用开发（Prompt、RAG、Agent 至少一项）</li>
+          <li>每周至少实习 4 天，持续 3 个月以上</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>加分项</h2>
+        <ul style="margin:0; padding-left:18px; line-height:2"><li>有 LangGraph 或类似工作流框架经验</li><li>有完整项目上线或开源经历</li></ul>
+      </div>
+      <div class="card">
+        <h2>技术关键词</h2>
+        <div class="row"><span class="tag">Python</span><span class="tag">FastAPI</span><span class="tag">LLM</span><span class="tag">RAG</span><span class="tag">LangGraph</span><span class="tag">PostgreSQL</span><span class="tag">Docker</span></div>
+        <p class="faint" style="margin-top:10px">关键词已标准化，例如「大模型」统一为 LLM</p>
+      </div>
+    </section>
+
+    <!-- 匹配报告 -->
+    <section class="page" id="page-job-match">
+      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
+      <div class="page-head">
+        <div><h1>Agent 应用开发实习</h1><p class="sub">基于事实库 v3 生成 · 11 月 16 日</p></div>
+        <div class="row"><button class="btn">重新生成</button><button class="btn primary" onclick="go('tailor-progress')">开始改写</button></div>
+      </div>
+      <div class="tabs"><a href="#job-parse">岗位解析</a><a href="#job-match" class="active">匹配报告</a><a href="#tailor-review">改写结果</a></div>
+      <div class="stats">
+        <div class="stat"><div class="label">硬性要求</div><div class="value">3 <small>/ 4 已覆盖</small></div></div>
+        <div class="stat"><div class="label">表达缺口</div><div class="value">2 <small>条</small></div></div>
+        <div class="stat"><div class="label">部分覆盖</div><div class="value">1 <small>条</small></div></div>
+        <div class="stat"><div class="label">未覆盖</div><div class="value">1 <small>条</small></div></div>
+      </div>
+      <div class="alert info"><span><b>表达缺口</b>：你做过，但当前简历没有写出来。改写会优先把这些事实写进简历。</span></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th style="width:28%">要求</th><th style="width:110px">判断</th><th>依据与说明</th><th style="width:26%">建议</th></tr></thead>
+          <tbody>
+            <tr><td>熟悉 Python，有 Web 后端开发经验 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td>
+              <td><details><summary>依据 F-03、F-07</summary><div class="fact-ref"><b>F-03</b> 使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div></details></td>
+              <td class="muted">放在项目经历第一条</td></tr>
+            <tr><td>有 LangGraph 或类似工作流框架经验 <span class="tag">加分</span></td><td><span class="tag primary">表达缺口</span></td>
+              <td><details><summary>依据 F-12（用户补充）</summary><div class="fact-ref"><b>F-12</b> 使用 LangGraph 检查点实现中断后恢复执行</div></details><p class="faint" style="margin-top:4px">简历原文没有提到 LangGraph</p></td>
+              <td class="muted">把这条事实写进项目经历</td></tr>
+            <tr><td>了解大模型应用开发 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td>
+              <td><details><summary>依据 F-03、F-11</summary><div class="fact-ref"><b>F-11</b> 参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div></details></td>
+              <td class="muted">—</td></tr>
+            <tr><td>每周至少实习 4 天，持续 3 个月以上 <span class="tag">硬性</span></td><td><span class="tag error">未覆盖</span></td>
+              <td class="muted">事实库中没有到岗时间的信息</td>
+              <td class="muted">如果可以满足，补充到事实库；这一条不能由改写补上</td></tr>
+            <tr><td>有完整项目上线或开源经历 <span class="tag">加分</span></td><td><span class="tag warning">部分覆盖</span></td>
+              <td><details><summary>依据 F-03</summary><div class="fact-ref"><b>F-03</b> 项目在本地运行，没有上线记录</div></details></td>
+              <td class="muted">学习或补项目；没有做过的不要写上去</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="anno">判断四种：已覆盖（成功色）、表达缺口（主色）、部分覆盖（警告色）、未覆盖（错误色）。依据用 details / Collapse 展开事实原文。不显示百分比匹配分（01 F3）。未覆盖的建议只能是「补充到事实库」或「学习、补项目」。</div>
+    </section>
+
+    <!-- 改写进行中 -->
+    <section class="page" id="page-tailor-progress">
+      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习 / 改写</div>
+      <div class="page-head"><div><h1>正在改写</h1><p class="sub">可以离开这个页面，回来后会继续显示进度</p></div><button class="btn" onclick="go('tailor-review')">查看结果（原型跳转）</button></div>
+      <div class="card">
+        <div class="steps">
+          <div class="step done"><span class="dot">✓</span><span class="txt">规划</span><span class="line"></span></div>
+          <div class="step done"><span class="dot">✓</span><span class="txt">逐条改写</span><span class="line"></span></div>
+          <div class="step current"><span class="dot">3</span><span class="txt">依据检查</span><span class="line"></span></div>
+          <div class="step"><span class="dot">4</span><span class="txt">修订</span></div>
+        </div>
+        <ul class="log" style="padding-left:18px; margin:0">
+          <li><b>规划完成</b>：保留 2 段经历，补入 1 条表达缺口</li>
+          <li><b>改写完成</b>：共 3 条</li>
+          <li><b>检查中</b>：第 2 / 3 条</li>
+        </ul>
+        <p class="faint num" style="margin-top:14px">已用 48 秒 · 模型调用 6 次</p>
+      </div>
+      <div class="anno">Steps。前端每 2 秒轮询 GET /api/tailor-runs/{run_id}；进度来自数据库中的运行状态，所以离开页面再回来能继续显示。失败时用 Result 组件说明原因并提供「重试」。</div>
+    </section>
+
+    <!-- 改写审阅 -->
+    <section class="page" id="page-tailor-review">
+      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
+      <div class="page-head">
+        <div><h1>Agent 应用开发实习</h1><p class="sub num" id="review-summary">3 条改写 · 已接受 1 · 待审阅 2</p></div>
+        <div class="row"><button class="btn" onclick="acceptAllPassed()">接受全部通过项</button><button class="btn">导出 Markdown</button><button class="btn primary">导出 DOCX</button></div>
+      </div>
+      <div class="tabs"><a href="#job-parse">岗位解析</a><a href="#job-match">匹配报告</a><a href="#tailor-review" class="active">改写结果</a></div>
+      <div class="review">
+        <div class="review-head"><div>原文</div><div>改写</div></div>
+
+        <div class="bullet" data-state="accepted" data-passed="1">
+          <div><div class="exp-label">Agent 机制实验项目</div><div class="prose">用 FastAPI 写了聊天接口，接入大模型。</div></div>
+          <div>
+            <div class="prose rewrite-text">基于 FastAPI 实现大模型对话接口，支持 <span class="diff-add">SSE 流式输出</span>与<span class="diff-add">失败重试</span>。</div>
+            <div class="actions">
+              <span class="tag success">检查通过</span>
+              <details><summary>依据 F-03、F-07</summary>
+                <div class="fact-ref"><b>F-03</b> 使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div>
+                <div class="fact-ref"><b>F-07</b> 模型调用失败时按指数退避重试，最多 3 次</div></details>
+              <span class="spacer-x"></span>
+              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">接受</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bullet" data-state="pending" data-passed="1">
+          <div><div class="exp-label">Agent 机制实验项目</div><div class="prose">做过一个 RAG 小实验。</div></div>
+          <div>
+            <div class="prose rewrite-text">参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异；使用 <span class="diff-add">LangGraph 检查点</span>实现中断后恢复执行。</div>
+            <div class="actions">
+              <span class="tag warning">修订 1 次后通过</span>
+              <details><summary>依据 F-11、F-12</summary>
+                <div class="fact-ref"><b>F-11</b> 参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div>
+                <div class="fact-ref"><b>F-12</b> 使用 LangGraph 检查点实现中断后恢复执行（用户补充）</div>
+                <p class="faint" style="margin-top:6px">第一版写了「主导搭建」，职责程度为「参与」，已修订</p></details>
+              <span class="spacer-x"></span>
+              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">接受</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bullet reverted" data-state="pending" data-passed="0">
+          <div><div class="exp-label">课程项目</div><div class="prose">参与过项目数据库设计。</div></div>
+          <div>
+            <div class="prose rewrite-text">参与过项目数据库设计。</div>
+            <div class="actions">
+              <span class="tag">已回退原文</span>
+              <span class="reason">两次修订后仍写了「主导」，事实里是「参与」</span>
+              <span class="spacer-x"></span>
+              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">保留原文</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="anno">核心页面。原文与改写并排，窄屏改为上下排列。接受 / 不用可以随时改回来，导出只包含接受的条目。「接受全部通过项」只处理检查通过且尚未决定的条目。改写里新增的内容用浅色底标出。用户手动修改的条目也会过一次依据检查，结果只提示不阻止保存。</div>
+      <div class="row" style="margin-top:16px">
+        <span class="faint">这次改写有帮助吗？</span><button class="btn small">有帮助</button><button class="btn small">没帮助</button>
+      </div>
+    </section>
+
+    <!-- 改写记录 -->
+    <section class="page" id="page-runs">
+      <div class="page-head"><div><h1>改写记录</h1><p class="sub">每次改写都记录用的是哪个事实库版本</p></div></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>岗位</th><th>事实库版本</th><th>状态</th><th>结果</th><th>时间</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#tailor-review">Agent 应用开发实习</a></td><td class="num">v3</td><td><span class="tag warning">待审阅</span></td><td class="num">3 条 · 回退 1</td><td class="faint num">11-16 14:20</td></tr>
+            <tr><td><a href="#tailor-review">大模型应用后端实习</a></td><td class="num">v2</td><td><span class="tag success">已导出</span></td><td class="num">4 条 · 回退 0</td><td class="faint num">11-15 21:05</td></tr>
+            <tr><td><a href="#tailor-progress">AI 产品工程实习</a></td><td class="num">v3</td><td><span class="tag primary">运行中</span></td><td class="faint">—</td><td class="faint num">11-16 14:31</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty card hidden" id="runs-empty">
+        <svg class="ico-lg"><use href="#i-runs"/></svg>
+        <p class="title">还没有改写记录</p>
+        <p class="muted">先在「岗位」里添加一份 JD，生成匹配报告后就能开始改写</p>
+        <button class="btn primary" style="margin-top:14px" onclick="go('jobs')">去添加岗位</button>
+      </div>
+      <p style="margin-top:12px"><a href="#runs" onclick="document.getElementById('runs-empty').classList.toggle('hidden'); return false">切换查看空状态示例</a></p>
+      <div class="anno">空状态要告诉用户下一步做什么，并给出按钮（07 第 6 节）。</div>
+    </section>
+
+    <!-- 账号 -->
+    <section class="page" id="page-account">
+      <div class="page-head"><div><h1>账号</h1></div></div>
+      <div class="alert warning hidden" id="pending-delete"><span><b>账号将于 11 月 23 日删除</b>。在此之前可以恢复，恢复前其他功能暂停使用。</span><span class="spacer-x"></span><button class="btn small" onclick="togglePending(false)">恢复账号</button></div>
+      <div class="card">
+        <h2>登录信息</h2>
+        <p class="muted">邮箱　demo@example.com</p>
+        <button class="btn" style="margin-top:14px" onclick="go('login')">退出登录</button>
+      </div>
+      <div class="card">
+        <h2>删除账号</h2>
+        <p class="muted">申请后有 7 天可以恢复；到期后简历、事实库、岗位和改写结果会全部删除，无法找回。</p>
+        <button class="btn danger" style="margin-top:14px" onclick="document.getElementById('delete-modal').classList.remove('hidden')">删除账号</button>
+      </div>
+      <div class="anno">两阶段删除（02 第 5.3 节）。申请后立即退出所有登录；待删除期内登录只能看到这一页和「恢复账号」。</div>
+    </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="mask hidden" id="delete-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
+    <h2 id="del-title">删除账号？</h2>
+    <p class="muted">提交后：</p>
+    <ul>
+      <li>立即退出所有设备的登录</li>
+      <li>7 天内可以登录并恢复账号</li>
+      <li>7 天后所有数据彻底删除，无法找回</li>
+    </ul>
+    <label class="field"><span>输入「删除」确认</span><input placeholder="删除"></label>
+    <div class="row"><span class="spacer-x"></span>
+      <button class="btn" onclick="document.getElementById('delete-modal').classList.add('hidden')">取消</button>
+      <button class="btn danger" onclick="document.getElementById('delete-modal').classList.add('hidden'); togglePending(true)">申请删除</button>
+    </div>
+  </div>
+</div>
+
+<button class="anno-toggle" onclick="document.body.classList.toggle('show-anno')">显示实现标注</button>
+
+<script>
+const NAV_OF = { facts: 'facts', jobs: 'jobs', 'job-new': 'jobs', 'job-parse': 'jobs', 'job-match': 'jobs', 'tailor-progress': 'runs', 'tailor-review': 'jobs', runs: 'runs', account: 'account' };
+
+let current = location.hash.slice(1) || 'facts';
+
+// 不依赖 hashchange：某些打开方式（如 data: 地址）改 hash 不会触发事件
+function go(page) {
+  current = page;
+  try { history.replaceState(null, '', '#' + page); } catch (e) { /* 忽略 */ }
+  render();
+}
+
+document.addEventListener('click', e => {
+  const link = e.target.closest('a[href^="#"]');
+  if (!link || link.getAttribute('onclick')) return;
+  e.preventDefault();
+  go(link.getAttribute('href').slice(1));
+});
+
+function render() {
+  const page = current;
+  const isLogin = page === 'login';
+  document.getElementById('app').classList.toggle('hidden', isLogin);
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
+  document.querySelectorAll('.nav[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === NAV_OF[page]));
+  document.body.classList.remove('nav-open');
+  window.scrollTo(0, 0);
+}
+
+function setBulletState(bullet, state) {
+  bullet.dataset.state = state;
+  const accept = bullet.querySelector('[data-act=accept]');
+  const reject = bullet.querySelector('[data-act=reject]');
+  accept.classList.toggle('on-accept', state === 'accepted');
+  reject.classList.toggle('on-reject', state === 'rejected');
+  updateSummary();
+}
+
+function updateSummary() {
+  const bullets = [...document.querySelectorAll('.bullet')];
+  const accepted = bullets.filter(b => b.dataset.state === 'accepted').length;
+  const pending = bullets.filter(b => b.dataset.state === 'pending').length;
+  document.getElementById('review-summary').textContent = `${bullets.length} 条改写 · 已接受 ${accepted} · 待审阅 ${pending}`;
+}
+
+function acceptAllPassed() {
+  document.querySelectorAll('.bullet[data-passed="1"][data-state="pending"]').forEach(b => setBulletState(b, 'accepted'));
+}
+
+function togglePending(on) {
+  document.getElementById('pending-delete').classList.toggle('hidden', !on);
+}
+
+document.querySelectorAll('.bullet').forEach(bullet => {
+  bullet.querySelectorAll('[data-act]').forEach(btn => btn.addEventListener('click', () => {
+    const target = btn.dataset.act === 'accept' ? 'accepted' : 'rejected';
+    setBulletState(bullet, bullet.dataset.state === target ? 'pending' : target);
+  }));
+  setBulletState(bullet, bullet.dataset.state);
+});
+
+window.addEventListener('hashchange', () => { current = location.hash.slice(1) || 'facts'; render(); });
+render();
+</script>
+</body>
+</html>
