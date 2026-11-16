@@ -367,15 +367,15 @@ body.show-anno .anno-toggle { color: var(--primary-text); border-color: var(--pr
         <div class="seg" role="tablist"><button class="on" data-mode="paste">粘贴文字</button><button data-mode="shot">上传截图</button></div>
         <div id="shot-area" class="hidden">
           <div class="shots"><div class="shot"><span>1</span></div><div class="shot"><span>2</span></div><div class="shot"><span>3</span></div><div class="shot add">+</div></div>
-          <p class="faint" style="margin-bottom:12px">可以一次上传多张，按顺序拼接。拖动缩略图调整顺序。</p>
-          <div class="alert info"><span>已识别 3 张截图，请核对下面的文字，有错直接改。</span></div>
+          <p class="faint" style="margin-bottom:12px">可以一次上传多张，不用按顺序。系统会自动整理顺序、去掉截图之间重叠的部分；顺序不对时拖动缩略图调整。</p>
+          <div class="alert info"><span>已识别 3 张截图，自动整理的顺序是 3 → 1 → 2，去掉了 2 处重叠。请核对下面的文字，有错直接改。</span></div>
         </div>
         <label class="field"><span>岗位描述</span>
           <textarea rows="12" placeholder="岗位职责：&#10;1. 参与大模型应用的后端开发……&#10;&#10;任职要求：&#10;1. 熟悉 Python……"></textarea>
         </label>
         <div class="row"><span class="spacer-x"></span><button class="btn" onclick="go('jobs')">取消</button><button class="btn primary" onclick="go('job-parse')">解析岗位</button></div>
       </div>
-      <div class="anno">Segmented 切换输入方式。截图模式：Upload 多张图片 → POST /api/ocr 本地识别 → 文字填进下方文本框供核对 → 点「解析岗位」才提交。两种来源都只作为数据交给模型，不会当作指令执行；解析出可疑指令时在解析结果页顶部提示。</div>
+      <div class="anno">Segmented 切换输入方式。截图模式：Upload 多张图片（顺序不限）→ POST /api/ocr：逐张本地识别，模型只判断顺序，程序拼接并去掉重叠行（每一行都来自识别原文）→ 文字填进下方文本框供核对；拖动缩略图会按新顺序重新拼接 → 点「解析岗位」才提交。两种来源都只作为数据交给模型，不会当作指令执行；解析出可疑指令时在解析结果页顶部提示。</div>
     </section>
 
     <!-- 岗位详情：解析结果 -->
