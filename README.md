@@ -1,163 +1,66 @@
 # agent-lab
 
-面向 AI 应用 / Agent 开发实习求职的项目：**实习求职助手 Agent**。帮学生完成「看 JD → 对照简历 → 按岗位改简历 → 准备面试 → 跟踪投递」，核心约束是改写简历时不编造经历。
+面向 AI 应用 / Agent 开发实习求职的个人项目：**实习求职助手 Agent**（开发中）。
 
-> 当前状态（2026-11-16）：**主题已确定为实习求职助手 Agent，处于设计阶段，新产品尚未实现**。设计文档入口见[实习求职助手 Agent](notes/求职助手Agent/README.md)（总览、功能、架构与数据模型、可信与隐私、评测、落地与里程碑）。以下为此前的选型记录，保留为历史与备选：[求职主题比较与企业知识评测](notes/2026-11-16-求职主题比较与企业知识评测.md)按岗位、数据、评分和已有代码比较多个主题，当前建议为企业知识分析 Agent，以公开年报作首个评测场景；尚未确认替换原方案。[技术调研 Agent V1](notes/2026-11-14-技术调研Agent-V1方案.md)保留为此前候选设计。[功能与开源选型](notes/2026-11-16-Agent功能与开源选型.md)记录 Memory、RAG、上下文、MCP 和算法候选及补测要求。
->
-> [Harness 架构候选池](notes/2026-11-16-Harness架构候选池与筛选记录.md)继续扩大比较 pi、Hermes 等实现及评测依据；当前技术组合仍待横向比较，尚未定最终框架。
->
-> 当前源码仍是先前的大模型调用、聊天、工具、Memory、RAG 与 SSE 机制实验。2026-11-07 封存时的验证与限制见[阶段封存与心屿交接](notes/2026-11-07-阶段封存与心屿交接.md)；下方运行说明和功能记录对应这些已有实验，不表示研究产品已经可用。
+> 当前状态（2026-11-16）：**设计完成并冻结，尚未开始实现。** 设计文档见 [notes/求职助手Agent](notes/求职助手Agent/README.md)。
 
-## 为什么创建这个仓库
+## 求职助手 Agent 是什么
 
-这个仓库最初是 AI 应用机制的个人学习实验场。2026-11-14 起，将已有积累发展为独立的求职项目；2026-11-16 主题确定为实习求职助手 Agent，V1 定位为个人学习项目、本人求职时在本地使用，暂不上线和推广；用户表、登录与用户隔离照常实现，为以后开放预留。心屿继续承载完整业务产品。保留学习过程、失败与验证证据。
+帮正在找技术类实习的学生完成「看 JD → 对照简历 → 按岗位改简历 → 准备面试 → 跟踪投递」。
 
-## 当前技术栈
+核心约束是**改写简历时不编造经历**：简历先拆成用户确认过的「经历事实」，改写的每一条都必须引用事实，再经过三层依据检查（引用合法性、数字与实体比对、语义支持判断）。效果用自建评测集和对照实验衡量。
 
-- Python 3.12
-- FastAPI
-- Uvicorn
-- Pydantic
-- pytest
-- uv
-- Git 与 GitHub
-- SQLite
-- HTTPX 与 MCP SDK
-- Ollama / BGE-M3（本地 Embedding）
-- Chroma（本地向量存储）
-- LangChain / langchain-deepseek（独立机制对照）
+V1 定位为个人学习项目，本人求职时在本地使用；暂不上线和推广，但用户表、登录与用户隔离照常实现，为以后开放预留。
 
-当前保留原生 Agent、记忆与 RAG 实现；LangChain独立机制对照、LangGraph核心机制学习已完成第一轮限定验证，独立文本SSE入口已接线，完整会话/Agent流式仍待后续。LangGraph结论限定为独立计算器图的离线验证，未迁移正式聊天链路。尚未接入登录认证，不将学习用 `user_id` 当作可信身份。
+| 设计文档 | 内容 |
+| --- | --- |
+| [00 总览与决策](notes/求职助手Agent/00-总览与决策.md) | 为什么选这个题目、范围、完成标准 |
+| [01 功能设计](notes/求职助手Agent/01-功能设计.md) | 经历事实库、JD 解析、匹配、改写与依据检查、模拟面试、记忆等 |
+| [02 技术架构与数据模型](notes/求职助手Agent/02-技术架构与数据模型.md) | 架构决定、LangGraph 流程、数据表、RAG、记忆与上下文管理 |
+| [03 可信、安全与隐私](notes/求职助手Agent/03-可信安全与隐私.md) | 防编造、提示注入防御、个人信息保护 |
+| [04 评测方案](notes/求职助手Agent/04-评测方案.md) | 评测集、指标与对照实验 |
+| [05 落地与里程碑](notes/求职助手Agent/05-落地与里程碑.md) | 每周计划、风险 |
 
-## 项目结构
+### 计划技术栈
+
+- 前端：React + Vite + TypeScript + Ant Design
+- 后端：Python 3.12、FastAPI（异步）、SQLAlchemy 2.0 + Alembic
+- 数据库：PostgreSQL + pgvector（本地用 Docker 启动）
+- Agent：LangGraph 编排，自写模型调用网关（DeepSeek）
+- 评测：自建评测集与对照实验
+
+## 仓库结构
 
 ```text
 agent-lab/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── config.py
-│   ├── database.py
-│   ├── schemas.py
-│   ├── mcp_server.py
-│   ├── tools.py
-│   └── services/
-│       ├── __init__.py
-│       ├── agent.py
-│       ├── llm.py
-│       ├── langchain_llm.py
-│       ├── langchain_tools.py
-│       ├── langchain_agent.py
-│       ├── langchain_callbacks.py
-│       ├── langchain_retrieval.py
-│       ├── langchain_rag.py
-│       ├── langchain_adapter.py
-│       ├── langchain_streaming.py
-│       ├── langgraph_basics.py
-│       ├── langgraph_agent.py
-│       ├── langgraph_checkpoint.py
-│       ├── langgraph_approval.py
-│       ├── mcp_tools.py
-│       ├── memory.py
-│       ├── embedding.py
-│       ├── vector_store.py
-│       ├── rag.py
-│       ├── rag_index.py
-│       ├── rag_retrieval.py
-│       ├── rag_context.py
-│       ├── rag_tools.py
-│       ├── rag_citations.py
-│       └── rag_answer.py
-├── playground/
-│   ├── 01_basic_syntax.py
-│   ├── 02_json_file.py
-│   ├── calculator.py
-│   ├── home.py
-│   ├── message.json
-│   ├── mcp_note_client.py
-│   ├── use_calculator.py
-│   ├── rag_acceptance_probe.py
-│   ├── langchain_live_acceptance.py
-│   ├── langchain_stream_probe.py
-│   ├── fixtures/
-│   └── results/
-├── tests/
-│   ├── __init__.py
-│   ├── test_agent.py
-│   ├── test_agent_mcp.py
-│   ├── test_conversation_ownership.py
-│   ├── test_database.py
-│   ├── test_health.py
-│   ├── test_langchain_llm.py
-│   ├── test_langchain_prompts.py
-│   ├── test_langchain_tools.py
-│   ├── test_langchain_agent.py
-│   ├── test_langchain_retrieval.py
-│   ├── test_langchain_rag.py
-│   ├── test_langchain_adapter.py
-│   ├── test_langchain_streaming.py
-│   ├── test_langgraph_basics.py
-│   ├── test_langgraph_agent.py
-│   ├── test_model_backend_contract.py
-│   ├── test_mcp.py
-│   ├── test_memory.py
-│   ├── test_memory_extraction.py
-│   └── test_tools.py
+├── app/          # 早期机制实验：原生 Agent、工具、Memory、RAG、MCP、LangChain / LangGraph 对照、SSE
+├── tests/        # 早期实验的自动化测试
+├── playground/   # Python 练习、真实模型验收脚本与结果
 ├── notes/
-│   ├── README.md
-│   ├── agent-lab总体学习路线.md
-│   ├── Codex学习导师提示词.md
-│   ├── Memory-V1.1轻量分层长期记忆方案.md
-│   ├── 代码注释规范.md
-│   └── sqlite多轮会话数据模型草案.md
-├── .vscode/
-│   └── settings.json
-├── .editorconfig
-├── .env.example
-├── .gitignore
-├── LICENSE
-├── pyproject.toml
-├── uv.lock
+│   ├── 求职助手Agent/   # 当前项目的设计文档
+│   ├── history/        # 已被取代的规划与历史记录
+│   └── ...             # 知识笔记，索引见 notes/README.md
 └── README.md
 ```
 
-`app/` 保存可运行的 FastAPI 应用，`tests/` 保存自动化测试，`playground/` 保存独立的 Python 学习示例，`notes/` 用于记录实验过程和结论。
+求职助手的代码将放在新目录 `jobpilot/`（后端）和 `web/`（前端），与 `app/` 分开管理、依赖独立。
 
-## 源码从哪里开始读
+## 早期机制实验（app/）
 
-按下面的顺序阅读，可以先看清一条聊天请求，再进入协议与数据细节。各 Python 文件开头都有职责说明，关键函数补充输入输出、异常或事务约束。
+这个仓库最初是 AI 应用机制的学习实验场，按阶段手写并验证了：
 
-| 文件 | 主要负责什么 |
-| --- | --- |
-| [app/main.py](app/main.py) | HTTP 入口、归属检查、短事务、Agent 调用和错误状态映射 |
-| [app/schemas.py](app/schemas.py) | 请求与响应的数据结构；字段校验不替代业务规则 |
-| [app/config.py](app/config.py) | 从进程环境读取应用和模型配置，不直接解析 .env |
-| [app/services/agent.py](app/services/agent.py) | 多轮模型与工具循环、调用预算和中途失败边界 |
-| [app/services/llm.py](app/services/llm.py) | 单次模型 HTTP 请求、响应解析和结构化调用元数据 |
-| [app/services/langchain_llm.py](app/services/langchain_llm.py) | 独立的 ChatDeepSeek 调用、消息模板与 Runnable 组合 |
-| [app/services/langchain_tools.py](app/services/langchain_tools.py) | 将原生计算器包装为框架工具，复用参数校验和计算逻辑 |
-| [app/services/langchain_agent.py](app/services/langchain_agent.py) | 独立的框架工具循环、三次模型限额与消息轨迹返回 |
-| [app/services/langchain_callbacks.py](app/services/langchain_callbacks.py) | 回调采集成功/失败模型步骤的耗时、可用 Token 与异常类型 |
-| [app/services/langchain_retrieval.py](app/services/langchain_retrieval.py) | 将原生异步检索包装为 Runnable，保留 Document 原文与来源 |
-| [app/services/langchain_rag.py](app/services/langchain_rag.py) | 预算内片段到模板与模型，再校验实际交付来源；保留原始响应 |
-| [app/services/langchain_adapter.py](app/services/langchain_adapter.py) | 单次调用转项目结果、原始工具请求与异常，以 HTTP 响应钩子记录实际状态 |
-| [app/services/langchain_streaming.py](app/services/langchain_streaming.py) | 独立异步文本流，逐片段转发、保留结束/usage并传播中断异常 |
-| [app/services/langgraph_agent.py](app/services/langgraph_agent.py) | 独立模型/计算器图、条件路由、执行前预算与部分失败调用记录 |
-| [app/services/langgraph_checkpoint.py](app/services/langgraph_checkpoint.py) | 共用记录序列化与异步SQLite检查点连接的打开/关闭 |
-| [app/services/langgraph_approval.py](app/services/langgraph_approval.py) | 独立工具前确认图，interrupt暂停及同意/拒绝选路 |
-| [app/tools.py](app/tools.py) | 工具声明、参数校验与本地工具执行 |
-| [app/services/mcp_tools.py](app/services/mcp_tools.py) | 将 Agent 的笔记工具请求接到 MCP Client |
-| [app/mcp_server.py](app/mcp_server.py) | 提供笔记 Tool 和学习路线 Resource，执行真实文件读取 |
-| [app/database.py](app/database.py) | SQLite 建表、历史窗口、消息/调用记录与记忆存储 |
-| [app/services/memory.py](app/services/memory.py) | 记忆触发、候选绑定、范围合并、Core/Regular 选择预算与写入编排 |
-| [app/services/embedding.py](app/services/embedding.py) | 请求本机 Ollama，将文本转为 BGE-M3 向量 |
-| [app/services/vector_store.py](app/services/vector_store.py) | 接收已有向量，在 Chroma 中存储、同步与查询 |
-| [app/services/rag_tools.py](app/services/rag_tools.py) | 校验语义工具参数，检索并选择预算内片段；Agent 回传工具消息 |
-| [app/services/rag_answer.py](app/services/rag_answer.py) | 共用引用收尾，以及独立的严格知识库问答路径 |
+- 模型调用与调用日志，SQLite 多轮会话与会话归属检查
+- Tool Calling 与原生 Agent 循环（调用预算、中途失败的持久化）
+- MCP Server / Client 接线
+- 分层长期记忆（[Memory V1.1](notes/Memory-V1.1轻量分层长期记忆方案.md)）：提取、选择、注入、删除防重建
+- RAG：BGE-M3 Embedding、Chroma、引用 ID 校验
+- LangChain 与原生实现对照；LangGraph 的条件路由、检查点、人工确认与失败恢复
+- SSE 流式输出与浏览器消费
+- 固定合成题评测与有限重试
 
-对应的 `tests/test_*.py` 说明每条链路的正常与失败预期。`pyproject.toml` 管理依赖与 pytest 配置，`uv.lock` 固定依赖解析结果；`playground/message.json` 是文件读写练习的数据，不是应用配置。注释写法见 [代码注释规范](notes/代码注释规范.md)。
+这部分已于 2026-11-07 收口。完整的完成清单、验收记录和源码阅读顺序见[早期机制实验说明](notes/history/早期机制实验说明.md)，学习笔记见 [notes/README.md](notes/README.md)。
 
-## 本地运行
+### 运行
 
 先安装 [uv](https://docs.astral.sh/uv/)，然后在仓库根目录执行：
 
@@ -167,133 +70,16 @@ cp .env.example .env
 uv run uvicorn app.main:app --reload --env-file .env
 ```
 
-服务默认运行在 `http://127.0.0.1:8000`。可使用以下命令检查接口：
+服务默认运行在 `http://127.0.0.1:8000`。`.env` 只用于本地配置，已被 Git 忽略；不要在 `.env.example` 或代码中写入真实 API Key。
 
-```bash
-curl http://127.0.0.1:8000/health
-
-curl -X POST http://127.0.0.1:8000/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"conversation_id":"test-001","message":"你好"}'
-```
-
-`/chat` 可选传入 `user_id`；省略时创建匿名会话。会话建立后归属固定，后续请求必须保持一致，包括是否匿名；不同归属返回 `409`，不会保存本轮消息或调用 Agent。该字段当前是学习用身份标识，尚未接入登录认证。
-
-`.env` 只用于本地配置，已被 Git 忽略。不要在 `.env.example` 或代码中写入真实 API Key。
-
-可选配置 `RAG_INDEX_PATH` 指向已建好的专用 Chroma 索引；留空时不提供语义检索工具。配置后仍由模型决定是否调用，应用启动或普通聊天不会自动重建索引。显式索引入口是 `app.services.rag_index.build_index()`，当前读取指定目录下的普通 Markdown，不递归或跟随符号链接。
-
-`/chat` 返回 `sources` 和 `invalid_citation_ids`，没有来源时为空列表。来源来自本轮交付且被正文合法引用的片段；ID 合法不等于结论一定得到原文支持。来源快照只在本次响应返回，尚未持久化为可恢复的历史证据。
-
-`POST /memories/query` 和 `POST /memories/delete` 提供记忆查看与按范围删除；具体请求模型见 `app/schemas.py` 和 `/docs`。归属检查沿用会话规则，当前没有额外登录认证。
-
-## GitHub SSH Key 撤销提醒
-
-本仓库首次推送使用为个人账号 `Galilieo` 单独创建的 SSH Key。以后如果不再从当前电脑维护这个仓库，请前往 GitHub 的 `Settings > SSH and GPG keys` 撤销对应 Key，并删除本机私钥。不要将私钥或访问令牌提交到仓库。
-
-## 运行测试
+### 测试
 
 ```bash
 uv run pytest
 ```
 
-2026-11-07 封存前实际离线全量结果为 `174 passed`（2.32s）。默认 pytest 使用 fake 模型 HTTP、临时数据库和索引，不调用真实模型。后续结果以正式路线更新为准。
+2026-11-07 收口时离线全量结果为 `174 passed`。默认测试使用假的模型 HTTP、临时数据库和索引，不调用真实模型。
 
-LangChain 对照测试为 `tests/test_langchain_*.py` 及 `tests/test_model_backend_contract.py`，模拟聊天 HTTP 和问题 Embedding，真实运行模板、SDK、工具、Agent、回调及临时 Chroma 查询。严格 RAG 仅交付预算内片段，来源校验不证明语义忠实；人工向量不证明真实检索质量。适配器已返回项目 `LLMResult`、原始工具请求和调用元数据，接收历史/Memory/RAG及工具交互，转换既有项目异常；共享场景验证原生Agent组合的正常与中途失败记录。适配计时覆盖客户端及框架处理，回调计时覆盖模型步骤，均不等同于纯网络耗时。预建Agent的消息列表、预算与部分失败观察仍与完整业务契约有差异，未替换主路由或持久化接线，详见[对照笔记](notes/LangChain与原生实现对照.md)。
+## License
 
-LangGraph 图测试为 `tests/test_langgraph_agent.py`：真实图、模型SDK、适配器、计算器及临时SQLite配合预设模型HTTP，验证模型/工具循环、预算与部分失败记录、内存存取与任务隔离、关闭后重开连接读回，以及工具前人工确认。暂停前零工具执行；同数据库同任务恢复时，同意执行、拒绝结束，原模型步骤不重跑。后续模型超时后重开连接，以None继续仅重试失败模型步骤，保存的工具结果复用；三次HTTP尝试、两条成功记录、一次工具执行。该验证不覆盖进程重启、崩溃窗口、生产权限、HTTP确认接口或前端展示，主路由仍用原生Agent。
-
-真实模型对照必须显式运行，并选择新的报告名以保留既有记录：
-
-```bash
-uv run --offline --no-sync --env-file .env python -m playground.langchain_live_acceptance \
-  --output playground/results/langchain_live_acceptance_new.json
-```
-
-该脚本使用已配置聊天API，只发送固定合成数据；九组场景上限27次模型调用，现有[报告](playground/results/langchain_live_acceptance_2026-11-04.json)实际12次、8217 tokens，经逐题复核通过限定范围验收。RAG题直接提供相同上下文，未重复验证检索；未验证数据库、HTTP路由或部署，也不据单轮样本宣称等价、稳定准确率或性能。`--offline`只约束uv依赖获取，脚本仍会请求真实模型。
-
-独立流式探针为 `playground/langchain_stream_probe.py`，使用相同的显式环境加载方式及 `--output` 另存报告，最多一次HTTP请求。现有[流式报告](playground/results/langchain_stream_probe_2026-11-04.json)验证一次真实请求收到73个片段、正确合成文本、stop与134 tokens统计；中途失败由离线流测试验证。该探针只在Python中消费模型流；阶段10现有独立文本SSE路由与浏览器消费者，完整会话/Agent流式仍待后续。
-
-新增 `POST /stream` 接收 `{"message":"你好"}`，返回 `text/event-stream`：delta为新增正文，done为本模型流正常完整，error为已知模型/流协议失败；尚未绑定会话或写聊天数据库。流目标10 passed、全量167 passed；[显式本地HTTP探针](playground/sse_http_probe.py)及[复验记录](playground/results/sse_http_probe_2026-11-05_recheck.json)验证真实Uvicorn/HTTPX回环首事件早于上游放行，正常/模拟超时均按契约收尾。[断开复验记录](playground/results/sse_http_probe_2026-11-06_disconnect.json)另验证主动关闭客户端后上游读取取消、迭代退出且流关闭，无done。该HTTP探针的上游模型HTTP预设，不包含真实模型、浏览器、供应商计算取消或部署验证；运行时必须用新的 `--output` 路径，不需加载.env。
-
-浏览器页面由同源 `/static/stream-demo.html` 提供，核心消费测试运行 `node --test tests/test_sse_client.mjs`，当前4 passed。[浏览器探针](playground/sse_browser_probe.py)配合真实Edge验证上游暂停时首段可见、正常完成、超时保留正文及按钮停止，记录见[浏览器报告](playground/results/sse_browser_probe_2026-11-06.json)。浏览器与本地HTTP真实，模型上游仍预设，未验证业务保存或供应商停止计算；临时服务已退出。
-
-固定合成题的真实模型验收需显式运行，会请求本机 Ollama 和已配置聊天 API：
-
-```bash
-uv run --offline --no-sync --env-file .env python -m playground.rag_acceptance_probe \
-  --output playground/results/rag_acceptance_new_run.json
-```
-
-选择新的结果文件名以保留历史证据。这里的 `--offline` 只约束 uv 的依赖获取，不会禁用脚本中的模型网络请求。
-
-本轮 [首次结果](playground/results/rag_acceptance_probe.json)发现引用 ID 多加前缀；[中断复验](playground/results/rag_acceptance_recheck.json)记录连接失败；[完整复验](playground/results/rag_acceptance_recheck_2.json)在说明澄清后通过限定验收：12 次 HTTP、17 次模型调用，4 道可答题事实与对应引用正确，5 道资料题无未知引用，缺失电话未编造，问候未检索。这是进程内正式 `/chat` 路径的合成实验，排除了关键词 MCP 工具；不是部署网络验收，也不证明单轮改善的因果或通用稳定性。
-
-## 当前完成情况
-
-- [x] FastAPI 项目基础骨架
-- [x] `GET /health` 健康检查接口
-- [x] `POST /chat` 真实异步 LLM 调用
-- [x] Pydantic 请求与响应模型
-- [x] 基础接口测试
-- [x] 环境变量示例与 Git 忽略规则
-- [x] 真实大模型调用
-- [x] SQLite 连接、会话/消息/调用/记忆四表结构、模型调用重试关系、跨会话外键隔离、稳定历史与最近窗口查询、文件持久化验证
-- [x] SQLite 多轮对话 API 接线，以及成功/失败 `model_call` 追踪
-- [x] SQLite schema 启动生命周期
-- [x] 阶段 5 真实 Uvicorn + HTTP 两轮会话验收
-- [x] calculator Tool Calling 协议解析、参数校验和单轮 Agent 工具闭环
-- [x] `/chat` 接入 Agent，并追踪中间与最终成功模型调用
-- [x] 可配置 Agent 工具循环，以及默认最多 3 次模型调用的停止保护
-- [x] 后续模型调用失败时保留已完成调用并持久化完整失败链
-- [x] 最大模型调用预算耗尽时返回 `502` 并持久化已完成调用
-- [x] 未知工具、非法参数和工具执行失败时返回 `502`，并保留此前成功的模型调用
-- [x] get_current_time 时区参数校验、本地执行、双工具注册与回传闭环的自动化验证
-- [x] search_notes 固定范围查询、原文出处、空结果和三工具注册的自动化验证
-- [x] 独立 MCP Server 工具注册、同进程 Client 测试与真实 stdio 查询实验
-- [x] MCP Client 接入 Agent 查询分支、工具结果回传与失败边界验证
-- [x] 学习路线 Resource 的真实 stdio 读取，以及 Tool / Resource / Prompt 职责复述
-- [x] 可选用户标识、会话归属冲突检查与旧会话表补列兼容
-- [x] 两种范围 memory 表、UPSERT、来源校验与无效来源不覆盖旧记忆
-- [x] [Memory V1.1 完整方案](notes/Memory-V1.1轻量分层长期记忆方案.md)落盘并关联正式路线
-- [x] Pydantic 提取结果模型、多条候选与 skip、空 upsert 和伪造来源拒绝
-- [x] LLM 按需提取、Core/Regular 选择预算与上下文注入的离线闭环
-- [x] 记忆查看、按归属范围删除和顺序执行下防旧历史重建
-- [x] Markdown 读取切分、本地 BGE-M3 Embedding 和 Chroma 持久化
-- [x] 显式索引同步、TopK 检索和整片上下文预算
-- [x] `/chat` 按配置启用语义工具、Agent 按需调用和来源累积
-- [x] 引用 ID 白名单检查、无效引用标注及实际引用来源响应
-- [x] 固定合成题的真实模型对照与限定范围复验
-- [x] LangChain 单次模型调用、模板与 Runnable 的独立离线对照
-- [x] 框架计算器、Agent 循环及成功/超时模型回调记录的独立离线验证
-- [x] LangChain 异步检索、严格 RAG 链及原始响应保留的独立离线验证
-- [x] 普通文本框架调用的项目结果与异常适配、实际 HTTP 状态观测
-- [x] 框架模型工具/上下文契约、原生循环组合的失败记录及共享离线/真实合成场景验收
-- [x] 框架独立文本流、结束/usage元数据及中断前缀的离线验证与一次真实正常流验收
-- [x] LangGraph 顺序图、模型/计算器循环、条件边及执行前预算的离线验证
-- [x] LangGraph 内存/SQLite检查点读回、任务隔离及工具前人工确认的离线验证
-- [x] LangGraph 后续模型超时后从SQLite检查点显式继续的离线验证
-- [ ] 完整会话/Agent SSE及业务工程化：按心屿 Java + Python 接入需求实施；Docker与部署随接入学习，不阻塞lab集中学习收口
-
-阶段 5 只保证数据模型可记录同一 user message 的多次调用，不实现自动重试策略；自动重试留到评测与工程化阶段。最近消息窗口是当前最小上下文裁剪方案，历史摘要待记忆或评测阶段出现真实需求后再实现，不阻塞阶段 5 完成。
-
-阶段 5 已在用户明确授权后，通过本地 `.env`、真实 Uvicorn 和独立临时数据库完成一次真实 DeepSeek 两轮联调；第二轮正确回答了第一轮提供的合成测试代号。联调没有输出 API Key，临时数据库已在验证后删除。
-
-阶段 6 已完成第一轮：三个基础工具、原生 Agent 循环、错误持久化边界及官方 MCP SDK 2.3.0 接线均已验证。`run_agent()` 的 search_notes 分支通过异步 MCP Client 执行，其他基础工具沿用本地执行；Server 另提供 `notes://learning-route` Resource。2026-10-16 的 `41 passed` 是历史基线；fake 模型配合真实同进程 MCP 查询验证回传链，独立 stdio 实验验证工具查询与 Resource 读取。当时未访问真实聊天模型，不将后续排除关键词工具的 RAG 验收当作完整 MCP 联调证据。Agent 接线与 Tool / Resource / Prompt 职责已完成复述；Resource 未自动注入上下文，MCP Prompt 只做职责理解。
-
-阶段 7 的记忆最小闭环已离线验证；原生 RAG 已完成上述有限合成验收。真实记忆提取与偏好遵循、并发删除时在途任务防重建、多租户知识权限及历史来源快照恢复仍未验证或实现。
-
-2026-10-19 会话归属目标测试为 `3 passed`，全量为 `44 passed`，`git diff --check` 通过。该测试使用临时旧数据库和 fake Agent，验证归属冲突返回 409、拒绝请求不追加消息和调用 Agent，以及旧会话数据保留；另以临时数据库验证重复初始化及旧会话继续聊天。已完成复述验收，没有调用真实模型。
-
-## 后续学习路线
-
-- V0.1 基础模型调用与调用日志
-- V0.2 多轮对话与上下文管理
-- V0.3 Tool Calling、Structured Output 与 MCP 小补充
-- V0.4 轻量记忆
-- V0.5 RAG
-- 接下来：LangChain → LangGraph → SSE、评测与工程化
-- 当前接续：LangChain/LangGraph、独立文本SSE和固定评测已按限定范围收口；有限重试已通过4条离线测试并本地提交44b1acf（正式/chat未接入）。按2026-11-06用户调整，lab完成职责概览、一个产品设计对照与交接后转入心屿；Docker/部署及业务工程化随Java+Python接入实施。主/chat仍沿用原生实现。
-- 最后：保留 Python AI 服务，与心屿 Java 业务后端集成
-
-每个阶段都应先理解并验证核心机制，再决定是否重构或迁移到正式项目。
+见 [LICENSE](LICENSE)。
