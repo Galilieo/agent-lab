@@ -277,10 +277,18 @@ body.show-anno .anno-toggle { color: var(--primary-text); border-color: var(--pr
 
       <div class="upload">
         <svg class="ico-lg" style="width:28px;height:28px"><use href="#i-upload"/></svg>
-        <p style="margin-top:6px">把简历拖到这里，或 <a href="#facts">选择文件</a>　·　也可以 <a href="#facts">直接粘贴文本</a></p>
+        <p style="margin-top:6px">把简历拖到这里，或 <a href="#facts">选择文件</a>　·　也可以 <a href="#facts" onclick="document.getElementById('paste-panel').classList.toggle('hidden'); return false">直接粘贴文本</a></p>
         <p class="faint" style="margin-top:4px">支持 PDF、DOCX、TXT、Markdown、HTML、图片；截图和扫描件会先识别文字，请核对后再拆分</p>
         <p class="faint" style="margin-top:2px">上传的文件解析后不保存，只保留文字；文字识别在本机完成</p>
       </div>
+      <div class="card hidden" id="paste-panel" style="margin-top:12px">
+        <label class="field"><span>粘贴简历全文</span>
+          <textarea rows="10" placeholder="示例同学&#10;求职意向：Agent 应用开发实习&#10;&#10;教育背景&#10;示例大学 · 软件工程 · 本科 · 2023.09 – 2027.06&#10;&#10;项目经历&#10;Agent 机制实验项目 · 个人项目 · 2026.09 – 2026.11&#10;- 用 FastAPI 写了聊天接口，接入大模型……"></textarea>
+        </label>
+        <p class="faint" style="margin:-6px 0 12px">从 Word、网页或在线简历里复制全文粘贴进来即可，不用整理格式。保留原来的分段和换行，拆分会更准。</p>
+        <div class="row"><span class="spacer-x"></span><button class="btn" onclick="document.getElementById('paste-panel').classList.add('hidden')">取消</button><button class="btn primary">拆分成事实</button></div>
+      </div>
+      <div class="anno">粘贴文本与上传文件走同一条流程，只是跳过「文件 → 文字」这一步：文本直接提交到 POST /api/resumes → 程序按标题和空行分段（教育、项目、实习、技能……）并保存分段结构 → 模型逐段拆成候选事实（含职责程度初判）→ 显示在下方，未确认前不进入事实库版本。</div>
       <div class="anno">Upload.Dragger。解析中显示「正在拆分事实…」和骨架屏；图片和扫描版 PDF 走本地 OCR（POST /api/ocr），识别结果先放进文本框让用户核对修改，再提交拆分事实；旧版 .doc 提示另存为 DOCX。</div>
 
       <div class="exp">
