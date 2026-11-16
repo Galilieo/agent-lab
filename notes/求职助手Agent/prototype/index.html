@@ -6,172 +6,156 @@
 <title>JobPilot 原型</title>
 <style>
 :root {
-  --primary: #50687F; --primary-hover: #3F566C; --primary-bg: #DCE3EA; --primary-text: #3B5268;
-  --bg-layout: #F4F2EE; --bg-sider: #ECE9E3; --bg-container: #FFFFFF; --bg-subtle: #F8F7F4;
-  --text: #2E2E2C; --text-2: #6B6A66; --text-3: #8A8984;
-  --border: #E2DFD8; --border-2: #EAE7E1;
+  /* 1+2 极简雾蓝：极简中性的骨架（白底、大圆角、无边框气泡）+ 雾蓝主色 */
+  --primary: #50687F; --primary-hover: #3F566C; --primary-bg: #E4EAF0; --primary-text: #3B5268;
+  --bg-layout: #FFFFFF; --bg-sider: #F6F6F4; --bg-container: #FFFFFF; --bg-subtle: #F7F7F5; --bg-panel: #FAFAF8; --bubble: #F2F2F0;
+  --text: #1F1F1F; --text-2: #5F5F5B; --text-3: #8F8F8A;
+  --border: #E6E6E2; --border-2: #EFEFEC;
   --success: #5B8A4A; --success-bg: #E6EEDF; --success-text: #3F6130;
   --warning: #B9842F; --warning-bg: #F5ECDA; --warning-text: #7A5618;
   --error: #B5534A; --error-bg: #F5E3E0; --error-text: #8A3A33;
-  --radius: 6px;
+  --radius: 10px;
   --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; }
+html, body { margin: 0; height: 100%; }
 body { font-family: var(--font); font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg-layout); }
 a { color: var(--primary); text-decoration: none; }
-a:hover { color: var(--primary-hover); }
+button { font: inherit; }
 h1 { font-size: 20px; font-weight: 600; margin: 0; }
-h2 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
 p { margin: 0; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--text-2); }
 .faint { color: var(--text-3); font-size: 13px; }
-
-/* 布局 */
-.app { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100vh; }
-.sider { background: var(--bg-sider); padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; }
-.logo { font-size: 17px; font-weight: 600; padding: 4px 12px 18px; letter-spacing: 0.2px; }
-.logo span { color: var(--primary); }
-.nav { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius); color: var(--text-2); cursor: pointer; }
-.nav:hover { background: rgba(80, 104, 127, 0.07); color: var(--text); }
-.nav.active { background: var(--primary-bg); color: var(--primary-text); font-weight: 500; }
-.nav.disabled { color: var(--text-3); cursor: default; }
-.nav.disabled:hover { background: none; }
-.nav .badge { margin-left: auto; font-size: 11px; color: var(--text-3); }
-.sider .spacer { flex: 1; }
+.hidden { display: none !important; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.grow { flex: 1; }
 .ico { width: 16px; height: 16px; flex: none; }
-.main { padding: 24px 32px 48px; min-width: 0; }
-.container { max-width: 1200px; margin: 0 auto; }
-.topbar { display: none; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-.page-head .sub { color: var(--text-2); margin-top: 4px; }
-.breadcrumb { color: var(--text-3); font-size: 13px; margin-bottom: 6px; }
-.breadcrumb a { color: var(--text-2); }
 
-/* 组件 */
-.card { background: var(--bg-container); border: 1px solid var(--border-2); border-radius: 8px; padding: 20px; }
-.card + .card { margin-top: 16px; }
-.btn { font: inherit; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 15px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-container); color: var(--text); cursor: pointer; white-space: nowrap; }
+/* 通用组件 */
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: var(--radius); border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; white-space: nowrap; }
 .btn:hover { border-color: var(--primary); color: var(--primary); }
 .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-.btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.btn.primary:hover { background: var(--primary-hover); color: #fff; }
 .btn.small { height: 26px; padding: 0 10px; font-size: 13px; }
-.btn.text { border-color: transparent; background: none; color: var(--text-2); padding: 0 8px; }
+.btn.text { border-color: transparent; background: none; color: var(--text-2); padding: 0 6px; }
 .btn.text:hover { color: var(--primary); }
 .btn.danger { color: var(--error); border-color: #E7C9C5; }
-.btn.danger:hover { color: #fff; background: var(--error); border-color: var(--error); }
-.btn.on-accept { background: var(--success-bg); border-color: #C9DABD; color: var(--success-text); }
-.btn.on-reject { background: var(--bg-subtle); color: var(--text-2); }
-.tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--border-2); background: var(--bg-subtle); color: var(--text-2); white-space: nowrap; }
+.btn.danger:hover { background: var(--error); color: #fff; }
+.tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border-2); background: var(--bg-subtle); color: var(--text-2); white-space: nowrap; }
 .tag.success { background: var(--success-bg); border-color: #D3E2C9; color: var(--success-text); }
 .tag.warning { background: var(--warning-bg); border-color: #EBDBBA; color: var(--warning-text); }
 .tag.error { background: var(--error-bg); border-color: #ECCDC8; color: var(--error-text); }
 .tag.primary { background: var(--primary-bg); border-color: #C9D4DF; color: var(--primary-text); }
-.alert { display: flex; gap: 10px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid; margin-bottom: 16px; }
-.alert.warning { background: var(--warning-bg); border-color: #EBDBBA; color: var(--warning-text); }
-.alert.info { background: #EAEFF3; border-color: #D2DCE5; color: var(--primary-text); }
-.alert.error { background: var(--error-bg); border-color: #ECCDC8; color: var(--error-text); }
-.alert b { font-weight: 600; }
-input, textarea, select { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); background: #fff; padding: 5px 10px; }
-input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(80, 104, 127, 0.15); }
-textarea { width: 100%; resize: vertical; line-height: 1.7; }
-label.field { display: block; margin-bottom: 14px; }
-label.field span { display: block; color: var(--text-2); margin-bottom: 6px; }
-label.field input { width: 100%; height: 36px; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.stat { background: var(--bg-container); border: 1px solid var(--border-2); border-radius: 8px; padding: 14px 16px; }
-.stat .label { color: var(--text-2); font-size: 13px; }
-.stat .value { font-size: 22px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.stat .value small { font-size: 13px; font-weight: 400; color: var(--text-3); }
-.tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.tabs a { padding: 8px 0 10px; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.tabs a.active { color: var(--primary-text); border-bottom-color: var(--primary); font-weight: 500; }
-table.data { width: 100%; border-collapse: collapse; }
-table.data th { text-align: left; font-weight: 500; color: var(--text-2); background: var(--bg-subtle); padding: 10px 12px; border-bottom: 1px solid var(--border-2); font-size: 13px; }
-table.data td { padding: 12px; border-bottom: 1px solid var(--border-2); vertical-align: top; }
+.chip { height: 26px; padding: 0 10px; border-radius: 13px; border: 1px solid var(--border); background: #fff; color: var(--text-2); cursor: pointer; font-size: 13px; }
+.chip.on { background: var(--primary-bg); border-color: #C9D4DF; color: var(--primary-text); }
+.card { background: #fff; border: 1px solid var(--border-2); border-radius: 8px; padding: 16px; }
+.tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); }
+.tabs button { border: none; background: none; padding: 8px 0 10px; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.tabs button.on { color: var(--primary-text); border-bottom-color: var(--primary); font-weight: 500; }
+textarea, input, select { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); background: #fff; padding: 5px 10px; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(80, 104, 127, 0.15); }
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data th { text-align: left; font-weight: 500; color: var(--text-2); background: var(--bg-subtle); padding: 8px 10px; border-bottom: 1px solid var(--border-2); }
+table.data td { padding: 10px; border-bottom: 1px solid var(--border-2); vertical-align: top; }
 table.data tr:last-child td { border-bottom: none; }
-.table-wrap { border: 1px solid var(--border-2); border-radius: 8px; overflow-x: auto; background: #fff; }
-.prose { font-size: 15px; line-height: 1.7; }
-details summary { cursor: pointer; color: var(--primary); font-size: 13px; list-style: none; }
-details summary::-webkit-details-marker { display: none; }
-details[open] summary { margin-bottom: 6px; }
-.fact-ref { background: var(--bg-subtle); border: 1px solid var(--border-2); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; color: var(--text-2); margin-top: 4px; }
-.fact-ref b { color: var(--text); font-weight: 500; }
-.empty { text-align: center; padding: 36px 16px; }
-.empty .title { font-size: 15px; font-weight: 500; margin: 10px 0 4px; }
-.empty .ico-lg { width: 40px; height: 40px; color: var(--text-3); }
-.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.spacer-x { flex: 1; }
-.hidden { display: none !important; }
-.page { display: none; }
-.page.active { display: block; }
 
-/* 事实库 */
-.upload { border: 1px dashed #CFCBC2; border-radius: 8px; background: var(--bg-subtle); padding: 22px; text-align: center; color: var(--text-2); }
-.exp { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; margin-top: 16px; overflow: hidden; }
-.exp-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-subtle); border-bottom: 1px solid var(--border-2); flex-wrap: wrap; }
-.exp-head .name { font-weight: 600; }
-.fact { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-2); align-items: start; }
-.fact:last-child { border-bottom: none; }
-.fact.needs-check { background: #FBF7EE; }
-.fact .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
-.fact select { height: 26px; padding: 0 6px; font-size: 13px; }
-.fact input[type=checkbox] { width: 16px; height: 16px; margin-top: 4px; accent-color: var(--primary); }
+/* 整体布局：侧栏 + 主区 */
+.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); height: 100vh; }
+.sider { background: var(--bg-sider); padding: 14px 10px 10px; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+.logo { font-size: 17px; font-weight: 600; padding: 2px 10px 14px; }
+.logo span { color: var(--primary); }
+.new-chat { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 7px 10px; cursor: pointer; margin-bottom: 12px; color: var(--text); }
+.new-chat:hover { border-color: var(--primary); }
+.sec { font-size: 12px; color: var(--text-3); padding: 10px 10px 4px; }
+.nav { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: var(--radius); color: var(--text-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav:hover { background: rgba(80, 104, 127, 0.07); color: var(--text); }
+.nav.on { background: var(--primary-bg); color: var(--primary-text); font-weight: 500; }
+.nav .meta { margin-left: auto; font-size: 11px; color: var(--text-3); }
+.convs { overflow-y: auto; min-height: 60px; }
+.sider .push { flex: 1; }
+.me-btn { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; position: relative; }
+.me-btn:hover { background: rgba(80, 104, 127, 0.07); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 13px; flex: none; }
+.menu { position: absolute; left: 8px; right: 8px; bottom: 46px; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); padding: 4px; z-index: 30; }
+.menu div { padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+.menu div:hover { background: var(--bg-subtle); }
+.main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.page { display: none; min-height: 0; flex: 1; }
+.page.on { display: flex; }
+.scroll { overflow-y: auto; flex: 1; min-height: 0; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 24px 28px 48px; }
+.topbar { display: none; }
 
-/* 改写审阅 */
-.review { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; overflow: hidden; }
-.review-head, .bullet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.review-head > div { padding: 10px 16px; background: var(--bg-subtle); color: var(--text-2); font-size: 13px; border-bottom: 1px solid var(--border-2); }
-.review-head > div + div, .bullet > div + div { border-left: 1px solid var(--border-2); }
-.bullet { border-bottom: 1px solid var(--border-2); }
-.bullet:last-child { border-bottom: none; }
-.bullet > div { padding: 14px 16px; }
-.bullet .exp-label { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
-.bullet .actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.bullet .reason { color: var(--error-text); font-size: 13px; }
-.bullet.reverted .rewrite-text { color: var(--text-2); }
-.diff-add { background: #E8EEF3; border-radius: 3px; padding: 0 2px; }
+/* 对话页：对话列 + 右侧面板 */
+/* 产物面板为主角：对话约四成，面板约六成 */
+.chat-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); flex: 1; min-height: 0; }
+.chat-layout.no-panel { grid-template-columns: minmax(0, 1fr); }
+.chat-layout.no-panel .panel { display: none; }
+.chat-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.chat-head { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border-2); background: var(--bg-layout); }
+.msgs { max-width: 860px; width: 100%; margin: 0 auto; }
+.chat-head .title { font-weight: 600; }
+.msgs { overflow-y: auto; flex: 1; min-height: 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.msg-user { align-self: flex-end; max-width: 82%; background: var(--bubble); border-radius: 16px 16px 4px 16px; padding: 9px 14px; }
+.msg-ai { max-width: 94%; }
+.msg-ai .body { line-height: 1.75; }
+.att { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); background: var(--bg-subtle); border-radius: 6px; padding: 1px 8px; font-size: 12px; color: var(--text-2); margin: 6px 4px 0 0; }
+details.steps { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; margin-bottom: 8px; font-size: 13px; }
+details.steps summary { padding: 6px 10px; cursor: pointer; color: var(--text-2); list-style: none; }
+details.steps summary::-webkit-details-marker { display: none; }
+details.steps ol { margin: 0; padding: 0 12px 8px 30px; color: var(--text-2); }
+details.steps li b { color: var(--text); font-weight: 500; }
+.ask { border: 1px solid var(--border); border-radius: 8px; background: #fff; padding: 10px 12px; margin-top: 8px; }
+.ask.warn { background: #FBF7EE; border-color: #EBDBBA; }
+.ask .kind { font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
+.ask .done { color: var(--success-text); font-size: 13px; }
+.link-btn { border: none; background: none; color: var(--primary); cursor: pointer; padding: 0; }
+.composer { padding: 10px 20px 16px; }
+.composer .box { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 8px 12px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04); }
+.composer .box:focus-within { border-color: var(--primary); }
+.composer textarea { border: none; width: 100%; resize: none; padding: 4px 2px; box-shadow: none; line-height: 1.6; }
+.composer .hint { font-size: 12px; color: var(--text-3); text-align: center; margin-top: 6px; }
+.panel { border-left: 1px solid var(--border-2); background: var(--bg-panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.panel-head { display: flex; align-items: center; gap: 8px; padding: 6px 12px 0; border-bottom: 1px solid var(--border-2); }
+.panel-head .tabs { border-bottom: none; flex: 1; overflow-x: auto; }
+.tabs button { white-space: nowrap; }
+.panel-body { overflow-y: auto; flex: 1; min-height: 0; padding: 12px; }
 
-/* 进度 */
-.steps { display: flex; gap: 0; margin: 8px 0 20px; }
-.step { flex: 1; display: flex; align-items: center; gap: 10px; }
-.step .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; border: 1px solid var(--border); color: var(--text-3); background: #fff; flex: none; }
-.step.done .dot { background: var(--primary-bg); border-color: var(--primary-bg); color: var(--primary-text); }
-.step.current .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
-.step .line { flex: 1; height: 1px; background: var(--border); margin-right: 10px; }
-.step.done .line { background: var(--primary); }
-.step .txt { white-space: nowrap; }
-.step.current .txt { font-weight: 500; }
-.log li { margin-bottom: 6px; color: var(--text-2); }
-.log li b { color: var(--text); font-weight: 500; }
+/* 对话与岗位绑定 */
+.conv { display: flex; align-items: center; gap: 8px; }
+.conv .ico { color: var(--text-3); }
+.conv.on .ico { color: var(--primary-text); }
+.job-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--primary-bg); color: var(--primary-text); border: none; cursor: pointer; font-size: 13px; }
+.job-chip.none { background: var(--bg-subtle); color: var(--text-3); border: 1px dashed var(--border); }
+.sys-note { align-self: center; font-size: 12px; color: var(--text-3); background: var(--bg-subtle); border: 1px solid var(--border-2); border-radius: 12px; padding: 2px 12px; }
+.sys-note a { cursor: pointer; }
+.welcome { margin: auto; max-width: 520px; text-align: center; padding: 24px 0; }
+.welcome h2 { font-size: 20px; margin-bottom: 6px; }
+.sugg { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 18px; text-align: left; }
+.sugg button { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 10px 12px; cursor: pointer; text-align: left; color: var(--text); line-height: 1.5; }
+.sugg button:hover { border-color: var(--primary); }
+.sugg small { display: block; color: var(--text-3); }
+.job-wrap { position: relative; }
+.job-menu { position: absolute; left: 0; top: 30px; min-width: 240px; background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); padding: 4px; z-index: 20; font-size: 13px; }
+.job-menu .item { padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+.job-menu .item:hover { background: var(--bg-subtle); }
+.job-menu .label { padding: 6px 10px 2px; font-size: 12px; color: var(--text-3); }
+.job-menu .item.cur { color: var(--primary-text); font-weight: 500; }
+.job-menu hr { border: none; border-top: 1px solid var(--border-2); margin: 4px 0; }
+.stale { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--warning-bg); color: var(--warning-text); border-radius: var(--radius); padding: 7px 10px; margin-bottom: 10px; font-size: 13px; }
+.empty-pane { text-align: center; padding: 48px 16px; color: var(--text-2); }
+.empty-pane .t { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.jd-list { margin: 0; padding-left: 18px; line-height: 1.9; }
 
-/* 登录 */
-.auth { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
-.auth .card { width: 100%; max-width: 380px; padding: 32px 28px; }
-
-/* 弹窗 */
-.mask { position: fixed; inset: 0; background: rgba(46, 46, 44, 0.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
-.modal { background: #fff; border-radius: 10px; width: 100%; max-width: 440px; padding: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16); }
-.modal h2 { margin-bottom: 8px; }
-.modal ul { padding-left: 18px; color: var(--text-2); margin: 10px 0 16px; }
-
-/* 岗位输入方式 */
-.seg { display: inline-flex; background: var(--bg-sider); border-radius: var(--radius); padding: 3px; margin-bottom: 14px; }
-.seg button { font: inherit; border: none; background: none; padding: 4px 14px; border-radius: 4px; color: var(--text-2); cursor: pointer; }
-.seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
-.shots { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.shot { width: 92px; height: 150px; border: 1px solid var(--border); border-radius: var(--radius); background: repeating-linear-gradient(180deg, #fff 0 12px, #F1EFEA 12px 14px); position: relative; }
-.shot span { position: absolute; left: 6px; top: 6px; font-size: 11px; background: var(--primary); color: #fff; border-radius: 3px; padding: 0 5px; }
-.shot.add { display: grid; place-items: center; background: var(--bg-subtle); border-style: dashed; color: var(--text-3); font-size: 22px; }
-
-/* 简历预览与编辑：简历本身用简历模板样式，不用应用配色 */
-.rs-toolbar { position: sticky; top: 0; z-index: 4; background: #fff; border: 1px solid var(--border-2); border-radius: 8px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-.rs-toolbar select { height: 30px; padding: 0 6px; }
-.rs-toolbar .status { font-size: 12px; color: var(--text-3); }
-.rs-toolbar .status.over { color: var(--error); }
-.rs-stage { background: #E9E6E0; border-radius: 8px; padding: 24px 12px; overflow-x: auto; }
-.paper { --rs-size: 13.5px; --rs-lh: 1.65; width: 794px; min-height: 1123px; margin: 0 auto; background: #fff; color: #1F1F1F; padding: 48px 56px; font-size: var(--rs-size); line-height: var(--rs-lh); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); position: relative; font-family: var(--rs-font, var(--font)); }
+/* 简历编辑器 */
+.rs-toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; font-size: 13px; }
+.rs-toolbar select { height: 26px; padding: 0 4px; font-size: 13px; }
+.rs-status { font-size: 12px; color: var(--text-3); }
+.rs-status.over { color: var(--error); }
+.rs-stage { background: #E9E6E0; border-radius: 8px; padding: 14px; overflow: auto; }
+.paper { --rs-size: 13.5px; --rs-lh: 1.65; width: 794px; min-height: 1123px; margin: 0 auto; background: #fff; color: #1F1F1F; padding: 48px 56px; font-size: var(--rs-size); line-height: var(--rs-lh); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); font-family: var(--rs-font, var(--font)); zoom: var(--rs-zoom, 0.62); }
 .paper.paged { background-image: linear-gradient(to bottom, transparent 1121px, #C9D4DF 1121px, #C9D4DF 1123px, transparent 1123px); background-size: 100% 1123px; }
 .paper[contenteditable=true] { outline: 2px solid #C9D4DF; }
 .paper h1 { font-size: 2.1em; margin: 0; font-weight: 700; letter-spacing: 1px; }
@@ -186,546 +170,897 @@ details[open] summary { margin-bottom: 6px; }
 .paper ul { margin: 4px 0 0; padding-left: 20px; }
 .paper li { margin-bottom: 2px; }
 .paper li.edited { box-shadow: -8px 0 0 -6px #B9842F; }
-@media (max-width: 991px) { .paper { transform-origin: top left; } }
-@media print {
-  body * { visibility: hidden; }
-  .paper, .paper * { visibility: visible; }
-  .paper { position: absolute; left: 0; top: 0; box-shadow: none; outline: none; background-image: none; width: auto; min-height: 0; padding: 0; }
-  @page { size: A4; margin: 12mm; }
-}
+/* 依据追溯：显示每条对应的事实编号 */
+.paper .src { display: none; }
+.paper.show-src .src { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 1px; }
+.paper .src span { font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border-radius: 9px; background: #E4EAF0; color: #3B5268; cursor: pointer; }
+.paper .src span.none { background: #F2F2F0; color: #8F8F8A; cursor: default; }
+.paper.show-src li { background: #FBFBFA; }
+.guarantee { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #EEF2F5; color: var(--primary-text); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
+.src-card { border: 1px solid #C9D4DF; background: #fff; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; font-size: 13px; }
+.src-card .from { color: var(--text-3); font-size: 12px; margin-top: 4px; }
+/* 对话里的领域卡片 */
+.mcard { border: 1px solid var(--border); border-radius: var(--radius); background: #fff; margin-top: 8px; overflow: hidden; font-size: 13px; }
+.mcard .r { display: grid; grid-template-columns: minmax(0, 1fr) 76px minmax(0, 0.9fr); gap: 8px; padding: 7px 12px; border-bottom: 1px solid var(--border-2); align-items: center; }
+.mcard .f { padding: 7px 12px; color: var(--text-2); display: flex; gap: 8px; align-items: center; background: var(--bg-subtle); }
+.fid { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 9px; background: #E4EAF0; color: #3B5268; margin-right: 3px; }
+.diff { display: flex; gap: 8px; align-items: baseline; margin-top: 4px; }
+.diff .plus { color: var(--success-text); font-weight: 600; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.quick button { border: 1px solid var(--border); background: #fff; border-radius: 14px; padding: 3px 11px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.quick button:hover { border-color: var(--primary); color: var(--primary); }
+/* 岗位详情 */
+.job .salary { color: var(--primary-text); font-weight: 600; font-size: 13px; }
+.info { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0; border: 1px solid var(--border-2); border-radius: 12px; overflow: hidden; background: #fff; }
+.info .cell { padding: 10px 14px; border-bottom: 1px solid var(--border-2); border-right: 1px solid var(--border-2); min-width: 0; }
+.info .lab { font-size: 12px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.info .val { margin-top: 2px; cursor: text; min-height: 22px; border-radius: 6px; padding: 1px 4px; margin-left: -4px; }
+.info .val:hover { background: var(--bg-subtle); }
+.info .val.empty { color: var(--text-3); }
+.info .val input { width: 100%; height: 28px; }
+.info .who { font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--bg-subtle); color: var(--text-3); }
+.info .who.me { background: #E4EAF0; color: #3B5268; }
+.jd-sec { margin-top: 18px; }
+.jd-sec h3 { font-size: 14px; margin: 0 0 6px; }
+.jd-sec ul { margin: 0; padding-left: 18px; line-height: 1.9; }
 
-/* 标注 */
+/* 工作台首页 */
+.hello { font-size: 22px; font-weight: 600; margin: 8px 0 14px; }
+.home-input { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 10px 12px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04); }
+.home-input textarea { border: none; width: 100%; resize: none; box-shadow: none; padding: 2px; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 22px; }
+.hcard { background: var(--bg-panel); border: 1px solid var(--border-2); border-radius: 12px; padding: 14px 16px; }
+.hcard .k { color: var(--text-3); font-size: 12px; }
+.hcard .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.hcard .v small { font-size: 13px; font-weight: 400; color: var(--text-3); }
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+.board .colb { background: var(--bg-panel); border: 1px solid var(--border-2); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.board .colh { display: flex; justify-content: space-between; color: var(--text-2); font-size: 13px; padding: 0 2px; }
+.bcard { background: #fff; border: 1px solid var(--border-2); border-radius: 10px; padding: 9px 11px; cursor: pointer; font-size: 13px; }
+.bcard:hover { border-color: #C9D4DF; }
+.bcard .t { font-weight: 600; }
+@media (max-width: 991px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.panel.wide { position: fixed; inset: 0; z-index: 40; border-left: none; }
+.panel.wide .paper { --rs-zoom: 1; }
+
+/* 事实列表 */
+.exp { border: 1px solid var(--border-2); border-radius: 8px; background: #fff; margin-top: 12px; overflow: hidden; }
+.exp-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--bg-subtle); border-bottom: 1px solid var(--border-2); flex-wrap: wrap; }
+.exp-head .name { font-weight: 600; }
+.fact { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-2); align-items: start; }
+.fact:last-child { border-bottom: none; }
+.fact.needs-check { background: #FBF7EE; }
+.fact .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; align-items: center; }
+.fact select { height: 24px; padding: 0 4px; font-size: 12px; }
+.fact input[type=checkbox] { width: 15px; height: 15px; margin-top: 4px; accent-color: var(--primary); }
+
+/* 岗位库 */
+.filters { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 16px 0; }
+.filters .label { color: var(--text-3); font-size: 13px; }
+.jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.job { background: #fff; border: 1px solid var(--border-2); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.job:hover { border-color: #C9D4DF; }
+.job .t { font-weight: 600; }
+.job .go { color: var(--primary); font-size: 13px; margin-top: auto; }
+
+/* 我的 */
+.overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.stat { background: #fff; border: 1px solid var(--border-2); border-radius: 8px; padding: 12px 14px; cursor: pointer; }
+.stat .label { color: var(--text-2); font-size: 13px; }
+.stat .value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat .value small { font-size: 13px; font-weight: 400; color: var(--text-3); }
+.mem { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border-2); align-items: center; }
+.mem:last-child { border-bottom: none; }
+
+/* 登录、弹窗 */
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.auth .card { width: 100%; max-width: 380px; padding: 30px 26px; }
+.field { display: block; margin-bottom: 14px; }
+.field span { display: block; color: var(--text-2); margin-bottom: 6px; }
+.field input { width: 100%; height: 36px; }
+.mask { position: fixed; inset: 0; background: rgba(46, 46, 44, 0.45); display: grid; place-items: center; padding: 16px; z-index: 50; }
+.modal { background: #fff; border-radius: 10px; width: 100%; max-width: 520px; padding: 22px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16); }
+.seg { display: inline-flex; background: var(--bg-sider); border-radius: var(--radius); padding: 3px; margin-bottom: 12px; }
+.seg button { border: none; background: none; padding: 3px 12px; border-radius: 4px; color: var(--text-2); cursor: pointer; }
+.seg button.on { background: #fff; color: var(--text); }
+
+/* 实现标注 */
 .anno { display: none; border: 1px dashed #A7B6C4; background: #EEF2F6; color: var(--primary-text); border-radius: var(--radius); padding: 6px 10px; font-size: 12px; line-height: 1.6; margin: 8px 0; }
 body.show-anno .anno { display: block; }
-.anno-toggle { position: fixed; right: 16px; bottom: 16px; z-index: 10; background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--text-2); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+.anno-toggle { position: fixed; right: 16px; bottom: 16px; z-index: 60; background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-size: 13px; color: var(--text-2); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
 body.show-anno .anno-toggle { color: var(--primary-text); border-color: var(--primary); }
 
-/* 窄屏：导航收起，审阅改为上下排列 */
+/* 窄屏：侧栏变抽屉；右侧面板变成全屏层 */
 @media (max-width: 991px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  .sider { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; z-index: 30; transform: translateX(-100%); transition: transform 0.2s; box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08); }
+  .sider { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 45; transform: translateX(-100%); transition: transform 0.2s; box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08); }
   body.nav-open .sider { transform: none; }
-  .topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: -16px -16px 16px; background: var(--bg-sider); position: sticky; top: 0; z-index: 5; }
-  .main { padding: 16px 16px 40px; }
-  .review-head { display: none; }
-  .bullet { grid-template-columns: minmax(0, 1fr); }
-  .bullet > div + div { border-left: none; border-top: 1px dashed var(--border-2); }
-  .bullet > div:first-child::before { content: "原文"; display: block; font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
-  .bullet > div + div::before { content: "改写"; display: block; font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
-  .steps { flex-direction: column; gap: 10px; }
-  .step .line { display: none; }
+  .topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-sider); }
+  .chat-layout, .chat-layout.no-panel { grid-template-columns: minmax(0, 1fr); }
+  .panel { position: fixed; inset: 0; z-index: 40; }
+  .chat-layout.no-panel .panel { display: none; }
+  .wrap { padding: 16px 16px 40px; }
+  .msgs, .composer { padding-left: 14px; padding-right: 14px; }
+  .filters { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  .paper .src { display: none !important; }
+  body * { visibility: hidden; }
+  .paper, .paper * { visibility: visible; }
+  .paper { position: absolute; left: 0; top: 0; zoom: 1; box-shadow: none; outline: none; background-image: none; width: auto; min-height: 0; padding: 0; }
+  @page { size: A4; margin: 12mm; }
 }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-facts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
-  <symbol id="i-jobs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
-  <symbol id="i-runs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
-  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-jobs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-me" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 17a4 4 0 0 1 8 0"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.5 3.5 0 0 1 5 5L10.5 18a2 2 0 0 1-3-3L15 7.5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
 </svg>
 
-<!-- 登录页：没有侧栏 -->
-<section class="page" id="page-login">
+<!-- 登录 -->
+<section class="hidden" id="login-view">
   <div class="auth">
     <div class="card">
       <div class="logo" style="padding:0 0 4px; font-size:20px">Job<span>Pilot</span></div>
-      <p class="muted" style="margin-bottom:24px">改简历不编造，每一句都有依据</p>
+      <p class="muted" style="margin-bottom:22px">跟它聊，把简历改成这个岗位要的样子，每一句都有依据</p>
       <label class="field"><span>邮箱</span><input type="email" placeholder="name@example.com"></label>
       <label class="field"><span>密码</span><input type="password" placeholder="至少 8 位"></label>
-      <button class="btn primary" style="width:100%; justify-content:center; height:36px" onclick="go('facts')">登录</button>
-      <p class="faint" style="text-align:center; margin-top:16px">还没有账号？<a href="#login">注册</a></p>
-      <div class="anno">登录成功后后端写入 HttpOnly Cookie，前端不保存 token。错误提示统一为「邮箱或密码不正确」，不区分是哪一项错。未登录访问其他页面时跳到这里，登录后回到原页面。</div>
+      <button class="btn primary" style="width:100%; justify-content:center; height:36px" onclick="go('chat')">登录</button>
+      <p class="faint" style="text-align:center; margin-top:14px">还没有账号？<a href="#">注册</a></p>
     </div>
   </div>
 </section>
 
 <div class="app" id="app">
+  <!-- 侧栏：对话 / 岗位库 / 我的 -->
   <aside class="sider">
     <div class="logo">Job<span>Pilot</span></div>
-    <a class="nav" data-nav="facts" href="#facts"><svg class="ico"><use href="#i-facts"/></svg>经历事实库</a>
-    <a class="nav" data-nav="jobs" href="#jobs"><svg class="ico"><use href="#i-jobs"/></svg>岗位</a>
-    <a class="nav" data-nav="runs" href="#runs"><svg class="ico"><use href="#i-runs"/></svg>改写记录</a>
-    <span class="nav disabled"><svg class="ico"><use href="#i-chat"/></svg>模拟面试<span class="badge">V2</span></span>
-    <div class="spacer"></div>
-    <a class="nav" data-nav="account" href="#account"><svg class="ico"><use href="#i-user"/></svg>账号</a>
+    <div class="new-chat" onclick="openConv('new')"><svg class="ico"><use href="#i-plus"/></svg>新对话</div>
+    <div class="nav" data-nav="home" onclick="go('home')"><svg class="ico"><use href="#i-home"/></svg>工作台</div>
+    <div class="nav" data-nav="jobs" onclick="go('jobs')"><svg class="ico"><use href="#i-jobs"/></svg>岗位库<span class="meta">23</span></div>
+    <div class="nav" data-nav="me" onclick="go('me')"><svg class="ico"><use href="#i-me"/></svg>我的</div>
+    <div class="sec">最近对话</div>
+    <div class="convs">
+      <div class="nav conv" data-conv="a" onclick="openConv('a')" title="岗位对话"><svg class="ico"><use href="#i-jobs"/></svg>Agent 应用开发实习</div>
+      <div class="nav conv" data-conv="b" onclick="openConv('b')"><svg class="ico"><use href="#i-chat"/></svg>补充实习经历</div>
+      <div class="nav conv" data-conv="c" onclick="openConv('c')" title="岗位对话"><svg class="ico"><use href="#i-jobs"/></svg>大模型应用后端实习</div>
+      <div class="nav conv" data-conv="d" onclick="openConv('d')"><svg class="ico"><use href="#i-chat"/></svg>问问怎么准备面试</div>
+    </div>
+    <div class="push"></div>
+    <div class="me-btn" onclick="toggleMenu(event)">
+      <span class="avatar">示</span><span class="grow">示例同学</span>
+      <div class="menu hidden" id="me-menu">
+        <div onclick="go('account')">账号设置</div>
+        <div onclick="go('login')">退出登录</div>
+      </div>
+    </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
       <button class="btn text" onclick="document.body.classList.toggle('nav-open')" aria-label="打开导航"><svg class="ico"><use href="#i-menu"/></svg></button>
       <div class="logo" style="padding:0">Job<span>Pilot</span></div>
+      <span class="grow"></span>
+      <button class="btn small" id="open-panel" onclick="togglePanel(true)">查看结果</button>
     </div>
-    <div class="container">
 
-    <!-- 经历事实库 -->
-    <section class="page" id="page-facts">
-      <div class="page-head">
-        <div>
-          <h1>经历事实库</h1>
-          <p class="sub">改写只会引用你确认过的事实。当前版本 <span class="num">v3</span>，<span class="num">12</span> 条已确认，<span class="num">2</span> 条待确认</p>
+    <!-- ===== 工作台（首页） ===== -->
+    <section class="page" id="page-home">
+      <div class="scroll"><div class="wrap" style="max-width:980px">
+        <div class="hello">示例同学，今天准备哪个岗位？</div>
+        <div class="home-input">
+          <textarea rows="2" id="home-input" placeholder="说说你要做什么，或拖入简历、JD、截图……例如：帮我看看这个岗位，然后改一份简历"></textarea>
+          <div class="row"><button class="btn text small"><svg class="ico"><use href="#i-clip"/></svg>附件</button><span class="grow"></span><button class="btn primary small" onclick="homeSend()" aria-label="开始"><svg class="ico"><use href="#i-send"/></svg></button></div>
         </div>
-        <div class="row">
-          <button class="btn">补充事实</button>
-          <button class="btn primary">提交为 v4</button>
-        </div>
-      </div>
-      <div class="anno">页面主要操作只有一个（提交新版本）。提交时只包含已确认的事实；旧版本保留，已有的改写结果仍然指向生成它的版本。</div>
+        <div class="quick"><button onclick="homeQuick('帮我看看这个岗位跟我匹不匹配')">发 JD 或截图看匹配</button><button onclick="homeQuick('这是我的新简历，帮我更新事实库')">更新简历</button><button onclick="homeQuick('我还做过……')">补充经历</button><button onclick="go('jobs')">从岗位库选一个</button></div>
 
-      <div class="upload">
-        <svg class="ico-lg" style="width:28px;height:28px"><use href="#i-upload"/></svg>
-        <p style="margin-top:6px">把简历拖到这里，或 <a href="#facts">选择文件</a>　·　也可以 <a href="#facts" onclick="document.getElementById('paste-panel').classList.toggle('hidden'); return false">直接粘贴文本</a></p>
-        <p class="faint" style="margin-top:4px">支持 PDF、DOCX、TXT、Markdown、HTML、图片；截图和扫描件会先识别文字，请核对后再拆分</p>
-        <p class="faint" style="margin-top:2px">上传的文件解析后不保存，只保留文字；文字识别在本机完成</p>
-      </div>
-      <div class="card hidden" id="paste-panel" style="margin-top:12px">
-        <label class="field"><span>粘贴简历全文</span>
-          <textarea rows="10" placeholder="示例同学&#10;求职意向：Agent 应用开发实习&#10;&#10;教育背景&#10;示例大学 · 软件工程 · 本科 · 2023.09 – 2027.06&#10;&#10;项目经历&#10;Agent 机制实验项目 · 个人项目 · 2026.09 – 2026.11&#10;- 用 FastAPI 写了聊天接口，接入大模型……"></textarea>
-        </label>
-        <p class="faint" style="margin:-6px 0 12px">从 Word、网页或在线简历里复制全文粘贴进来即可，不用整理格式。保留原来的分段和换行，拆分会更准。</p>
-        <div class="row"><span class="spacer-x"></span><button class="btn" onclick="document.getElementById('paste-panel').classList.add('hidden')">取消</button><button class="btn primary">拆分成事实</button></div>
-      </div>
-      <div class="anno">粘贴文本与上传文件走同一条流程，只是跳过「文件 → 文字」这一步：文本直接提交到 POST /api/resumes → 程序按标题和空行分段（教育、项目、实习、技能……）并保存分段结构 → 模型逐段拆成候选事实（含职责程度初判）→ 显示在下方，未确认前不进入事实库版本。</div>
-      <div class="anno">Upload.Dragger。解析中显示「正在拆分事实…」和骨架屏；图片和扫描版 PDF 走本地 OCR（POST /api/ocr），识别结果先放进文本框让用户核对修改，再提交拆分事实；旧版 .doc 提示另存为 DOCX。</div>
+        <div class="home-grid">
+          <div class="hcard"><div class="k">经历事实库</div><div class="v">34 <small>条 · v5</small></div><div class="muted" style="font-size:13px">2 条职责程度待确认</div><button class="btn small" style="margin-top:8px" onclick="go('me')">去确认</button></div>
+          <div class="hcard"><div class="k">不编造记录</div><div class="v">18 <small>/ 18 条改写可追溯</small></div><div class="muted" style="font-size:13px">5 份定制简历；3 条因依据不足保留了原文</div></div>
+          <div class="hcard"><div class="k">记住的偏好</div><div class="v">4 <small>条</small></div><div class="muted" style="font-size:13px">Agent 应用开发 · 上海、杭州 · 语气平实</div><button class="btn small" style="margin-top:8px" onclick="go('me'); meTab('memory')">查看</button></div>
+        </div>
 
-      <div class="exp">
-        <div class="exp-head">
-          <span class="name">Agent 机制实验项目</span><span class="faint">个人项目 · 2026.09–2026.11</span>
-        </div>
-        <div class="fact">
-          <input type="checkbox" checked aria-label="已确认">
-          <div>
-            <div class="prose">使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div>
-            <div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span>
-              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
+        <div class="row" style="margin-top:26px"><b>岗位进度</b><span class="faint">点卡片回到这个岗位的对话</span><span class="grow"></span><button class="btn small" onclick="go('jobs')">打开岗位库</button></div>
+        <div class="board">
+          <div class="colb"><div class="colh"><span>未匹配</span><span>2</span></div>
+            <div class="bcard" onclick="openConv('e')"><div class="t">AI 产品工程实习</div><div class="faint">演示数据 · 北京</div></div>
+            <div class="bcard" onclick="openJob('x')"><div class="t">检索算法实习</div><div class="faint">样例数据 · 上海</div></div>
           </div>
-          <button class="btn text small">编辑</button>
-        </div>
-        <div class="fact">
-          <input type="checkbox" checked aria-label="已确认">
-          <div>
-            <div class="prose">模型调用失败时按指数退避重试，最多 3 次</div>
-            <div class="meta"><span class="tag">做了什么</span><span class="tag primary">含数字</span><span class="tag">来自简历</span>
-              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
+          <div class="colb"><div class="colh"><span>已匹配</span><span>1</span></div>
+            <div class="bcard" onclick="openConv('c')"><div class="t">大模型应用后端实习</div><div class="faint">样例智能 · 杭州</div><div class="row" style="margin-top:4px"><span class="tag">硬性 2/3</span><span class="tag primary">表达缺口 1</span></div></div>
           </div>
-          <button class="btn text small">编辑</button>
-        </div>
-        <div class="fact needs-check">
-          <input type="checkbox" aria-label="已确认">
-          <div>
-            <div class="prose">参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div>
-            <div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span>
-              <select aria-label="职责程度"><option>参与</option><option>负责</option><option>主导</option><option>不适用</option></select>
-              <span class="tag warning">请核对职责程度</span></div>
+          <div class="colb"><div class="colh"><span>已生成简历</span><span>1</span></div>
+            <div class="bcard" onclick="openConv('a')"><div class="t">Agent 应用开发实习</div><div class="faint">示例科技 · 上海</div><div class="row" style="margin-top:4px"><span class="tag">硬性 3/4</span><span class="tag warning">事实库已更新</span></div></div>
           </div>
-          <button class="btn text small">编辑</button>
         </div>
-        <div class="fact">
-          <input type="checkbox" checked aria-label="已确认">
-          <div>
-            <div class="prose">使用 LangGraph 检查点实现中断后恢复执行</div>
-            <div class="meta"><span class="tag">技术</span><span class="tag primary">用户补充</span>
-              <select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div>
-          </div>
-          <button class="btn text small">编辑</button>
-        </div>
-      </div>
-      <div class="anno">按经历分组。职责程度用 Select：模型初判，原文没写清时默认「参与」并标黄提示核对。来源分「来自简历」「用户补充」两种，后者在匹配报告里会产生「表达缺口」。勾选框即确认；删除事实放在「编辑」里，需要二次确认。</div>
+        <div class="anno">首页是「求职工作台」而不是空白对话：打开就看到事实库、不编造记录、偏好和岗位进度，这些是通用 Agent 没有的持久数据。输入框发出的内容会新建一段对话。岗位进度看板来自 user_job.stage。V2 在看板后面加「已投递 / 面试中」两列（投递追踪）。</div>
+      </div></div>
+    </section>
 
-      <div class="exp">
-        <div class="exp-head"><span class="name">技能</span></div>
-        <div class="fact">
-          <input type="checkbox" checked aria-label="已确认">
-          <div>
-            <div class="prose">熟悉 Python、FastAPI；了解 React</div>
-            <div class="meta"><span class="tag">技术</span><span class="tag">来自简历</span><span class="tag">职责程度：不适用</span></div>
+    <!-- ===== 对话 ===== -->
+    <section class="page" id="page-chat">
+      <div class="chat-layout" id="chat-layout">
+        <div class="chat-col">
+          <div class="chat-head">
+            <span class="title" id="conv-title">Agent 应用开发实习</span>
+            <span class="job-wrap">
+              <button class="job-chip" id="job-chip" onclick="toggleJobMenu(event)"><svg class="ico"><use href="#i-jobs"/></svg><span id="job-chip-text">示例科技 · 上海</span> ▾</button>
+              <div class="job-menu hidden" id="job-menu">
+                <div class="item" id="jm-view" onclick="showPane('job'); closeJobMenu()">查看当前岗位</div>
+                <hr>
+                <div class="label">切换当前岗位</div>
+                <div class="item" data-job="Agent 应用开发实习|示例科技 · 上海">Agent 应用开发实习</div>
+                <div class="item" data-job="大模型应用后端实习|样例智能 · 杭州">大模型应用后端实习</div>
+                <div class="item" data-job="AI 产品工程实习|演示数据 · 北京">AI 产品工程实习</div>
+                <hr>
+                <div class="item" id="jm-unlink" onclick="unlinkJob()">解除关联</div>
+                <div class="label" style="padding-bottom:6px">当前岗位只决定右侧显示哪个岗位、工具默认用哪个岗位；Agent 仍可读取其他岗位做对比。</div>
+              </div>
+            </span>
+            <span class="grow"></span>
+            <button class="btn text small" onclick="togglePanel()" title="显示或隐藏右侧面板"><svg class="ico"><use href="#i-panel"/></svg></button>
           </div>
-          <button class="btn text small">编辑</button>
+          <!-- 新对话：欢迎页 -->
+          <div class="msgs hidden" data-conv="new">
+            <div class="welcome">
+              <h2>今天想准备哪个岗位？</h2>
+              <p class="muted">发一份 JD 或截图，这段对话就会关联到那个岗位，结果都会存进岗位库。</p>
+              <div class="sugg">
+                <button onclick="fillInput('这是我的简历，帮我整理成经历事实')">上传简历<small>建立或更新经历事实库</small></button>
+                <button onclick="fillInput('帮我看看这个岗位跟我匹不匹配')">发 JD 或截图<small>解析岗位、生成匹配报告</small></button>
+                <button onclick="go('jobs')">从岗位库选一个<small>继续之前的岗位</small></button>
+                <button onclick="fillInput('我还做过……')">补充经历<small>说一说没写进简历的事</small></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 对话 b：没有关联岗位，补充经历 -->
+          <div class="msgs hidden" data-conv="b">
+            <div class="msg-user">我实习的时候还做过接口压测，把一个查询接口从大约 200 QPS 提到了 800</div>
+            <div class="msg-ai">
+              <div class="body">这条简历里没有，可以加进事实库。数字我按你说的原样记下，改写时不会改动。</div>
+              <div class="ask" id="ask-b1">
+                <div class="kind">提议新增事实 · 示例公司后端实习</div>
+                <div>对查询接口做压测与优化，吞吐量从约 200 QPS 提升到约 800 QPS</div>
+                <div class="row" style="margin-top:8px"><span class="faint">职责程度</span><select aria-label="职责程度"><option>负责</option><option>参与</option><option>主导</option></select><span class="grow"></span><button class="btn small primary" onclick="answer('ask-b1','已加入事实库（v5）')">确认加入</button><button class="btn small" onclick="answer('ask-b1','没有加入')">不用</button></div>
+              </div>
+              <div class="body" style="margin-top:8px">这段对话没有关联岗位。以后在任何岗位的对话里改简历，都会用到这条事实。</div>
+              <div class="anno">没有关联岗位的对话：右侧面板只显示本次对话里事实库的变化。对话中出现 JD 时才会关联岗位。</div>
+            </div>
+          </div>
+
+          <!-- 对话 c：关联岗位，已匹配，还没生成简历 -->
+          <div class="msgs hidden" data-conv="c">
+            <div class="msg-user">看看这个岗位<div><span class="att">JD截图.png</span></div></div>
+            <div class="msg-ai">
+              <details class="steps"><summary>✓ 已完成 3 步 · 用时 12 秒</summary><ol><li><b>识别截图</b></li><li><b>解析岗位</b>：已存入岗位库</li><li><b>生成匹配报告</b></li></ol></details>
+              <div class="body">硬性要求 3 条覆盖 2 条；“熟悉 PostgreSQL”在事实库里没有找到。你刚补充的压测经历正好对得上“有性能优化经验”这条加分项。</div>
+              <div class="ask" id="ask-c1">
+                <div class="kind">下一步</div>
+                <div>要按这个岗位生成一份定制简历吗？</div>
+                <div class="row" style="margin-top:8px"><button class="btn small primary" onclick="answer('ask-c1','（原型）开始改写，进度会显示在这里')">生成简历</button><button class="btn small" onclick="answer('ask-c1','先不生成')">先不用</button></div>
+              </div>
+            </div>
+            <div class="sys-note">这段对话已关联岗位「大模型应用后端实习」· <a onclick="go('jobs')">在岗位库查看</a></div>
+            <div class="msg-user">顺便看看这个，跟刚才那个比哪个更适合我？<div><span class="att">另一个JD截图.png</span></div></div>
+            <div class="msg-ai">
+              <div class="body">新岗位「检索算法实习」已解析并存入岗位库。对比来看：两个都要求 Python；后端岗更看重 PostgreSQL，检索岗更看重 RAG，而 RAG 你有实验经历，检索岗的硬性要求覆盖更多。</div>
+              <div class="ask" id="ask-c2">
+                <div class="kind">这段对话的当前岗位</div>
+                <div>接下来要围绕哪个岗位？</div>
+                <div class="row" style="margin-top:8px"><button class="btn small" onclick="answer('ask-c2','已新开对话「检索算法实习」，这段对话保持原岗位')">新开对话</button><button class="btn small" onclick="switchJob('检索算法实习','样例数据 · 上海'); answer('ask-c2','已把当前岗位切换为「检索算法实习」')">切换到新岗位</button><button class="btn small" onclick="answer('ask-c2','保持当前岗位不变')">保持不变</button></div>
+              </div>
+              <div class="anno">对比时 Agent 直接读取两个岗位，不需要切换当前岗位。只有右侧面板显示哪个、后续工具默认用哪个，才需要你选。</div>
+            </div>
+          </div>
+
+          <!-- 对话 d：没有关联岗位，一般提问 -->
+          <div class="msgs hidden" data-conv="d">
+            <div class="msg-user">面试前一般要准备什么？</div>
+            <div class="msg-ai"><div class="body">先把简历里每一条都准备好“为什么这样做、遇到什么问题、结果怎么验证”。针对具体岗位的模拟面试会在下个版本加入；现在可以先在岗位对话里让我帮你列出这个岗位可能会问的问题。</div></div>
+          </div>
+
+          <!-- 对话 e：从岗位库打开，还没匹配 -->
+          <div class="msgs hidden" data-conv="e">
+            <div class="sys-note">从岗位库打开 · 已关联岗位「AI 产品工程实习」</div>
+            <div class="msg-ai">
+              <div class="body">这个岗位我已经解析过了：硬性要求 3 条，主要看 RAG 和 Prompt 设计。要先跟你的事实库做一次匹配吗？</div>
+              <div class="ask" id="ask-e1"><div class="row"><button class="btn small primary" onclick="answer('ask-e1','（原型）开始匹配')">做匹配</button><button class="btn small" onclick="showPane('job')">先看看 JD</button></div></div>
+            </div>
+          </div>
+
+          <!-- 对话 a：关联岗位，已生成简历（完整演示） -->
+          <div class="msgs" data-conv="a">
+            <div class="msg-user">这是我的简历，还有一个岗位的截图，帮我看看匹不匹配，然后改一份简历
+              <div><span class="att">简历.pdf</span><span class="att">截图 ×3</span></div>
+            </div>
+
+            <div class="msg-ai">
+              <details class="steps">
+                <summary>✓ 已完成 4 步 · 用时 21 秒</summary>
+                <ol>
+                  <li><b>拆分简历</b>：得到 14 条经历事实，其中 2 条职责程度需要你确认</li>
+                  <li><b>识别截图</b>：3 张，自动整理顺序为 3 → 1 → 2，去掉 2 处重叠</li>
+                  <li><b>解析岗位</b>：硬性要求 4 条、加分项 2 条，已存入岗位库</li>
+                  <li><b>生成匹配报告</b></li>
+                </ol>
+              </details>
+              <div class="body">先看匹配结果，最值得补的是 LangGraph：你做过，但简历没写。</div>
+              <div class="mcard">
+                <div class="r"><span>熟悉 Python，有 Web 后端经验</span><span class="tag success">已覆盖</span><span><span class="fid">F-03</span><span class="fid">F-07</span></span></div>
+                <div class="r"><span>LangGraph 或类似框架经验</span><span class="tag primary">表达缺口</span><span><span class="fid">F-12</span><span class="faint">简历原文没写</span></span></div>
+                <div class="r"><span>每周至少实习 4 天</span><span class="tag error">未覆盖</span><span class="faint">事实库里没有到岗信息</span></div>
+                <div class="f">硬性要求 3/4 · 加分项 1/2<span class="grow"></span><a style="cursor:pointer" onclick="showPane('match')">完整报告 →</a></div>
+              </div>
+              <div class="ask warn" id="ask-resp">
+                <div class="kind">有 2 个地方拿不准，先问问你</div>
+                <div style="margin-top:4px">1. “参与搭建 RAG 检索实验”里，你是参与还是负责？<span class="faint">（简历原文没写清楚）</span></div>
+                <div class="row" style="margin:6px 0 8px"><select aria-label="职责程度"><option>参与</option><option>负责</option><option>主导</option></select></div>
+                <div>2. 「Agent 机制实验项目」的时间，简历两处写得不一样，哪个对？<span class="faint">（说法矛盾）</span></div>
+                <div class="row" style="margin:6px 0 8px"><select aria-label="项目时间"><option>2026.09 – 2026.11</option><option>2026.10 – 2026.11</option><option>都不对，我来填</option></select></div>
+                <div class="row"><button class="btn small primary" onclick="answer('ask-resp','已确认：参与；项目时间 2026.09 – 2026.11')">确认</button><button class="btn small" onclick="answer('ask-resp','先跳过：这两条事实暂时不会被改写引用')">先跳过</button></div>
+              </div>
+              <div class="anno">不确定就问：原文对不上、说法矛盾、职责程度不明、缺少关键信息时，Agent 用 ask_user 提问；一轮最多一张卡片，多个问题合并。跳过的事实不能被改写引用。</div>
+              <div class="anno">工具调用进度用 Ant Design X 的 ThoughtChain，默认折叠。需要用户决定的事情用确认卡片：Agent 运行在这里暂停（LangGraph interrupt），用户点击后带着选择恢复执行。</div>
+            </div>
+            <div class="sys-note">这段对话已关联岗位「Agent 应用开发实习」· <a onclick="go('jobs')">在岗位库查看</a></div>
+            <div class="anno">软绑定：对话里第一次解析出 JD 时，把它设为这段对话的「当前岗位」并存入岗位库。当前岗位只决定右侧面板显示什么、工具默认用哪个岗位，不限制 Agent 读取其他岗位做对比；标题栏可以切换或解除。再发另一个 JD 时，新岗位照样存进岗位库，Agent 用确认卡片问：切换当前岗位、新开对话，还是保持不变（见「大模型应用后端实习」对话）。没有 JD 的对话不设当前岗位。</div>
+
+            <div class="msg-user">参与。我每周能去 5 天，帮我生成简历，语气别太浮夸</div>
+
+            <div class="msg-ai">
+              <div class="ask" id="ask-fact">
+                <div class="kind">提议新增事实 · 求职条件</div>
+                <div class="diff"><span class="plus">＋</span><span>可每周实习 5 天</span></div>
+                <div class="faint">来源：对话中补充 · 职责程度：不适用 · 确认后事实库 v3 → v4</div>
+                <div class="row" style="margin-top:8px"><button class="btn small primary" onclick="answer('ask-fact','已加入事实库（v4）')">确认加入</button><button class="btn small" onclick="answer('ask-fact','没有加入')">不用</button></div>
+              </div>
+              <div class="ask" id="ask-mem">
+                <div class="kind">提议记住 · 写作偏好</div>
+                <div>改写时语气平实，不用夸张的形容词</div>
+                <div class="row" style="margin-top:8px"><button class="btn small primary" onclick="answer('ask-mem','已记住，可以在「我的 → 记忆」里修改')">记住</button><button class="btn small" onclick="answer('ask-mem','只用于这次对话')">只这一次</button></div>
+              </div>
+              <details class="steps" style="margin-top:8px">
+                <summary>✓ 已完成改写 · 3 条，修订 1 次，回退 1 条</summary>
+                <ol>
+                  <li><b>读取</b>：事实库 v4、岗位要求、写作偏好（读取是自动的，不用确认）</li>
+                  <li><b>规划</b>：保留 2 段经历，补入 1 条表达缺口</li>
+                  <li><b>逐条改写</b>：每条引用事实编号</li>
+                  <li><b>依据检查</b>：第 2 条写成“主导”，与职责程度“参与”不符，已修订；第 3 条两次修订后仍不通过，回退原文</li>
+                </ol>
+              </details>
+              <div class="body">定制简历已经生成，在右侧。3 条改写都能追溯到你确认过的事实，其中 1 条因为依据不足保留了原文。</div>
+              <div class="quick"><button onclick="showPane('resume'); toggleSrc(true)">查看每条的依据</button><button onclick="fillInput('为什么选课系统那条被回退了？')">为什么有一条被回退</button><button onclick="fillInput('把检索那条写得更偏工程一点')">把检索那条写得更偏工程</button><button onclick="fillInput('跟大模型应用后端实习比，哪个更适合我？')">对比另一个岗位</button></div>
+              <div class="anno">回复下方是领域快捷操作（根据当前状态生成），点了会填进输入框或直接切换面板；不是通用的「继续」「重新生成」。</div>
+              <div class="anno">工具按三类权限分组：① 读取（事实库、岗位、匹配报告、简历、记忆）自动执行；② 生成（解析 JD、匹配、生成新简历）自动执行，只产生新结果或新版本，不覆盖已有内容；③ 写入、修改、删除（事实、简历条目、记忆）必须用户在确认卡片上同意，不点确认不会执行（测试保证）。所有工具的 user_id 来自登录态，模型无法指定；V1 没有对外发送数据的工具。改写工具内部仍是 LangGraph 改写流程 + 三层依据检查，Agent 无法跳过检查。</div>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="box">
+              <div id="pending-atts"></div>
+              <textarea rows="2" id="input" placeholder="说点什么，或拖入简历、JD、截图……例如：把检索那条写得更偏工程一点"></textarea>
+              <div class="row">
+                <button class="btn text small" onclick="addAttachment()" title="添加附件"><svg class="ico"><use href="#i-clip"/></svg>附件</button>
+                <span class="grow"></span>
+                <button class="btn primary small" onclick="send()" aria-label="发送"><svg class="ico"><use href="#i-send"/></svg></button>
+              </div>
+            </div>
+            <div class="hint">写入事实库、记忆和简历前都会先问你</div>
+            <div class="anno">输入框用 Ant Design X 的 Sender + Attachments：支持拖入 PDF、DOCX、TXT、Markdown、HTML、图片。回复用 SSE 流式输出。</div>
+          </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div class="panel" id="panel">
+          <div class="panel-head">
+            <div class="tabs" id="panel-tabs">
+              <button class="on" data-tab="resume">简历</button>
+              <button data-tab="match">匹配报告</button>
+              <button data-tab="job">岗位</button>
+              <button data-tab="facts">用到的事实</button>
+              <button data-tab="changes">事实库变化</button>
+            </div>
+            <button class="btn text small" onclick="toggleWide()" title="放大"><svg class="ico"><use href="#i-expand"/></svg></button>
+            <button class="btn text small" onclick="togglePanel(false)" title="关闭"><svg class="ico"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="panel-body">
+            <!-- 简历：对话 c 还没生成 -->
+            <div data-pane="resume" data-for="c" class="hidden">
+              <div class="empty-pane"><p class="t">还没有为这个岗位生成简历</p><p>匹配报告已经好了，说一句“生成简历”或点下面的按钮。</p><button class="btn primary" style="margin-top:14px" onclick="answer('ask-c1','（原型）开始改写，进度会显示在这里')">生成定制简历</button></div>
+            </div>
+
+            <!-- 岗位：JD 解析结果 -->
+            <div data-pane="job" data-for="e" class="hidden">
+              <h2>AI 产品工程实习</h2>
+              <p class="faint" style="margin-bottom:10px">演示数据 · 北京 · 每周 4 天</p>
+              <p class="faint">硬性要求</p>
+              <ul class="jd-list"><li>了解 RAG 的基本流程</li><li>有 Prompt 设计与评测经验</li><li>每周至少 4 天</li></ul>
+            </div>
+            <div data-pane="job" data-for="a" class="hidden">
+              <h2>Agent 应用开发实习</h2>
+              <p class="faint" style="margin-bottom:10px">示例科技 · 上海 · 每周 4 天，至少 3 个月</p>
+              <p class="faint">硬性要求</p>
+              <ul class="jd-list"><li>本科及以上在读，计算机相关专业</li><li>熟悉 Python，有 Web 后端开发经验</li><li>了解大模型应用开发（Prompt、RAG、Agent 至少一项）</li><li>每周至少实习 4 天，持续 3 个月以上</li></ul>
+              <p class="faint" style="margin-top:8px">加分项</p>
+              <ul class="jd-list"><li>有 LangGraph 或类似工作流框架经验</li><li>有项目上线或开源经历</li></ul>
+              <div class="row" style="margin-top:10px"><span class="tag">RAG</span><span class="tag">LangGraph</span><span class="tag">FastAPI</span><span class="grow"></span><button class="btn small" onclick="go('jobs')">在岗位库查看</button></div>
+              <div class="anno">岗位标签显示 JD 解析结果，内容与岗位库中这条岗位一致。</div>
+            </div>
+            <div data-pane="job" data-for="c" class="hidden">
+              <h2>大模型应用后端实习</h2>
+              <p class="faint" style="margin-bottom:10px">样例智能 · 杭州 · 每周 5 天</p>
+              <p class="faint">硬性要求</p>
+              <ul class="jd-list"><li>熟悉 Python 与 FastAPI</li><li>熟悉 PostgreSQL</li><li>了解大模型接口调用</li></ul>
+              <p class="faint" style="margin-top:8px">加分项</p>
+              <ul class="jd-list"><li>有性能优化经验</li></ul>
+            </div>
+
+            <!-- 事实库变化：没有关联岗位的对话 -->
+            <div data-pane="changes" data-for="b" class="hidden">
+              <p class="faint" style="margin-bottom:8px">这段对话里对事实库的改动。确认后才会生效。</p>
+              <div class="exp">
+                <div class="exp-head"><span class="name">示例公司后端实习</span><span class="tag primary">新增 · 待确认</span></div>
+                <div class="fact"><span class="faint">新</span><div>对查询接口做压测与优化，吞吐量从约 200 QPS 提升到约 800 QPS<div class="meta"><span class="tag">结果或数字</span><span class="tag primary">对话中补充</span><span class="tag">负责</span></div></div><span></span></div>
+              </div>
+            </div>
+
+            <!-- 简历 -->
+            <div data-pane="resume" data-for="a">
+              <div class="guarantee">✓ 改写 3 条 · 每条都能追溯到你确认过的事实 · 1 条因依据不足保留原文<span class="grow"></span><button class="btn small" id="src-btn" onclick="toggleSrc()">显示依据</button></div>
+              <div class="src-card hidden" id="src-card"></div>
+              <div class="stale" id="stale">这份简历基于事实库 v4 生成，事实库已更新到 v5（新增 1 条：压测经历）<span class="grow"></span><button class="btn small" onclick="this.parentElement.remove()">先不用</button><button class="btn small primary" onclick="this.parentElement.innerHTML='（原型）已用 v5 重新生成，旧版本保留在「我的 → 简历」'">重新生成</button></div>
+              <div class="rs-toolbar">
+                <button class="btn small" id="rs-edit">编辑</button>
+                <button class="btn small" id="rs-fit">自动一页</button>
+                <span class="rs-status num" id="rs-status">—</span>
+                <select id="rs-font" aria-label="字体"><option value="">系统字体</option><option value='"PingFang SC", sans-serif'>苹方</option><option value='"Microsoft YaHei", sans-serif'>微软雅黑</option><option value='"Songti SC", "SimSun", serif'>宋体</option></select>
+                <select id="rs-size" aria-label="字号"><option>12</option><option>12.5</option><option>13</option><option selected>13.5</option><option>14</option><option>15</option></select>
+                <button class="btn small" onclick="document.execCommand('bold')"><b>B</b></button>
+                <button class="btn small" onclick="document.execCommand('undo')">撤回</button>
+                <button class="btn small" onclick="document.execCommand('redo')">前进</button>
+                <select id="rs-mode" aria-label="页面模式"><option value="paged">A4 分页</option><option value="flow">连续</option></select>
+                <button class="btn small" id="rs-reset">重置</button>
+                <span class="grow"></span>
+                <span class="faint" id="rs-saved">自动保存已开启</span>
+                <button class="btn small" onclick="saveHtml()">保存 HTML</button>
+                <button class="btn small primary" onclick="window.print()">导出 PDF</button>
+              </div>
+              <div class="rs-stage">
+                <article class="paper paged" id="paper">
+                  <h1>示例同学</h1>
+                  <div class="intent">求职意向：Agent 应用开发实习</div>
+                  <div class="contact">138-0000-0000 · demo@example.com · GitHub：github.com/example</div>
+                  <div class="avail">可立即到岗 · 每周 5 天 · 可连续实习 6 个月</div>
+                  <p class="summary">软件工程本科在读，主要方向为大模型应用与 Agent 工程。能把需求拆成可验证的场景，通过接口测试和日志定位问题。</p>
+                  <h3>教育背景</h3>
+                  <div class="entry-head"><span>示例大学 · 软件工程 · 本科</span><span>2023.09 – 2027.06</span></div>
+                  <div>相关课程：数据结构、数据库系统、操作系统、计算机网络</div>
+                  <h3>项目经历</h3>
+                  <div class="entry-head"><span>Agent 机制实验项目 · 个人项目</span><span>2026.09 – 2026.11</span></div>
+                  <div class="stack">Python · FastAPI · LangGraph · SQLite · SSE</div>
+                  <ul>
+                    <li title="检查通过 · 依据 F-03、F-07"><b>对话接口：</b>基于 FastAPI 实现大模型对话接口，支持 SSE 流式输出与失败重试。<span class="src" contenteditable="false"><span data-f="F-03">F-03</span><span data-f="F-07">F-07</span></span></li>
+                    <li class="edited" title="修订 1 次后通过 · 依据 F-11、F-12"><b>检索实验：</b>参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异；使用 LangGraph 检查点实现中断后恢复执行。<span class="src" contenteditable="false"><span data-f="F-11">F-11</span><span data-f="F-12">F-12</span></span></li>
+                  </ul>
+                  <div class="entry-head"><span>课程项目 · 选课系统</span><span>2025.03 – 2025.06</span></div>
+                  <ul><li title="已回退原文：两次修订后仍写了“主导”">参与过项目数据库设计。<span class="src" contenteditable="false"><span class="none">原文 · 改写依据不足已回退</span></span></li></ul>
+                  <h3>专业技能</h3>
+                  <ul><li>熟悉 Python、FastAPI；了解 React、Docker。</li></ul>
+                </article>
+              </div>
+              <div class="anno">简历是「模板 + 内嵌编辑脚本」的 HTML，放在 iframe 里；导出的 HTML 文件也自带这套编辑器。悬停条目显示依据检查结果；左侧黄线表示修订或手动改过。点右上角放大按钮可以全屏编辑。</div>
+            </div>
+
+            <!-- 匹配报告 -->
+            <div data-pane="match" data-for="c" class="hidden">
+              <div class="row" style="margin-bottom:10px"><span class="tag">硬性要求 2/3</span><span class="tag error">未覆盖 1</span></div>
+              <table class="data">
+                <thead><tr><th>要求</th><th style="width:84px">判断</th><th>依据 / 建议</th></tr></thead>
+                <tbody>
+                  <tr><td>熟悉 Python 与 FastAPI <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td><td class="muted">F-03</td></tr>
+                  <tr><td>熟悉 PostgreSQL <span class="tag">硬性</span></td><td><span class="tag error">未覆盖</span></td><td class="muted">事实库中没有 → 学习或补项目</td></tr>
+                  <tr><td>有性能优化经验 <span class="tag">加分</span></td><td><span class="tag primary">表达缺口</span></td><td class="muted">F-21（对话中补充的压测经历）→ 写进实习经历</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div data-pane="match" data-for="a" class="hidden">
+              <div class="row" style="margin-bottom:10px"><span class="tag">硬性要求 3/4</span><span class="tag primary">表达缺口 2</span><span class="tag warning">部分覆盖 1</span><span class="tag error">未覆盖 1</span></div>
+              <table class="data">
+                <thead><tr><th>要求</th><th style="width:84px">判断</th><th>依据 / 建议</th></tr></thead>
+                <tbody>
+                  <tr><td>熟悉 Python，有 Web 后端经验 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td><td class="muted">F-03、F-07</td></tr>
+                  <tr><td>LangGraph 或类似框架经验 <span class="tag">加分</span></td><td><span class="tag primary">表达缺口</span></td><td class="muted">F-12（你补充的，简历原文没写）→ 写进项目经历</td></tr>
+                  <tr><td>了解大模型应用开发 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td><td class="muted">F-03、F-11</td></tr>
+                  <tr><td>每周至少 4 天，3 个月以上 <span class="tag">硬性</span></td><td><span class="tag error">未覆盖</span></td><td class="muted">事实库没有到岗信息 → 如果能满足，补充到事实库</td></tr>
+                  <tr><td>有项目上线或开源经历 <span class="tag">加分</span></td><td><span class="tag warning">部分覆盖</span></td><td class="muted">项目只在本地运行 → 学习或补项目，没做过的不要写</td></tr>
+                </tbody>
+              </table>
+              <p class="faint" style="margin-top:8px">在对话里补充了“每周 5 天”后，这一条会在重新匹配时变为已覆盖。</p>
+            </div>
+
+            <!-- 用到的事实 -->
+            <div data-pane="facts" data-for="a" class="hidden">
+              <p class="faint">本次改写引用的事实（事实库 v4）。完整事实库在「我的 → 经历」。</p>
+              <div class="exp">
+                <div class="exp-head"><span class="name">Agent 机制实验项目</span></div>
+                <div class="fact"><span class="faint">F-03</span><div>使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出<div class="meta"><span class="tag">负责</span><span class="tag">来自简历</span></div></div><span></span></div>
+                <div class="fact"><span class="faint">F-11</span><div>参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异<div class="meta"><span class="tag">参与</span><span class="tag">来自简历</span></div></div><span></span></div>
+                <div class="fact"><span class="faint">F-12</span><div>使用 LangGraph 检查点实现中断后恢复执行<div class="meta"><span class="tag">负责</span><span class="tag primary">对话中补充</span></div></div><span></span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 岗位列表 -->
+    <!-- ===== 岗位库 ===== -->
     <section class="page" id="page-jobs">
-      <div class="page-head">
-        <div><h1>岗位</h1><p class="sub">粘贴一份 JD，解析出要求后就能生成匹配报告</p></div>
-        <button class="btn primary" onclick="go('job-new')">添加岗位</button>
-      </div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>岗位</th><th>公司</th><th>硬性要求覆盖</th><th>最近改写</th><th style="width:90px"></th></tr></thead>
-          <tbody>
-            <tr><td><a href="#job-match">Agent 应用开发实习</a></td><td>示例科技</td><td class="num">3 / 4</td><td><span class="tag warning">待审阅 2 条</span></td><td><a href="#job-match">查看</a></td></tr>
-            <tr><td><a href="#job-match">大模型应用后端实习</a></td><td>样例智能</td><td class="num">2 / 3</td><td><span class="tag success">已导出</span></td><td><a href="#job-match">查看</a></td></tr>
-            <tr><td><a href="#job-parse">AI 产品工程实习</a></td><td>演示数据</td><td class="faint">尚未生成匹配报告</td><td class="faint">—</td><td><a href="#job-parse">查看</a></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="anno">Table。列表加载时用骨架屏。删除岗位放在详情页，用 Popconfirm 二次确认（02 第 5.3 节：直接删除）。不显示百分比匹配度，只显示硬性要求覆盖条数。</div>
-    </section>
-
-    <!-- 添加岗位 -->
-    <section class="page" id="page-job-new">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / 添加岗位</div>
-      <div class="page-head"><div><h1>添加岗位</h1><p class="sub">把招聘页面上的岗位描述整段粘贴进来</p></div></div>
-      <div class="card">
-        <div class="seg" role="tablist"><button class="on" data-mode="paste">粘贴文字</button><button data-mode="shot">上传截图</button></div>
-        <div id="shot-area" class="hidden">
-          <div class="shots"><div class="shot"><span>1</span></div><div class="shot"><span>2</span></div><div class="shot"><span>3</span></div><div class="shot add">+</div></div>
-          <p class="faint" style="margin-bottom:12px">可以一次上传多张，不用按顺序。系统会自动整理顺序、去掉截图之间重叠的部分；顺序不对时拖动缩略图调整。</p>
-          <div class="alert info"><span>已识别 3 张截图，自动整理的顺序是 3 → 1 → 2，去掉了 2 处重叠。请核对下面的文字，有错直接改。</span></div>
+      <div class="scroll"><div class="wrap">
+        <div class="row">
+          <div class="grow"><h1>岗位库</h1><p class="muted" style="margin-top:4px">对话里解析过的岗位都会存在这里。每个岗位对应一段对话，点开就回到那段对话。</p></div>
+          <div class="seg" style="margin:0"><button class="on">我的岗位</button><button disabled title="V2：开放共享后可以看到其他用户添加的公开岗位">公共岗位 · V2</button></div>
+          <button class="btn primary" onclick="openModal('job-modal')"><svg class="ico"><use href="#i-plus"/></svg>添加岗位</button>
         </div>
-        <label class="field"><span>岗位描述</span>
-          <textarea rows="12" placeholder="岗位职责：&#10;1. 参与大模型应用的后端开发……&#10;&#10;任职要求：&#10;1. 熟悉 Python……"></textarea>
-        </label>
-        <div class="row"><span class="spacer-x"></span><button class="btn" onclick="go('jobs')">取消</button><button class="btn primary" onclick="go('job-parse')">解析岗位</button></div>
-      </div>
-      <div class="anno">Segmented 切换输入方式。截图模式：Upload 多张图片（顺序不限）→ POST /api/ocr：逐张本地识别，模型只判断顺序，程序拼接并去掉重叠行（每一行都来自识别原文）→ 文字填进下方文本框供核对；拖动缩略图会按新顺序重新拼接 → 点「解析岗位」才提交。两种来源都只作为数据交给模型，不会当作指令执行；解析出可疑指令时在解析结果页顶部提示。</div>
-    </section>
-
-    <!-- 岗位详情：解析结果 -->
-    <section class="page" id="page-job-parse">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
-      <div class="page-head">
-        <div><h1>Agent 应用开发实习</h1><p class="sub">示例科技 · 上海 · 每周 4 天，至少 3 个月</p></div>
-        <div class="row"><button class="btn danger">删除岗位</button><button class="btn primary" onclick="go('job-match')">生成匹配报告</button></div>
-      </div>
-      <div class="tabs"><a href="#job-parse" class="active">岗位解析</a><a href="#job-match">匹配报告</a><a href="#tailor-review">改写结果</a></div>
-      <div class="alert warning"><b>注意</b><span>岗位描述中有一段像是写给 AI 的指令（「忽略之前的要求……」），已当作普通文字处理，不会执行。</span></div>
-      <div class="anno">注入检测命中时才显示这条 Alert。</div>
-      <div class="card">
-        <h2>硬性要求</h2>
-        <ul style="margin:0; padding-left:18px; line-height:2">
-          <li>本科及以上在读，计算机相关专业</li>
-          <li>熟悉 Python，有 Web 后端开发经验</li>
-          <li>了解大模型应用开发（Prompt、RAG、Agent 至少一项）</li>
-          <li>每周至少实习 4 天，持续 3 个月以上</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h2>加分项</h2>
-        <ul style="margin:0; padding-left:18px; line-height:2"><li>有 LangGraph 或类似工作流框架经验</li><li>有完整项目上线或开源经历</li></ul>
-      </div>
-      <div class="card">
-        <h2>技术关键词</h2>
-        <div class="row"><span class="tag">Python</span><span class="tag">FastAPI</span><span class="tag">LLM</span><span class="tag">RAG</span><span class="tag">LangGraph</span><span class="tag">PostgreSQL</span><span class="tag">Docker</span></div>
-        <p class="faint" style="margin-top:10px">关键词已标准化，例如「大模型」统一为 LLM</p>
-      </div>
-    </section>
-
-    <!-- 匹配报告 -->
-    <section class="page" id="page-job-match">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
-      <div class="page-head">
-        <div><h1>Agent 应用开发实习</h1><p class="sub">基于事实库 v3 生成 · 11 月 16 日</p></div>
-        <div class="row"><button class="btn">重新生成</button><button class="btn primary" onclick="go('tailor-progress')">开始改写</button></div>
-      </div>
-      <div class="tabs"><a href="#job-parse">岗位解析</a><a href="#job-match" class="active">匹配报告</a><a href="#tailor-review">改写结果</a></div>
-      <div class="stats">
-        <div class="stat"><div class="label">硬性要求</div><div class="value">3 <small>/ 4 已覆盖</small></div></div>
-        <div class="stat"><div class="label">表达缺口</div><div class="value">2 <small>条</small></div></div>
-        <div class="stat"><div class="label">部分覆盖</div><div class="value">1 <small>条</small></div></div>
-        <div class="stat"><div class="label">未覆盖</div><div class="value">1 <small>条</small></div></div>
-      </div>
-      <div class="alert info"><span><b>表达缺口</b>：你做过，但当前简历没有写出来。改写会优先把这些事实写进简历。</span></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th style="width:28%">要求</th><th style="width:110px">判断</th><th>依据与说明</th><th style="width:26%">建议</th></tr></thead>
-          <tbody>
-            <tr><td>熟悉 Python，有 Web 后端开发经验 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td>
-              <td><details><summary>依据 F-03、F-07</summary><div class="fact-ref"><b>F-03</b> 使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div></details></td>
-              <td class="muted">放在项目经历第一条</td></tr>
-            <tr><td>有 LangGraph 或类似工作流框架经验 <span class="tag">加分</span></td><td><span class="tag primary">表达缺口</span></td>
-              <td><details><summary>依据 F-12（用户补充）</summary><div class="fact-ref"><b>F-12</b> 使用 LangGraph 检查点实现中断后恢复执行</div></details><p class="faint" style="margin-top:4px">简历原文没有提到 LangGraph</p></td>
-              <td class="muted">把这条事实写进项目经历</td></tr>
-            <tr><td>了解大模型应用开发 <span class="tag">硬性</span></td><td><span class="tag success">已覆盖</span></td>
-              <td><details><summary>依据 F-03、F-11</summary><div class="fact-ref"><b>F-11</b> 参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div></details></td>
-              <td class="muted">—</td></tr>
-            <tr><td>每周至少实习 4 天，持续 3 个月以上 <span class="tag">硬性</span></td><td><span class="tag error">未覆盖</span></td>
-              <td class="muted">事实库中没有到岗时间的信息</td>
-              <td class="muted">如果可以满足，补充到事实库；这一条不能由改写补上</td></tr>
-            <tr><td>有完整项目上线或开源经历 <span class="tag">加分</span></td><td><span class="tag warning">部分覆盖</span></td>
-              <td><details><summary>依据 F-03</summary><div class="fact-ref"><b>F-03</b> 项目在本地运行，没有上线记录</div></details></td>
-              <td class="muted">学习或补项目；没有做过的不要写上去</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="anno">判断四种：已覆盖（成功色）、表达缺口（主色）、部分覆盖（警告色）、未覆盖（错误色）。依据用 details / Collapse 展开事实原文。不显示百分比匹配分（01 F3）。未覆盖的建议只能是「补充到事实库」或「学习、补项目」。</div>
-    </section>
-
-    <!-- 改写进行中 -->
-    <section class="page" id="page-tailor-progress">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习 / 改写</div>
-      <div class="page-head"><div><h1>正在改写</h1><p class="sub">可以离开这个页面，回来后会继续显示进度</p></div><button class="btn" onclick="go('tailor-review')">查看结果（原型跳转）</button></div>
-      <div class="card">
-        <div class="steps">
-          <div class="step done"><span class="dot">✓</span><span class="txt">规划</span><span class="line"></span></div>
-          <div class="step done"><span class="dot">✓</span><span class="txt">逐条改写</span><span class="line"></span></div>
-          <div class="step current"><span class="dot">3</span><span class="txt">依据检查</span><span class="line"></span></div>
-          <div class="step"><span class="dot">4</span><span class="txt">修订</span></div>
+        <div class="filters">
+          <span class="label">方向</span>
+          <div class="row" data-group="dir"><button class="chip on" data-v="">全部</button><button class="chip" data-v="agent">Agent 应用 12</button><button class="chip" data-v="backend">后端 6</button><button class="chip" data-v="algo">算法 3</button><button class="chip" data-v="frontend">前端 2</button></div>
+          <span class="label">关键词</span>
+          <div class="row" data-group="kw"><button class="chip on" data-v="">全部</button><button class="chip" data-v="RAG">RAG 15</button><button class="chip" data-v="FastAPI">FastAPI 9</button><button class="chip" data-v="LangGraph">LangGraph 7</button><button class="chip" data-v="PostgreSQL">PostgreSQL 5</button></div>
+          <span class="label">城市</span>
+          <div class="row" data-group="city"><button class="chip on" data-v="">全部</button><button class="chip" data-v="上海">上海 11</button><button class="chip" data-v="杭州">杭州 6</button><button class="chip" data-v="北京">北京 4</button></div>
+          <span class="label">薪资</span>
+          <div class="row" data-group="pay"><button class="chip on" data-v="">不限</button><button class="chip" data-v="200">200 元/天以上</button><button class="chip" data-v="300">300 元/天以上</button><button class="chip" data-v="unknown">未填写</button></div>
+          <span class="label">进度</span>
+          <div class="row" data-group="stage"><button class="chip on" data-v="">全部</button><button class="chip" data-v="none">未匹配</button><button class="chip" data-v="matched">已匹配</button><button class="chip" data-v="resume">已生成简历</button></div>
         </div>
-        <ul class="log" style="padding-left:18px; margin:0">
-          <li><b>规划完成</b>：保留 2 段经历，补入 1 条表达缺口</li>
-          <li><b>改写完成</b>：共 3 条</li>
-          <li><b>检查中</b>：第 2 / 3 条</li>
-        </ul>
-        <p class="faint num" style="margin-top:14px">已用 48 秒 · 模型调用 6 次</p>
-      </div>
-      <div class="anno">Steps。前端每 2 秒轮询 GET /api/tailor-runs/{run_id}；进度来自数据库中的运行状态，所以离开页面再回来能继续显示。失败时用 Result 组件说明原因并提供「重试」。</div>
-    </section>
-
-    <!-- 改写审阅 -->
-    <section class="page" id="page-tailor-review">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / Agent 应用开发实习</div>
-      <div class="page-head">
-        <div><h1>Agent 应用开发实习</h1><p class="sub num" id="review-summary">3 条改写 · 已接受 1 · 待审阅 2</p></div>
-        <div class="row"><button class="btn" onclick="acceptAllPassed()">接受全部通过项</button><button class="btn primary" onclick="go('resume')">生成完整简历</button></div>
-      </div>
-      <div class="tabs"><a href="#job-parse">岗位解析</a><a href="#job-match">匹配报告</a><a href="#tailor-review" class="active">改写结果</a></div>
-      <div class="review">
-        <div class="review-head"><div>原文</div><div>改写</div></div>
-
-        <div class="bullet" data-state="accepted" data-passed="1">
-          <div><div class="exp-label">Agent 机制实验项目</div><div class="prose">用 FastAPI 写了聊天接口，接入大模型。</div></div>
-          <div>
-            <div class="prose rewrite-text">基于 FastAPI 实现大模型对话接口，支持 <span class="diff-add">SSE 流式输出</span>与<span class="diff-add">失败重试</span>。</div>
-            <div class="actions">
-              <span class="tag success">检查通过</span>
-              <details><summary>依据 F-03、F-07</summary>
-                <div class="fact-ref"><b>F-03</b> 使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出</div>
-                <div class="fact-ref"><b>F-07</b> 模型调用失败时按指数退避重试，最多 3 次</div></details>
-              <span class="spacer-x"></span>
-              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">接受</button>
-            </div>
+        <div class="anno">分类来自 F2 的关键词标准化与统计，标签旁的数字由程序计算。数据分两部分：岗位本身（JD 原文、解析结果，以后可共享）与「我和这个岗位的关系」（匹配、简历、备注，永远私有）。</div>
+        <div class="jobs" id="jobs">
+          <div class="job" data-dir="agent" data-kw="RAG LangGraph FastAPI" data-city="上海" data-stage="resume" data-pay="200" onclick="openJob('a')">
+            <div class="t">Agent 应用开发实习</div><div class="salary">200–300 元/天</div><div class="faint">示例科技 · 上海 · 每周 4 天 · 本科</div>
+            <div class="row"><span class="tag">RAG</span><span class="tag">LangGraph</span><span class="tag">FastAPI</span></div>
+            <div class="muted" style="font-size:13px">硬性要求 3/4 · 表达缺口 2</div>
+            <div class="go">已生成简历 · 查看详情 →</div>
+          </div>
+          <div class="job" data-dir="backend" data-kw="FastAPI PostgreSQL" data-city="杭州" data-stage="matched" data-pay="250" onclick="openJob('c')">
+            <div class="t">大模型应用后端实习</div><div class="salary">250–350 元/天</div><div class="faint">样例智能 · 杭州 · 每周 5 天 · 硕士优先</div>
+            <div class="row"><span class="tag">FastAPI</span><span class="tag">PostgreSQL</span></div>
+            <div class="muted" style="font-size:13px">硬性要求 2/3 · 表达缺口 1</div>
+            <div class="go">已匹配 · 查看详情 →</div>
+          </div>
+          <div class="job" data-dir="agent" data-kw="RAG" data-city="北京" data-stage="none" data-pay="unknown" onclick="openJob('e')">
+            <div class="t">AI 产品工程实习</div><div class="salary faint">薪资未填写</div><div class="faint">演示数据 · 北京 · 每周 4 天</div>
+            <div class="row"><span class="tag">RAG</span><span class="tag">Prompt</span></div>
+            <div class="muted" style="font-size:13px">还没做匹配</div>
+            <div class="go">查看详情 →</div>
+          </div>
+          <div class="job" data-dir="algo" data-kw="RAG" data-city="上海" data-stage="none" data-pay="300" onclick="openJob('x')">
+            <div class="t">检索算法实习</div><div class="salary">300 元/天</div><div class="faint">样例数据 · 上海 · 每周 5 天 · 截止 11-30</div>
+            <div class="row"><span class="tag">RAG</span><span class="tag">Python</span></div>
+            <div class="muted" style="font-size:13px">还没做匹配</div>
+            <div class="go">查看详情 →</div>
           </div>
         </div>
+        <p class="faint hidden" id="jobs-empty" style="margin-top:16px">没有符合条件的岗位，换个筛选条件试试。</p>
+      </div></div>
+    </section>
 
-        <div class="bullet" data-state="pending" data-passed="1">
-          <div><div class="exp-label">Agent 机制实验项目</div><div class="prose">做过一个 RAG 小实验。</div></div>
-          <div>
-            <div class="prose rewrite-text">参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异；使用 <span class="diff-add">LangGraph 检查点</span>实现中断后恢复执行。</div>
-            <div class="actions">
-              <span class="tag warning">修订 1 次后通过</span>
-              <details><summary>依据 F-11、F-12</summary>
-                <div class="fact-ref"><b>F-11</b> 参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异</div>
-                <div class="fact-ref"><b>F-12</b> 使用 LangGraph 检查点实现中断后恢复执行（用户补充）</div>
-                <p class="faint" style="margin-top:6px">第一版写了「主导搭建」，职责程度为「参与」，已修订</p></details>
-              <span class="spacer-x"></span>
-              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">接受</button>
-            </div>
+    <!-- ===== 岗位详情 ===== -->
+    <section class="page" id="page-job">
+      <div class="scroll"><div class="wrap" style="max-width:1000px">
+        <div class="faint"><a style="cursor:pointer" onclick="go('jobs')">岗位库</a> / <span id="jd-crumb"></span></div>
+        <div class="row" style="margin:6px 0 4px">
+          <div class="grow"><h1 id="jd-title"></h1><p class="muted" id="jd-sub" style="margin-top:2px"></p></div>
+          <button class="btn danger small">删除</button>
+          <button class="btn primary" id="jd-chat"></button>
+        </div>
+        <div class="row" id="jd-match" style="margin:8px 0 14px"></div>
+        <div class="card" id="jd-apply" style="margin-bottom:14px"></div>
+
+        <div class="info" id="jd-info"></div>
+        <div class="row" style="margin-top:8px"><button class="btn small" onclick="addField()">＋ 添加字段</button><span class="faint">字段都可以修改或留空；标「AI 提取」的来自 JD，标「你填写」的是你改过或补充的。</span></div>
+
+        <div class="jd-sec"><h3>岗位职责</h3><ul id="jd-duty"></ul></div>
+        <div class="jd-sec"><h3>硬性要求</h3><ul id="jd-must"></ul></div>
+        <div class="jd-sec"><h3>加分项</h3><ul id="jd-plus"></ul></div>
+        <div class="jd-sec"><h3>技术关键词</h3><div class="row" id="jd-kw"></div></div>
+        <details class="jd-sec"><summary class="link-btn">查看 JD 原文</summary><pre id="jd-raw" style="white-space:pre-wrap; font-family:inherit; background:var(--bg-panel); border:1px solid var(--border-2); border-radius:10px; padding:12px; margin-top:8px"></pre></details>
+        <div class="anno">字段由 F2 从 JD 中提取，没写的留空（显示「未填写」），不猜测。所有字段都能点击修改，也能添加自定义字段（例如「内推人」「面试轮数」）。修改保存在「我和这个岗位的关系」（user_job）里，永远私有；JD 原文和提取结果保存在岗位本身（job_posting），V2 共享时不会被个人修改覆盖。薪资统一换算成「元/天」方便筛选，原始写法（例如「8k–10k/月」）保留在字段里。</div>
+      </div></div>
+    </section>
+
+    <!-- ===== 我的 ===== -->
+    <section class="page" id="page-me">
+      <div class="scroll"><div class="wrap">
+        <h1>我的</h1>
+        <div class="overview">
+          <div class="stat" onclick="meTab('facts')"><div class="label">经历事实</div><div class="value">34 <small>条 · v4</small></div></div>
+          <div class="stat" onclick="meTab('resumes')"><div class="label">定制简历</div><div class="value">5 <small>份</small></div></div>
+          <div class="stat" onclick="meTab('memory')"><div class="label">记忆</div><div class="value">6 <small>条</small></div></div>
+        </div>
+        <div class="tabs" id="me-tabs" style="margin-bottom:12px"><button class="on" data-tab="facts">经历</button><button data-tab="resumes">简历</button><button data-tab="memory">记忆</button></div>
+
+        <div data-me="facts">
+          <div class="row"><span class="faint grow">改写只会引用这里确认过的事实。也可以直接在对话里说“我还做过……”。</span><button class="btn small">上传或粘贴简历</button><button class="btn small">补充事实</button><button class="btn small primary">提交为 v5</button></div>
+          <div class="exp">
+            <div class="exp-head"><span class="name">Agent 机制实验项目</span><span class="faint">个人项目 · 2026.09–2026.11</span></div>
+            <div class="fact"><input type="checkbox" checked aria-label="已确认"><div>使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出<div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span><select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div></div><button class="btn text small">编辑</button></div>
+            <div class="fact needs-check"><input type="checkbox" aria-label="已确认"><div>参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异<div class="meta"><span class="tag">做了什么</span><span class="tag">来自简历</span><select aria-label="职责程度"><option>参与</option><option>负责</option><option>主导</option><option>不适用</option></select><span class="tag warning">请核对职责程度</span></div></div><button class="btn text small">编辑</button></div>
+            <div class="fact"><input type="checkbox" checked aria-label="已确认"><div>使用 LangGraph 检查点实现中断后恢复执行<div class="meta"><span class="tag">技术</span><span class="tag primary">对话中补充</span><select aria-label="职责程度"><option>负责</option><option>主导</option><option>参与</option><option>不适用</option></select></div></div><button class="btn text small">编辑</button></div>
           </div>
+          <div class="exp">
+            <div class="exp-head"><span class="name">求职条件</span></div>
+            <div class="fact"><input type="checkbox" checked aria-label="已确认"><div>可每周实习 5 天<div class="meta"><span class="tag">条件</span><span class="tag primary">对话中补充</span><span class="tag">职责程度：不适用</span></div></div><button class="btn text small">编辑</button></div>
+          </div>
+          <div class="anno">事实库是权威数据：经历只放这里，不放记忆。对话中补充的事实来源记为「对话中补充」，同样需要确认；它们在匹配报告里会产生「表达缺口」。</div>
         </div>
 
-        <div class="bullet reverted" data-state="pending" data-passed="0">
-          <div><div class="exp-label">课程项目</div><div class="prose">参与过项目数据库设计。</div></div>
-          <div>
-            <div class="prose rewrite-text">参与过项目数据库设计。</div>
-            <div class="actions">
-              <span class="tag">已回退原文</span>
-              <span class="reason">两次修订后仍写了「主导」，事实里是「参与」</span>
-              <span class="spacer-x"></span>
-              <button class="btn small" data-act="reject">不用</button><button class="btn small" data-act="accept">保留原文</button>
-            </div>
-          </div>
+        <div data-me="resumes" class="hidden">
+          <table class="data card" style="padding:0">
+            <thead><tr><th>岗位</th><th>事实库版本</th><th>状态</th><th>更新时间</th><th style="width:220px"></th></tr></thead>
+            <tbody>
+              <tr><td>Agent 应用开发实习</td><td class="num">v4</td><td><span class="tag warning">已手动修改</span></td><td class="faint num">11-16 14:40</td><td><button class="btn small" onclick="openConv('a')">打开</button> <button class="btn small">保存 HTML</button></td></tr>
+              <tr><td>大模型应用后端实习</td><td class="num">v3</td><td><span class="tag success">已导出 PDF</span></td><td class="faint num">11-15 21:05</td><td><button class="btn small" onclick="openConv('c')">打开</button> <button class="btn small">保存 HTML</button></td></tr>
+            </tbody>
+          </table>
+          <div class="anno">每份简历记录生成时用的事实库版本；「打开」回到对应对话，右侧面板显示这份简历。</div>
         </div>
-      </div>
-      <div class="anno">核心页面。原文与改写并排，窄屏改为上下排列。接受 / 不用可以随时改回来。「生成完整简历」组装整份简历：接受的条目用改写版，不用或回退的保留原文，未改写的部分原样保留。「接受全部通过项」只处理检查通过且尚未决定的条目。改写里新增的内容用浅色底标出。用户手动修改的条目也会过一次依据检查，结果只提示不阻止保存。</div>
-      <div class="row" style="margin-top:16px">
-        <span class="faint">这次改写有帮助吗？</span><button class="btn small">有帮助</button><button class="btn small">没帮助</button>
-      </div>
+
+        <div data-me="memory" class="hidden">
+          <p class="faint" style="margin-bottom:8px">记忆只保存偏好，不保存经历。改写时偏好只影响措辞风格，内容仍然只能来自事实库。</p>
+          <div class="card" style="padding:0">
+            <div class="mem"><span class="tag">求职偏好</span><div>目标方向：Agent 应用开发、大模型应用后端</div><span><button class="btn text small">修改</button><button class="btn text small">删除</button></span></div>
+            <div class="mem"><span class="tag">求职偏好</span><div>城市：上海、杭州；不投外包岗位</div><span><button class="btn text small">修改</button><button class="btn text small">删除</button></span></div>
+            <div class="mem"><span class="tag primary">写作偏好</span><div>语气平实，不用夸张的形容词</div><span><button class="btn text small">修改</button><button class="btn text small">删除</button></span></div>
+            <div class="mem"><span class="tag primary">写作偏好</span><div>技术名用英文原名，每条不超过两行</div><span><button class="btn text small">修改</button><button class="btn text small">删除</button></span></div>
+          </div>
+          <div class="anno">每次对话把全部记忆放进上下文（V1 条数少，不做检索）。删除后不会被 Agent 从旧对话里再提议回来（防重建）。弱项记忆随 V2 模拟面试加入。</div>
+        </div>
+      </div></div>
     </section>
 
-    <!-- 完整简历预览与编辑 -->
-    <section class="page" id="page-resume">
-      <div class="breadcrumb"><a href="#jobs">岗位</a> / <a href="#tailor-review">Agent 应用开发实习</a> / 完整简历</div>
-      <div class="page-head">
-        <div><h1>完整简历</h1><p class="sub">点击「编辑」后直接修改；导出的 HTML 文件也能继续编辑</p></div>
-        <div class="row"><button class="btn" onclick="exportFile('md')">导出 Markdown</button><button class="btn" onclick="exportFile('docx')">导出 DOCX</button></div>
-      </div>
-      <div class="rs-toolbar">
-        <button class="btn small" id="rs-edit">编辑</button>
-        <button class="btn small" id="rs-fit">自动一页</button>
-        <span class="status num" id="rs-status">—</span>
-        <label class="faint">字体 <select id="rs-font"><option value="">系统默认</option><option value='"PingFang SC", sans-serif'>苹方</option><option value='"Microsoft YaHei", sans-serif'>微软雅黑</option><option value='"Songti SC", "SimSun", serif'>宋体</option></select></label>
-        <label class="faint">字号 <select id="rs-size"><option>12</option><option>12.5</option><option>13</option><option selected>13.5</option><option>14</option><option>15</option></select></label>
-        <button class="btn small" onclick="document.execCommand('bold')"><b>B</b> 加粗</button>
-        <button class="btn small" onclick="document.execCommand('undo')">撤回</button>
-        <button class="btn small" onclick="document.execCommand('redo')">前进</button>
-        <label class="faint">页面 <select id="rs-mode"><option value="paged">A4 分页</option><option value="flow">连续</option></select></label>
-        <button class="btn small" id="rs-reset">重置</button>
-        <span class="spacer-x"></span>
-        <span class="faint" id="rs-saved">自动保存已开启</span>
-        <button class="btn small" onclick="saveHtml()">保存 HTML</button>
-        <button class="btn small primary" onclick="window.print()">导出 PDF</button>
-      </div>
-      <div class="rs-stage">
-        <article class="paper paged" id="paper">
-          <h1>示例同学</h1>
-          <div class="intent">求职意向：Agent 应用开发实习</div>
-          <div class="contact">138-0000-0000 · demo@example.com · GitHub：github.com/example</div>
-          <div class="avail">可立即到岗 · 每周 5 天 · 可连续实习 6 个月</div>
-          <p class="summary">软件工程本科在读，主要方向为大模型应用与 Agent 工程。能把需求拆成可验证的场景，通过接口测试和日志定位问题。</p>
-          <h3>教育背景</h3>
-          <div class="entry-head"><span>示例大学 · 软件工程 · 本科</span><span>2023.09 – 2027.06</span></div>
-          <div>相关课程：数据结构、数据库系统、操作系统、计算机网络</div>
-          <h3>项目经历</h3>
-          <div class="entry-head"><span>Agent 机制实验项目 · 个人项目</span><span>2026.09 – 2026.11</span></div>
-          <div class="stack">Python · FastAPI · LangGraph · SQLite · SSE</div>
-          <ul>
-            <li><b>对话接口：</b>基于 FastAPI 实现大模型对话接口，支持 SSE 流式输出与失败重试。</li>
-            <li class="edited" title="手动修改过，依据检查：通过"><b>检索实验：</b>参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异；使用 LangGraph 检查点实现中断后恢复执行。</li>
-          </ul>
-          <div class="entry-head"><span>课程项目 · 选课系统</span><span>2025.03 – 2025.06</span></div>
-          <ul><li>参与过项目数据库设计。</li></ul>
-          <h3>专业技能</h3>
-          <ul><li>熟悉 Python、FastAPI；了解 React、Docker。</li></ul>
-        </article>
-      </div>
-      <div class="anno">简历模板本身（白纸、A4）不用应用配色，只有外面的工具栏是应用样式。实际实现：后端把 tailored_resume 渲染成「模板 + 内嵌编辑脚本」的完整 HTML，前端放进 iframe；脚本在应用里通过 postMessage 交给外层保存到服务器，作为导出文件单独打开时保存在浏览器本地。条目左侧的黄线表示手动修改过，悬停显示依据检查结果。照片、文字颜色、导入字体、多模板是 V2。</div>
-    </section>
-
-    <!-- 改写记录 -->
-    <section class="page" id="page-runs">
-      <div class="page-head"><div><h1>改写记录</h1><p class="sub">每次改写都记录用的是哪个事实库版本</p></div></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>岗位</th><th>事实库版本</th><th>状态</th><th>结果</th><th>时间</th></tr></thead>
-          <tbody>
-            <tr><td><a href="#tailor-review">Agent 应用开发实习</a></td><td class="num">v3</td><td><span class="tag warning">待审阅</span></td><td class="num">3 条 · 回退 1</td><td class="faint num">11-16 14:20</td></tr>
-            <tr><td><a href="#tailor-review">大模型应用后端实习</a></td><td class="num">v2</td><td><span class="tag success">已导出</span></td><td class="num">4 条 · 回退 0</td><td class="faint num">11-15 21:05</td></tr>
-            <tr><td><a href="#tailor-progress">AI 产品工程实习</a></td><td class="num">v3</td><td><span class="tag primary">运行中</span></td><td class="faint">—</td><td class="faint num">11-16 14:31</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="empty card hidden" id="runs-empty">
-        <svg class="ico-lg"><use href="#i-runs"/></svg>
-        <p class="title">还没有改写记录</p>
-        <p class="muted">先在「岗位」里添加一份 JD，生成匹配报告后就能开始改写</p>
-        <button class="btn primary" style="margin-top:14px" onclick="go('jobs')">去添加岗位</button>
-      </div>
-      <p style="margin-top:12px"><a href="#runs" onclick="document.getElementById('runs-empty').classList.toggle('hidden'); return false">切换查看空状态示例</a></p>
-      <div class="anno">空状态要告诉用户下一步做什么，并给出按钮（07 第 6 节）。</div>
-    </section>
-
-    <!-- 账号 -->
+    <!-- ===== 账号 ===== -->
     <section class="page" id="page-account">
-      <div class="page-head"><div><h1>账号</h1></div></div>
-      <div class="alert warning hidden" id="pending-delete"><span><b>账号将于 11 月 23 日删除</b>。在此之前可以恢复，恢复前其他功能暂停使用。</span><span class="spacer-x"></span><button class="btn small" onclick="togglePending(false)">恢复账号</button></div>
-      <div class="card">
-        <h2>登录信息</h2>
-        <p class="muted">邮箱　demo@example.com</p>
-        <button class="btn" style="margin-top:14px" onclick="go('login')">退出登录</button>
-      </div>
-      <div class="card">
-        <h2>删除账号</h2>
-        <p class="muted">申请后有 7 天可以恢复；到期后简历、事实库、岗位和改写结果会全部删除，无法找回。</p>
-        <button class="btn danger" style="margin-top:14px" onclick="document.getElementById('delete-modal').classList.remove('hidden')">删除账号</button>
-      </div>
-      <div class="anno">两阶段删除（02 第 5.3 节）。申请后立即退出所有登录；待删除期内登录只能看到这一页和「恢复账号」。</div>
+      <div class="scroll"><div class="wrap" style="max-width:720px">
+        <h1 style="margin-bottom:16px">账号设置</h1>
+        <div class="card"><h2>登录信息</h2><p class="muted">邮箱　demo@example.com</p><button class="btn" style="margin-top:12px" onclick="go('login')">退出登录</button></div>
+        <div class="card" style="margin-top:12px"><h2>删除账号</h2><p class="muted">申请后有 7 天可以恢复；到期后简历、事实库、岗位、对话和记忆全部删除，无法找回。</p><button class="btn danger" style="margin-top:12px">删除账号</button></div>
+      </div></div>
     </section>
-
-    </div>
   </main>
 </div>
 
-<div class="mask hidden" id="delete-modal">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
-    <h2 id="del-title">删除账号？</h2>
-    <p class="muted">提交后：</p>
-    <ul>
-      <li>立即退出所有设备的登录</li>
-      <li>7 天内可以登录并恢复账号</li>
-      <li>7 天后所有数据彻底删除，无法找回</li>
-    </ul>
-    <label class="field"><span>输入「删除」确认</span><input placeholder="删除"></label>
-    <div class="row"><span class="spacer-x"></span>
-      <button class="btn" onclick="document.getElementById('delete-modal').classList.add('hidden')">取消</button>
-      <button class="btn danger" onclick="document.getElementById('delete-modal').classList.add('hidden'); togglePending(true)">申请删除</button>
-    </div>
+<!-- 添加岗位 -->
+<div class="mask hidden" id="job-modal" onclick="if (event.target === this) closeModal('job-modal')">
+  <div class="modal">
+    <h2>添加岗位</h2>
+    <p class="faint" style="margin-bottom:12px">也可以直接在对话里发 JD 或截图，Agent 会自动存进岗位库。</p>
+    <div class="seg"><button class="on">粘贴文字</button><button>上传截图</button></div>
+    <textarea rows="8" style="width:100%" placeholder="岗位职责：……&#10;任职要求：……"></textarea>
+    <div class="row" style="margin-top:12px"><span class="grow"></span><button class="btn" onclick="closeModal('job-modal')">取消</button><button class="btn primary" onclick="closeModal('job-modal')">解析并保存</button></div>
   </div>
 </div>
 
 <button class="anno-toggle" onclick="document.body.classList.toggle('show-anno')">显示实现标注</button>
 
 <script>
-const NAV_OF = { facts: 'facts', jobs: 'jobs', 'job-new': 'jobs', 'job-parse': 'jobs', 'job-match': 'jobs', 'tailor-progress': 'runs', 'tailor-review': 'jobs', resume: 'jobs', runs: 'runs', account: 'account' };
+// ---------- 页面切换 ----------
+let current = location.hash.slice(1) || 'home';
+const NAV_OF = { home: 'home', chat: 'chat', jobs: 'jobs', job: 'jobs', me: 'me', account: 'me' };
 
-let current = location.hash.slice(1) || 'facts';
-
-// 不依赖 hashchange：某些打开方式（如 data: 地址）改 hash 不会触发事件
 function go(page) {
   current = page;
-  try { history.replaceState(null, '', '#' + page); } catch (e) { /* 忽略 */ }
+  try { history.replaceState(null, '', '#' + page); } catch (e) { /* 某些打开方式不允许改地址 */ }
   render();
 }
 
-document.addEventListener('click', e => {
-  const link = e.target.closest('a[href^="#"]');
-  if (!link || link.getAttribute('onclick')) return;
-  e.preventDefault();
-  go(link.getAttribute('href').slice(1));
-});
-
 function render() {
-  const page = current;
-  const isLogin = page === 'login';
+  const isLogin = current === 'login';
+  document.getElementById('login-view').classList.toggle('hidden', !isLogin);
   document.getElementById('app').classList.toggle('hidden', isLogin);
-  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
-  document.querySelectorAll('.nav[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === NAV_OF[page]));
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('on', el.id === 'page-' + current));
+  document.querySelectorAll('.nav[data-nav]').forEach(el => el.classList.toggle('on', el.dataset.nav === NAV_OF[current]));
+  document.querySelectorAll('.conv[data-conv]').forEach(el => el.classList.toggle('on', current === 'chat' && el.dataset.conv === conv));
   document.body.classList.remove('nav-open');
-  window.scrollTo(0, 0);
-  if (page === 'resume') requestAnimationFrame(measure);
+  document.getElementById('me-menu').classList.add('hidden');
+  if (current === 'chat') requestAnimationFrame(measure);
 }
 
-function setBulletState(bullet, state) {
-  bullet.dataset.state = state;
-  const accept = bullet.querySelector('[data-act=accept]');
-  const reject = bullet.querySelector('[data-act=reject]');
-  accept.classList.toggle('on-accept', state === 'accepted');
-  reject.classList.toggle('on-reject', state === 'rejected');
-  updateSummary();
+function toggleMenu(e) {
+  if (e.target.closest('.menu')) return;
+  document.getElementById('me-menu').classList.toggle('hidden');
 }
 
-function updateSummary() {
-  const bullets = [...document.querySelectorAll('.bullet')];
-  const accepted = bullets.filter(b => b.dataset.state === 'accepted').length;
-  const pending = bullets.filter(b => b.dataset.state === 'pending').length;
-  document.getElementById('review-summary').textContent = `${bullets.length} 条改写 · 已接受 ${accepted} · 待审阅 ${pending}`;
+// ---------- 对话与岗位绑定 ----------
+// job 为空表示没有关联岗位；tabs 是右侧面板在这段对话里可用的标签
+const CONVS = {
+  new: { title: '新对话', job: null, tabs: [] },
+  a: { title: 'Agent 应用开发实习', job: '示例科技 · 上海', tabs: ['resume', 'match', 'job', 'facts'] },
+  b: { title: '补充实习经历', job: null, tabs: ['changes'] },
+  c: { title: '大模型应用后端实习', job: '样例智能 · 杭州', tabs: ['resume', 'match', 'job'] },
+  d: { title: '问问怎么准备面试', job: null, tabs: [] },
+  e: { title: 'AI 产品工程实习', job: '演示数据 · 北京', tabs: ['job'] },
+};
+let conv = 'a';
+
+function openConv(id) {
+  conv = id;
+  const c = CONVS[id];
+  document.getElementById('conv-title').textContent = c.title;
+  const chip = document.getElementById('job-chip');
+  chip.classList.toggle('none', !c.job);
+  document.getElementById('job-chip-text').textContent = c.job || '未关联岗位';
+  document.querySelectorAll('.msgs[data-conv]').forEach(m => m.classList.toggle('hidden', m.dataset.conv !== id));
+  document.querySelectorAll('.conv[data-conv]').forEach(n => n.classList.toggle('on', n.dataset.conv === id));
+  document.querySelectorAll('#panel-tabs button').forEach(b => b.classList.toggle('hidden', !c.tabs.includes(b.dataset.tab)));
+  // 窄屏时面板是全屏层，不自动打开，用顶部「查看结果」按钮打开
+  const wide = window.matchMedia('(min-width: 992px)').matches;
+  if (c.tabs.length) showPane(c.tabs[0]);
+  togglePanel(c.tabs.length > 0 && wide);
+  document.getElementById('open-panel').classList.toggle('hidden', !c.tabs.length);
+  go('chat');
 }
 
-function acceptAllPassed() {
-  document.querySelectorAll('.bullet[data-passed="1"][data-state="pending"]').forEach(b => setBulletState(b, 'accepted'));
+function showPane(tab) {
+  if (!CONVS[conv].tabs.includes(tab)) return;
+  togglePanel(true);
+  document.querySelectorAll('#panel-tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('[data-pane]').forEach(p => {
+    const forConv = (p.dataset.for || '').split(' ');
+    p.classList.toggle('hidden', !(p.dataset.pane === tab && forConv.includes(conv)));
+  });
+  if (tab === 'resume') requestAnimationFrame(measure);
 }
 
-function togglePending(on) {
-  document.getElementById('pending-delete').classList.toggle('hidden', !on);
+function fillInput(text) {
+  const input = document.getElementById('input');
+  input.value = text;
+  input.focus();
 }
 
-document.querySelectorAll('.bullet').forEach(bullet => {
-  bullet.querySelectorAll('[data-act]').forEach(btn => btn.addEventListener('click', () => {
-    const target = btn.dataset.act === 'accept' ? 'accepted' : 'rejected';
-    setBulletState(bullet, bullet.dataset.state === target ? 'pending' : target);
-  }));
-  setBulletState(bullet, bullet.dataset.state);
-});
-
-// 岗位输入方式切换
-document.querySelectorAll('.seg button').forEach(btn => btn.addEventListener('click', () => {
-  document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b === btn));
-  document.getElementById('shot-area').classList.toggle('hidden', btn.dataset.mode !== 'shot');
+function toggleJobMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('job-menu');
+  const cur = CONVS[conv].title;
+  menu.querySelectorAll('[data-job]').forEach(it => it.classList.toggle('cur', it.dataset.job.startsWith(cur + '|')));
+  document.getElementById('jm-view').classList.toggle('hidden', !CONVS[conv].job);
+  document.getElementById('jm-unlink').classList.toggle('hidden', !CONVS[conv].job);
+  menu.classList.toggle('hidden');
+}
+function closeJobMenu() { document.getElementById('job-menu').classList.add('hidden'); }
+document.addEventListener('click', e => { if (!e.target.closest('.job-wrap')) closeJobMenu(); });
+document.querySelectorAll('#job-menu [data-job]').forEach(it => it.addEventListener('click', () => {
+  const [title, sub] = it.dataset.job.split('|');
+  switchJob(title, sub);
+  closeJobMenu();
 }));
 
-// 简历编辑器（原型版，实际实现见 07 第 5.1 节）
+function addNote(text) {
+  const note = document.createElement('div');
+  note.className = 'sys-note';
+  note.textContent = text;
+  const msgs = document.querySelector(`.msgs[data-conv="${conv}"]`);
+  msgs.appendChild(note);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// 原型只改标题栏与提示；实际实现时右侧面板随当前岗位切换
+function switchJob(title, sub) {
+  CONVS[conv].job = sub;
+  document.getElementById('job-chip-text').textContent = sub;
+  document.getElementById('job-chip').classList.remove('none');
+  addNote(`当前岗位已切换为「${title}」，岗位仍保存在岗位库`);
+}
+
+function unlinkJob() {
+  CONVS[conv].job = null;
+  document.getElementById('job-chip-text').textContent = '未关联岗位';
+  document.getElementById('job-chip').classList.add('none');
+  closeJobMenu();
+  addNote('已解除关联，岗位仍保存在岗位库');
+}
+
+// ---------- 对话 ----------
+function answer(id, text) {
+  const card = document.getElementById(id);
+  card.classList.remove('warn');
+  card.querySelector('.row').outerHTML = `<div class="done">✓ ${text}</div>`;
+}
+
+function addAttachment() {
+  document.getElementById('pending-atts').innerHTML = '<span class="att">JD截图.png</span>';
+}
+
+function send() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) { input.focus(); return; }
+  const msgs = document.querySelector(`.msgs[data-conv="${conv}"]`);
+  msgs.querySelector('.welcome')?.remove();
+  const user = document.createElement('div');
+  user.className = 'msg-user';
+  user.textContent = text;
+  msgs.appendChild(user);
+  const ai = document.createElement('div');
+  ai.className = 'msg-ai';
+  ai.innerHTML = '<div class="body faint">（原型）这里会流式显示 Agent 的回复；如果需要改动简历或事实库，会先出现确认卡片。</div>';
+  msgs.appendChild(ai);
+  input.value = '';
+  document.getElementById('pending-atts').innerHTML = '';
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+document.getElementById('input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+});
+
+// ---------- 右侧面板 ----------
+const layout = document.getElementById('chat-layout');
+const panel = document.getElementById('panel');
+
+function togglePanel(show) {
+  const open = show === undefined ? layout.classList.contains('no-panel') : show;
+  layout.classList.toggle('no-panel', !open);
+  if (!open) panel.classList.remove('wide');
+  if (open) requestAnimationFrame(measure);
+}
+
+function toggleWide() { panel.classList.toggle('wide'); }
+
+function bindTabs(tabsId, attr) {
+  const tabs = document.getElementById(tabsId);
+  tabs.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+    document.querySelectorAll(`[${attr}]`).forEach(p => p.classList.toggle('hidden', p.getAttribute(attr) !== btn.dataset.tab));
+  }));
+}
+document.querySelectorAll('#panel-tabs button').forEach(btn => btn.addEventListener('click', () => showPane(btn.dataset.tab)));
+bindTabs('me-tabs', 'data-me');
+
+function meTab(name) { document.querySelector(`#me-tabs [data-tab="${name}"]`).click(); }
+
+// ---------- 岗位库筛选 ----------
+const filters = { dir: '', kw: '', city: '', stage: '', pay: '' };
+document.querySelectorAll('[data-group]').forEach(group => {
+  group.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+    group.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip));
+    filters[group.dataset.group] = chip.dataset.v;
+    let shown = 0;
+    document.querySelectorAll('.job').forEach(job => {
+      const ok = (!filters.dir || job.dataset.dir === filters.dir)
+        && (!filters.kw || job.dataset.kw.split(' ').includes(filters.kw))
+        && (!filters.city || job.dataset.city === filters.city)
+        && (!filters.stage || job.dataset.stage === filters.stage)
+        && (!filters.pay || (filters.pay === 'unknown' ? job.dataset.pay === 'unknown' : job.dataset.pay !== 'unknown' && Number(job.dataset.pay) >= Number(filters.pay)));
+      job.classList.toggle('hidden', !ok);
+      if (ok) shown++;
+    });
+    document.getElementById('jobs-empty').classList.toggle('hidden', shown > 0);
+  }));
+});
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button:not([disabled])').forEach(b => b.addEventListener('click', () => {
+  seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+})));
+
+// ---------- 简历编辑器（原型版） ----------
 const paper = document.getElementById('paper');
 const ORIGINAL_HTML = paper.innerHTML;
 const A4_HEIGHT = 1123;
-const STORE_KEY = 'jobpilot-proto-resume';
 
 function contentHeight() {
-  // 先去掉 A4 最小高度再量，否则内容很少时也会显示占满
+  // 去掉 A4 最小高度再量，否则内容少时也显示占满
   const prev = paper.style.minHeight;
   paper.style.minHeight = '0';
   const h = paper.scrollHeight;
@@ -734,6 +1069,7 @@ function contentHeight() {
 }
 
 function measure() {
+  if (!paper.offsetParent) return;
   const ratio = contentHeight() / A4_HEIGHT;
   const status = document.getElementById('rs-status');
   status.textContent = ratio <= 1 ? `一页内 · 占用 ${Math.round(ratio * 100)}%` : `超出 ${Math.ceil(ratio) - 1} 页`;
@@ -754,17 +1090,19 @@ function autoFit() {
 }
 
 function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, paper.innerHTML); document.getElementById('rs-saved').textContent = '已自动保存'; } catch (e) { /* 存储不可用时忽略 */ }
+  try { localStorage.setItem('jobpilot-chat-proto-resume', paper.innerHTML); document.getElementById('rs-saved').textContent = '已自动保存'; } catch (e) { /* 存储不可用时忽略 */ }
 }
 
 function saveHtml() {
-  const doc = '<!doctype html><meta charset="utf-8"><title>简历</title>' + paper.outerHTML;
+  const copy = paper.cloneNode(true);
+  copy.querySelectorAll('.src').forEach(el => el.remove());
+  copy.classList.remove('show-src');
+  const doc = '<!doctype html><meta charset="utf-8"><title>简历</title>' + copy.outerHTML;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html' }));
-  a.download = 'resume.html'; a.click();
+  a.download = 'resume.html';
+  a.click();
 }
-
-function exportFile(fmt) { alert('原型：实际由后端生成 ' + fmt.toUpperCase() + ' 文件'); }
 
 document.getElementById('rs-edit').addEventListener('click', e => {
   const on = paper.getAttribute('contenteditable') !== 'true';
@@ -780,10 +1118,157 @@ document.getElementById('rs-reset').addEventListener('click', () => {
   if (!confirm('回到系统生成的版本？手动修改会丢失。')) return;
   paper.innerHTML = ORIGINAL_HTML; paper.style.removeProperty('--rs-lh'); setSize(13.5); saveLocal();
 });
-paper.addEventListener('input', () => { document.getElementById('rs-saved').textContent = '正在保存…'; clearTimeout(paper._t); paper._t = setTimeout(() => { saveLocal(); measure(); }, 600); });
+paper.addEventListener('input', () => {
+  document.getElementById('rs-saved').textContent = '正在保存…';
+  clearTimeout(paper._t);
+  paper._t = setTimeout(() => { saveLocal(); measure(); }, 600);
+});
 
-window.addEventListener('hashchange', () => { current = location.hash.slice(1) || 'facts'; render(); });
-render();
+// ---------- 依据追溯 ----------
+const FACTS = {
+  'F-03': ['使用 FastAPI 实现大模型对话接口，支持 SSE 流式输出', '来自简历原文：“用 FastAPI 写了聊天接口，接入大模型。” · 职责程度：负责'],
+  'F-07': ['模型调用失败时按指数退避重试，最多 3 次', '来自简历原文 · 职责程度：负责'],
+  'F-11': ['参与搭建 RAG 检索实验，对比开启与关闭知识库时的回答差异', '来自简历原文：“做过一个 RAG 小实验。” · 职责程度：参与（你在对话中确认）'],
+  'F-12': ['使用 LangGraph 检查点实现中断后恢复执行', '对话中补充 · 职责程度：负责'],
+};
+function toggleSrc(force) {
+  const on = force === undefined ? !paper.classList.contains('show-src') : force;
+  paper.classList.toggle('show-src', on);
+  document.getElementById('src-btn').textContent = on ? '隐藏依据' : '显示依据';
+  if (!on) document.getElementById('src-card').classList.add('hidden');
+  measure();
+}
+paper.addEventListener('click', e => {
+  const chip = e.target.closest('.src span[data-f]');
+  if (!chip) return;
+  const [text, from] = FACTS[chip.dataset.f];
+  const card = document.getElementById('src-card');
+  card.innerHTML = `<b>${chip.dataset.f}</b> ${text}<div class="from">${from}</div>`;
+  card.classList.remove('hidden');
+});
+
+// ---------- 岗位详情 ----------
+const FIELD_ORDER = [['company', '公司'], ['city', '工作地点'], ['salary', '薪资'], ['days', '每周到岗'], ['duration', '实习时长'], ['edu', '学历要求'], ['grad', '毕业时间要求'], ['deadline', '截止日期'], ['channel', '投递渠道'], ['link', '岗位链接']];
+const JOBS = {
+  a: { title: 'Agent 应用开发实习', conv: 'a', stage: '已生成简历', match: ['硬性 3/4', '表达缺口 2'],
+       f: { company: '示例科技', city: '上海 · 徐汇', salary: '200–300 元/天', days: '4 天', duration: '至少 3 个月', edu: '本科及以上', grad: '', deadline: '', channel: '示例招聘 App', link: '' },
+       duty: ['参与 Agent 应用的后端开发与接口设计', '负责大模型调用、检索与工具调用模块的实现与测试'],
+       must: ['本科及以上在读，计算机相关专业', '熟悉 Python，有 Web 后端开发经验', '了解大模型应用开发（Prompt、RAG、Agent 至少一项）', '每周至少实习 4 天，持续 3 个月以上'],
+       plus: ['有 LangGraph 或类似工作流框架经验', '有项目上线或开源经历'], kw: ['Python', 'FastAPI', 'LLM', 'RAG', 'LangGraph'] },
+  c: { title: '大模型应用后端实习', conv: 'c', stage: '已匹配', match: ['硬性 2/3', '表达缺口 1'],
+       f: { company: '样例智能', city: '杭州', salary: '250–350 元/天', days: '5 天', duration: '6 个月', edu: '硕士优先', grad: '2027 届', deadline: '', channel: '', link: '' },
+       duty: ['负责大模型应用服务的接口开发与性能优化'], must: ['熟悉 Python 与 FastAPI', '熟悉 PostgreSQL', '了解大模型接口调用'], plus: ['有性能优化经验'], kw: ['Python', 'FastAPI', 'PostgreSQL'] },
+  e: { title: 'AI 产品工程实习', conv: 'e', stage: '未匹配', match: [],
+       f: { company: '演示数据', city: '北京', salary: '', days: '4 天', duration: '', edu: '', grad: '', deadline: '', channel: '', link: '' },
+       duty: ['协助设计 RAG 类产品的提示词与评测'], must: ['了解 RAG 的基本流程', '有 Prompt 设计与评测经验', '每周至少 4 天'], plus: [], kw: ['RAG', 'Prompt'] },
+  x: { title: '检索算法实习', conv: null, stage: '未匹配', match: [],
+       f: { company: '样例数据', city: '上海', salary: '300 元/天', days: '5 天', duration: '3 个月', edu: '', grad: '', deadline: '11-30', channel: '', link: '' },
+       duty: ['参与检索与排序模型的实验'], must: ['熟悉 Python', '了解向量检索'], plus: ['有 RAG 项目经历'], kw: ['RAG', 'Python'] },
+};
+let curJob = 'a';
+JOBS.a.applied = { date: '11-16', channel: '示例招聘 App', resume: '定制简历 v1（基于事实库 v4）', stage: '已投递' };
+
+function renderApply() {
+  const box = document.getElementById('jd-apply');
+  const ap = JOBS[curJob].applied;
+  if (!ap) {
+    box.innerHTML = `<div class="row"><b>投递记录</b><span class="faint">还没有投递 · P1</span><span class="grow"></span><button class="btn small primary" onclick="markApplied()">标记为已投递</button></div><p class="faint" style="margin-top:4px">标记时会冻结当时的简历快照，之后再改简历也不会影响它。</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="row"><b>投递记录</b><span class="faint">P1</span><span class="grow"></span><select aria-label="进度">${['已投递', '笔试', '面试', 'offer', '未通过'].map(x => `<option ${x === ap.stage ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+    <p style="margin-top:6px">${ap.date} 通过 ${ap.channel} 投递 · 使用 ${ap.resume}</p>
+    <div class="row" style="margin-top:8px"><button class="btn small" onclick="openConv(JOBS[curJob].conv || 'a'); showPane('resume')">查看当时的简历</button><button class="btn small">下载 PDF</button></div>
+    <details style="margin-top:10px"><summary class="link-btn">与现在对比</summary>
+      <ul style="margin:8px 0 0; padding-left:18px; line-height:1.9">
+        <li><b>简历：</b>「检索实验」那条投递后改写过，面试官手里是旧写法</li>
+        <li><b>事实库：</b>投递后补充了压测经历（F-21），面试时可以主动提</li>
+        <li><b>提醒：</b>没有被回退或改弱的表述</li>
+      </ul></details>`;
+}
+
+function markApplied() {
+  const channel = prompt('投递渠道，例如：招聘 App、官网、内推', '招聘 App');
+  if (channel === null) return;
+  JOBS[curJob].applied = { date: '11-16', channel: channel || '未填写', resume: '当前定制简历（已冻结快照）', stage: '已投递' };
+  renderApply();
+}
+const mine = {};
+
+function openJob(id) {
+  curJob = id;
+  const j = JOBS[id];
+  document.getElementById('jd-crumb').textContent = j.title;
+  document.getElementById('jd-title').textContent = j.title;
+  document.getElementById('jd-sub').textContent = `${j.f.company} · ${j.f.city || '地点未填写'} · ${j.stage}`;
+  const chatBtn = document.getElementById('jd-chat');
+  chatBtn.textContent = j.conv ? '回到这个岗位的对话' : '用这个岗位开始对话';
+  chatBtn.onclick = () => openConv(j.conv || 'new');
+  document.getElementById('jd-match').innerHTML = j.match.length
+    ? j.match.map((m, i) => `<span class="tag ${i ? 'primary' : ''}">${m}</span>`).join('') + '<span class="faint">匹配基于事实库 v4</span>'
+    : '<span class="faint">还没有做匹配</span>';
+  renderInfo();
+  renderApply();
+  const li = arr => arr.length ? arr.map(x => `<li>${x}</li>`).join('') : '<li class="faint">JD 中没有写</li>';
+  document.getElementById('jd-duty').innerHTML = li(j.duty);
+  document.getElementById('jd-must').innerHTML = li(j.must);
+  document.getElementById('jd-plus').innerHTML = li(j.plus);
+  document.getElementById('jd-kw').innerHTML = j.kw.map(k => `<span class="tag">${k}</span>`).join('');
+  document.getElementById('jd-raw').textContent = `岗位职责：\n${j.duty.map((d, i) => `${i + 1}. ${d}`).join('\n')}\n\n任职要求：\n${j.must.map((d, i) => `${i + 1}. ${d}`).join('\n')}\n\n加分项：\n${j.plus.map((d, i) => `${i + 1}. ${d}`).join('\n') || '（无）'}`;
+  go('job');
+}
+
+function renderInfo() {
+  const j = JOBS[curJob];
+  const my = mine[curJob] || (mine[curJob] = { edited: {}, extra: [] });
+  const cells = FIELD_ORDER.map(([k, label]) => {
+    const v = my.edited[k] ?? j.f[k];
+    const who = k in my.edited ? '<span class="who me">你填写</span>' : (j.f[k] ? '<span class="who">AI 提取</span>' : '');
+    return `<div class="cell"><div class="lab">${label}${who}</div><div class="val ${v ? '' : 'empty'}" data-k="${k}">${v || '未填写'}</div></div>`;
+  });
+  my.extra.forEach((x, i) => cells.push(`<div class="cell"><div class="lab">${x.k || '自定义字段'}<span class="who me">你填写</span></div><div class="val ${x.v ? '' : 'empty'}" data-x="${i}">${x.v || '未填写'}</div></div>`));
+  document.getElementById('jd-info').innerHTML = cells.join('');
+}
+
+document.getElementById('jd-info').addEventListener('click', e => {
+  const val = e.target.closest('.val');
+  if (!val || val.querySelector('input')) return;
+  const my = mine[curJob];
+  const isExtra = val.dataset.x !== undefined;
+  const cur = isExtra ? my.extra[val.dataset.x].v : (my.edited[val.dataset.k] ?? JOBS[curJob].f[val.dataset.k]);
+  val.innerHTML = `<input value="${cur || ''}" placeholder="留空也可以">`;
+  const input = val.querySelector('input');
+  input.focus();
+  const save = () => {
+    if (isExtra) my.extra[val.dataset.x].v = input.value.trim();
+    else my.edited[val.dataset.k] = input.value.trim();
+    renderInfo();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', ev => { if (ev.key === 'Enter') input.blur(); });
+});
+
+function addField() {
+  const name = prompt('字段名称，例如：内推人、面试轮数、HR 联系方式');
+  if (!name) return;
+  mine[curJob].extra.push({ k: name.trim(), v: '' });
+  renderInfo();
+}
+
+// ---------- 工作台 ----------
+function homeQuick(text) { document.getElementById('home-input').value = text; document.getElementById('home-input').focus(); }
+function homeSend() {
+  const text = document.getElementById('home-input').value.trim();
+  if (!text) { document.getElementById('home-input').focus(); return; }
+  openConv('new');
+  document.getElementById('input').value = text;
+  send();
+  document.getElementById('home-input').value = '';
+}
+
+window.addEventListener('hashchange', () => { current = location.hash.slice(1) || 'home'; render(); });
+const initial = current;
+openConv('a');
+go(initial);
 </script>
 </body>
 </html>
