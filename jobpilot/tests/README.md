@@ -9,6 +9,9 @@ uv run ruff format --check .
 uv run ruff check .
 ```
 
+GitHub Actions（`.github/workflows/jobpilot.yml`）在后端有改动时运行同样三条命令，
+测试库由临时 pgvector 服务容器加 `docker/initdb/01-init.sql` 提供。
+
 数据库与接口测试只允许使用与开发库分开的本机 `jobpilot_test`。首次使用时
 执行 Alembic 升级；每个数据库测试前后删除全部已登记业务表的数据，保留
 `alembic_version`。不要在测试库保存需要保留的资料。

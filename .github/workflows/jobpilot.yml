@@ -1,0 +1,78 @@
+# JobPilot 后端 CI：每次改动后端时检查格式、lint，并在临时 PostgreSQL 上跑测试，不做部署。
+name: jobpilot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'jobpilot/**'
+      - 'docker/initdb/**'
+      - '.github/workflows/jobpilot.yml'
+  pull_request:
+    paths:
+      - 'jobpilot/**'
+      - 'docker/initdb/**'
+      - '.github/workflows/jobpilot.yml'
+
+# 同一分支连续推送时，只保留最新一次运行。
+concurrency:
+  group: jobpilot-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jobpilot
+
+    # 只供本次运行的临时数据库，随任务结束销毁；密码不是真实凭证。
+    env:
+      POSTGRES_USER: jobpilot_app
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_DB: jobpilot
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_TEST_DB: jobpilot_test
+
+    services:
+      # 与 compose.yaml 使用同一镜像，保证 pgvector 扩展可用。
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18
+        env:
+          POSTGRES_USER: jobpilot_app
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: jobpilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobpilot_app -d jobpilot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv 不提供大版本标签，只能固定到具体版本。
+      # Python 版本取自 jobpilot/.python-version。
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: jobpilot
+
+      - run: uv sync --frozen
+
+      - run: uv run --frozen ruff format --check .
+      - run: uv run --frozen ruff check .
+
+      # 服务容器启动时仓库还没检出，无法挂载 initdb 脚本，这里手动执行一次：
+      # 启用 vector 扩展并创建 jobpilot_test。
+      - name: Initialize databases
+        env:
+          PGPASSWORD: ci-only-password
+        run: psql -h 127.0.0.1 -U jobpilot_app -d jobpilot -v ON_ERROR_STOP=1 -f ../docker/initdb/01-init.sql
+
+      - run: uv run --frozen pytest -q

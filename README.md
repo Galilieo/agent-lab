@@ -1,5 +1,6 @@
 # agent-lab
 
+[![jobpilot CI](https://github.com/Galilieo/agent-lab/actions/workflows/jobpilot.yml/badge.svg)](https://github.com/Galilieo/agent-lab/actions/workflows/jobpilot.yml)
 [![web CI](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml/badge.svg)](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml)
 
 面向 AI 应用 / Agent 开发实习求职的个人项目：**实习求职助手 Agent**（开发中）。
