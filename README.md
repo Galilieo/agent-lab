@@ -1,5 +1,7 @@
 # agent-lab
 
+[![web CI](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml/badge.svg)](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml)
+
 面向 AI 应用 / Agent 开发实习求职的个人项目：**实习求职助手 Agent**（开发中）。
 
 > 当前状态（2026-11-16）：**设计已冻结，第 0 周骨架开发中。** 实际进度见 [06 V1 实施任务书](notes/求职助手Agent/06-V1实施任务书.md)，设计文档见 [notes/求职助手Agent](notes/求职助手Agent/README.md)。
