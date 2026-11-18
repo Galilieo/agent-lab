@@ -5,7 +5,7 @@ from logging.config import fileConfig
 
 from jobpilot.config import settings
 
-# 导入此模块会登记 User 与 UserSession，使自动生成能看到全部模型。
+# 导入模型模块，使自动生成能看到完整的表结构。
 from jobpilot.db.models import Base
 from sqlalchemy import URL, pool
 from sqlalchemy.engine import Connection
