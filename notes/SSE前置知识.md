@@ -6,9 +6,9 @@
 
 ## 现有代码到哪里了
 
-[chat路由](../app/main.py)先检查归属、读旧历史、保存用户问题，再调用原生Agent，最终保存回答和成功调用，处理记忆反馈后返回ChatResponse。客户端此时收到一份完整JSON，不能从该返回值提前获得模型生成中的正文。
+[chat路由](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/main.py)先检查归属、读旧历史、保存用户问题，再调用原生Agent，最终保存回答和成功调用，处理记忆反馈后返回ChatResponse。客户端此时收到一份完整JSON，不能从该返回值提前获得模型生成中的正文。
 
-[stream_langchain_reply](../app/services/langchain_streaming.py)已经是异步生成器：调用函数先获得可迭代对象，消费时才打开HTTP客户端；chain.astream依次产生AIMessageChunk，函数用yield逐个交出。它可保留空正文片段中的finish_reason/usage，并向外传播读取异常，但不发送本应用HTTP响应，也不写业务数据库。
+[stream_langchain_reply](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langchain_streaming.py)已经是异步生成器：调用函数先获得可迭代对象，消费时才打开HTTP客户端；chain.astream依次产生AIMessageChunk，函数用yield逐个交出。它可保留空正文片段中的finish_reason/usage，并向外传播读取异常，但不发送本应用HTTP响应，也不写业务数据库。
 
 模型服务到Python应用、Python应用到浏览器是两段独立HTTP通信。模型SDK已经解析上游协议得到Python对象，浏览器不会因此自动收到这些对象；应用还需要选择对外数据契约并编码。
 
@@ -90,7 +90,7 @@ yield把内容交给响应层，不承诺屏幕立即更新；客户端、服务
 
 ## 局部实践：模型片段转为事件
 
-新增[app/services/sse.py](../app/services/sse.py)，本层接收已有模型异步生成器，不自行调用模型或写库。当前done仅表示这段普通模型文本流正常完整；之后业务接口若承诺保存回答，业务done需在保存成功之后交付。当前没有HTTP路由，也没有浏览器解析器。
+新增[app/services/sse.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/sse.py)，本层接收已有模型异步生成器，不自行调用模型或写库。当前done仅表示这段普通模型文本流正常完整；之后业务接口若承诺保存回答，业务done需在保存成功之后交付。当前没有HTTP路由，也没有浏览器解析器。
 
 Codex已写三个辅助定义：
 
@@ -139,7 +139,7 @@ async def stream_sse_events(
 
 aclosing仍是标准库contextlib组件，退出时调用输入生成器的aclose，释放其客户端。combined使用AIMessageChunk的加法保留正文、结束及usage，不是只拼字符串；已在本机探索确认空正文stop/usage片段合并后元数据保留。先合并每个chunk，再只对非空正文yield delta，因此空元数据不会漏掉。全部正常迭代后仍要求非空有效正文及finish_reason为stop；即使到达迭代结束，没有stop也发error。usage未知可为None，不虚构Token数。except中yield error后return避免随后再done；本层不吞取消/未知异常。
 
-新增测试在原[test_langchain_streaming.py](../tests/test_langchain_streaming.py)，复用已有offline_stream；prepare仅增加include_finish参数控制是否发送上游finish_reason，默认True兼容旧测试，没有新增fake/fixture。
+新增测试在原[test_langchain_streaming.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langchain_streaming.py)，复用已有offline_stream；prepare仅增加include_finish参数控制是否发送上游finish_reason，默认True兼容旧测试，没有新增fake/fixture。
 
 编码测试故意让正文含中文、引号及换行后的event: done，验证它仍在同一JSON负载内且只占一条SSE事件。转换测试参数化normal/timeout/missing-finish，调用现有stream_langchain_reply获得真实SDK解析的chunk，再传给新转换函数：
 
@@ -194,7 +194,7 @@ HTTP接线正确RED：目标2 failed / 7 passed（1.49秒），两个失败均�
 
 用户修正响应类型后，目标9 passed（1.07秒）、全量166 passed（2.38秒），diff及离线锁检查通过。实际/stream路由的正常终态、部分正文后超时error及输入422拒绝成立。独立文本流仍不写业务数据库，不将done当成会话保存证明。
 
-新增显式[HTTP探针](../playground/sse_http_probe.py)：
+新增显式[HTTP探针](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/sse_http_probe.py)：
 
 ```bash
 uv run --offline --no-sync python -m playground.sse_http_probe \
@@ -220,7 +220,7 @@ uv run --offline --no-sync python -m playground.sse_http_probe \
 
 探针只解析本应用固定的event行加单行JSON data行，借助HTTPX增量解码；不是实现通用浏览器SSE解析器。Uvicorn的create_task在当前事件循环驱动本地服务，短暂sleep仅轮询启动标志，server.should_exit及finally负责清理。patch仅在探针范围替换上游入口、模型配置和tracing环境，退出后恢复。
 
-首次执行受环境权限限制，记录[PermissionError结果](../playground/results/sse_http_probe_2026-11-05.json)，未形成网络验证；在允许本地监听的执行环境中使用相同源码另存[复验结果](../playground/results/sse_http_probe_2026-11-05_recheck.json)，正常与模拟超时两例passed。两例均first_delta_received_while_upstream_blocked=True、上游请求一次且closed=True；正常事件delta/delta/done及usage总数12，故障事件delta/error且finished=False，没有done。服务已退出，没有遗留常驻监听。
+首次执行受环境权限限制，记录[PermissionError结果](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/sse_http_probe_2026-11-05.json)，未形成网络验证；在允许本地监听的执行环境中使用相同源码另存[复验结果](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/sse_http_probe_2026-11-05_recheck.json)，正常与模拟超时两例passed。两例均first_delta_received_while_upstream_blocked=True、上游请求一次且closed=True；正常事件delta/delta/done及usage总数12，故障事件delta/error且finished=False，没有done。服务已退出，没有遗留常驻监听。
 
 这是真实本地HTTP配合预设模型响应的逐段交付证据，没有调用真实模型、启动浏览器、接入代理或部署，也没有验证客户端断开或业务持久化。显式探针不计入pytest用例数；本单元未提交。
 
@@ -236,7 +236,7 @@ uv run --offline --no-sync python -m playground.sse_http_probe \
 
 用户询问前次HTTP探针是模拟还是真实，已明确：客户端到应用是真实Uvicorn/HTTPX回环连接，上游模型HTTP模拟，没有真实模型或浏览器。用户正确预测断开后不等待完整回答、不标done，并提出独立取消标记。标记分位置：前端主动停止可本地显示已取消；服务器可记录客户端断开/取消的运行状态；断开后不能依赖原SSE再送达cancelled。当前应用没有新增任务状态持久化，不能把探针观察字段说成已有业务状态。
 
-本次扩展原[显式探针](../playground/sse_http_probe.py)而不修改路由、模型读取或事件转换核心。run_case新增disconnect参数，正常/超时保持旧路径；第三例首delta后主动离开HTTP响应上下文，实际关闭连接，且不调用release.set。上游仍在Event等待，必须由实际服务器断开处理触发取消。
+本次扩展原[显式探针](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/sse_http_probe.py)而不修改路由、模型读取或事件转换核心。run_case新增disconnect参数，正常/超时保持旧路径；第三例首delta后主动离开HTTP响应上下文，实际关闭连接，且不调用release.set。上游仍在Event等待，必须由实际服务器断开处理触发取消。
 
 新增观察和等待逻辑：
 
@@ -245,7 +245,7 @@ uv run --offline --no-sync python -m playground.sse_http_probe \
 - 断开例检查release仍未放行、finished为False、真实上游请求一次、读取确实取消且迭代停止和响应流关闭，客户端只收到delta。该状态为探针记录，未增添生产日志/数据库任务状态。
 - probe顺序执行正常、模型超时和客户端断开三例，再按原finally停止服务器；原报告不覆盖。
 
-[2026-11-06报告](../playground/results/sse_http_probe_2026-11-06_disconnect.json)三例passed，断开例upstream_read_cancelled=True、upstream_iterator_stopped=True、closed=True、finished=False，上游请求一次，客户端仅首delta。相关源码指纹在报告中保留。正常及超时两例仍符合原契约。本次在允许临时回环监听的执行环境运行，服务已在finally退出。
+[2026-11-06报告](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/sse_http_probe_2026-11-06_disconnect.json)三例passed，断开例upstream_read_cancelled=True、upstream_iterator_stopped=True、closed=True、finished=False，上游请求一次，客户端仅首delta。相关源码指纹在报告中保留。正常及超时两例仍符合原契约。本次在允许临时回环监听的执行环境运行，服务已在finally退出。
 
 另外新增一条默认离线回归测试test_cancelled_stream_propagates_cancellation_and_closes_upstream，复用offline_stream，不新增独立fixture：prepare增加wait_after_first选项，在首正文后通知waiting事件再阻塞；测试先anext读取首delta，再create_task(anext(events))请求下一条，等上游确实进入待读取后pending.cancel，要求await pending抛CancelledError。若被转换成error或done则不会抛预期异常，测试会失败。finally确保取消读取任务后才关闭生成器，aclosing负责释放；最后检查cancelled=True、finish_sent=False、closed=True和一次模型HTTP。
 

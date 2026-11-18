@@ -12,7 +12,7 @@
 
 正式 `/chat` 继续使用原生链路。本轮共享验收比较前两种组合；不能把结果写成预建框架 Agent 已完成业务迁移。
 
-阅读位置：[原生模型入口](../app/services/llm.py)、[框架适配](../app/services/langchain_adapter.py)、[原生循环](../app/services/agent.py)、[预建 Agent](../app/services/langchain_agent.py)。
+阅读位置：[原生模型入口](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/llm.py)、[框架适配](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langchain_adapter.py)、[原生循环](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/agent.py)、[预建 Agent](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langchain_agent.py)。
 
 ## 框架封装了什么，应用仍负责什么
 
@@ -44,7 +44,7 @@ run_agent 接收问题、history 和参考文本
 
 ## 共享场景怎样验收
 
-[test_model_backend_contract.py](../tests/test_model_backend_contract.py) 使用一份参数化测试：两个模型入口分别运行三个相同场景，共六例。
+[test_model_backend_contract.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_model_backend_contract.py) 使用一份参数化测试：两个模型入口分别运行三个相同场景，共六例。
 
 | 场景 | 实际模型请求数 | 保留的成功调用数 | 项目结果 |
 | --- | --- | --- | --- |
@@ -60,7 +60,7 @@ run_agent 接收问题、history 和参考文本
 
 ## 真实模型验收补充
 
-用户要求使用 `.env` 配置进一步验证。通过显式命令加载进程环境，运行[真实验收脚本](../playground/langchain_live_acceptance.py)，结果保存在[本次报告](../playground/results/langchain_live_acceptance_2026-11-04.json)。不读取或打印配置文件内容和密钥。
+用户要求使用 `.env` 配置进一步验证。通过显式命令加载进程环境，运行[真实验收脚本](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/langchain_live_acceptance.py)，结果保存在[本次报告](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/langchain_live_acceptance_2026-11-04.json)。不读取或打印配置文件内容和密钥。
 
 原生入口和框架适配入口各运行四类问题，再单独运行预建Agent计算器，共九组场景：
 
@@ -92,7 +92,7 @@ SDK 字段默认值、工具参数格式和提示词内容等也可能影响真�
 
 ## 流式接口补充
 
-[langchain_streaming.py](../app/services/langchain_streaming.py)复用已有模板，以 `chain.astream()` 读取模型流并逐个 `yield AIMessageChunk`。外层调用得到异步生成器，开始迭代才执行函数体并请求模型；它不返回完整 `LLMResult` 或业务HTTP响应。
+[langchain_streaming.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langchain_streaming.py)复用已有模板，以 `chain.astream()` 读取模型流并逐个 `yield AIMessageChunk`。外层调用得到异步生成器，开始迭代才执行函数体并请求模型；它不返回完整 `LLMResult` 或业务HTTP响应。
 
 这里的完成范围是独立函数的实现、带读与验收：已接真实模型服务，能够供Python消费者调用。尚未接入正式 `/chat`、浏览器逐段展示、取消交互或流式数据库记录；应用SSE接线仍在阶段10。阶段8收口不表示整个聊天应用已迁移为LangChain或已经提供流式产品功能。
 
@@ -100,11 +100,11 @@ SDK 字段默认值、工具参数格式和提示词内容等也可能影响真�
 
 空正文片段仍可能携带其他字段，核心函数原样转交；消费者可以用消息片段的 `+` 合并正文及元数据。`stream_usage=True` 请求服务提供统计，业务不应假设所有服务必然提供usage。已交付前缀由消费者持有，中途异常继续向外传播，不能把前缀当作成功最终回答入库。
 
-[两条离线测试](../tests/test_langchain_streaming.py)使用真实SDK解析按需产出的上游SSE字节流：正常场景检查文字在结束事件前可见、stop/usage保留、仅一次请求及资源关闭；中断场景检查HTTP200后的读取超时仍抛出异常、前缀保留、没有伪造最终usage且资源关闭。它们验证模型服务→Python这一段；阶段10再实现本服务→浏览器的SSE。
+[两条离线测试](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langchain_streaming.py)使用真实SDK解析按需产出的上游SSE字节流：正常场景检查文字在结束事件前可见、stop/usage保留、仅一次请求及资源关闭；中断场景检查HTTP200后的读取超时仍抛出异常、前缀保留、没有伪造最终usage且资源关闭。它们验证模型服务→Python这一段；阶段10再实现本服务→浏览器的SSE。
 
 2026-11-04，用户参考补写后目标 **2 passed**、全量 **148 passed**。独立静态复核未发现当前契约下有意义的问题，复核者未运行测试或模型。参考补写不记为独立设计，测试通过也不等于所有概念已完全掌握。
 
-随后沿用已授权的真实配置验收方式运行[单次探针](../playground/langchain_stream_probe.py)，[报告](../playground/results/langchain_stream_probe_2026-11-04.json)经Codex复核为 `reviewed_pass_synthetic_scope`：一次HTTP请求，73个片段（8个含正文），输出准确为“青榆/流式/验收完成”三行，收到stop及134 tokens统计。片段数、正文片段数、Token数与请求次数是不同观测量。
+随后沿用已授权的真实配置验收方式运行[单次探针](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/langchain_stream_probe.py)，[报告](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/langchain_stream_probe_2026-11-04.json)经Codex复核为 `reviewed_pass_synthetic_scope`：一次HTTP请求，73个片段（8个含正文），输出准确为“青榆/流式/验收完成”三行，收到stop及134 tokens统计。片段数、正文片段数、Token数与请求次数是不同观测量。
 
 探针的请求钩子只计数且最多允许一次请求，不读响应正文；消费端逐片段记录合成内容与到达时间并用 `+` 聚合。使用 `aclosing` 关闭外层生成器；异常时仅保存异常类型与已有前缀，不冒充成功。报告保留执行时Git基线及源文件指纹，不记录密钥/上游异常正文或推理正文。
 

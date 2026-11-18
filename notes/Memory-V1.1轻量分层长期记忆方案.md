@@ -285,7 +285,7 @@
 
 2026-10-24 预测纠偏与样板：用户正确选择更新原助手消息、保持主聊天成功状态；已补充最终助手内容应含与 HTTP answer 一致的确认，以及本轮 model_call 表只记录主 Agent，故示例为一条 succeeded，而非按两次模型请求写两条。已创建 tests/conftest.py 的默认路由提取 skip 隔离，以及 tests/test_chat_memory.py 的保存成功/普通失败/显式保存失败样板；旧 fake generate_reply 仅补充 system_prompt 参数兼容。新三例只运行 collect-only，3 tests collected，关键断言待用户写，尚未确认 RED；排除新未完成样板后的既有回归为 62 passed。生产接线、反馈 SQL 与主 Agent 指令仍未修改。
 
-2026-10-26 提交检查点：聊天接线生产实现仍未开始；未完成测试已保存为 [聊天接线测试（后续已恢复）](../tests/test_chat_memory.py)，核心断言保留，恢复步骤见 [草稿说明](../tests/drafts/README.md)。归档前实际为 3 failed、62 passed，含断言结构问题，尚非正确 RED；归档后默认全量 62 passed，草稿仅确认 3 tests collected，不计入通过基线。下一步先核对断言、恢复测试文件名并确认 RED，再按最新教学要求，结合设计讲解与局部参考理解并完成实现，不强制先独立手写。
+2026-10-26 提交检查点：聊天接线生产实现仍未开始；未完成测试已保存为 [聊天接线测试（后续已恢复）](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_chat_memory.py)，核心断言保留，恢复步骤见 [草稿说明](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/drafts/README.md)。归档前实际为 3 failed、62 passed，含断言结构问题，尚非正确 RED；归档后默认全量 62 passed，草稿仅确认 3 tests collected，不计入通过基线。下一步先核对断言、恢复测试文件名并确认 RED，再按最新教学要求，结合设计讲解与局部参考理解并完成实现，不强制先独立手写。
 
 2026-10-28 接线测试恢复：已统一三处字典键名并恢复 tests/test_chat_memory.py，目标正确 RED 为 3 failed，全量为 3 failed、62 passed。失败分别为缺少成功反馈、普通失败的安全分类日志、显式失败反馈；生产接线尚未实现，继续按本节已确认契约讲解与推进。
 

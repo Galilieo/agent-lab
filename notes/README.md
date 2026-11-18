@@ -2,6 +2,8 @@
 
 2026-11-16 整理：当前项目是实习求职助手 Agent；已被取代的规划移入 [`history/`](./history/)，知识笔记保留在本目录。
 
+2026-11-18：早期实验代码（`app/`、`tests/`、`playground/`）已从 main 移除，保留在标签 [`learning-phase-archive`](https://github.com/Galilieo/agent-lab/tree/learning-phase-archive)。笔记里的源码链接已改为指向该标签；正文中以代码格式提到的这些路径，同样要到该标签下查看。
+
 ## 当前项目
 
 - [实习求职助手 Agent 设计文档](./求职助手Agent/README.md)：总览与决策、功能设计、技术架构与数据模型、可信安全与隐私、评测方案、落地与里程碑。**设计完成并冻结（2026-11-16），尚未实施。**
@@ -55,9 +57,9 @@
 
 ## 实验材料：RAG 固定合成题
 
-- [问题与合成文档](../playground/fixtures/rag_acceptance.json)：同题对照关闭 / 开启知识库。
-- [显式运行脚本](../playground/rag_acceptance_probe.py)：真实本机 Embedding、Chroma 和聊天 API；默认 pytest 不会执行。
-- [首次记录](../playground/results/rag_acceptance_probe.json)、[连接中断记录](../playground/results/rag_acceptance_recheck.json)、[完整复验记录](../playground/results/rag_acceptance_recheck_2.json)：保留原始结果与逐题复核。重跑时用 `--output` 选择新文件，不覆盖历史记录。
+- [问题与合成文档](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/fixtures/rag_acceptance.json)：同题对照关闭 / 开启知识库。
+- [显式运行脚本](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/rag_acceptance_probe.py)：真实本机 Embedding、Chroma 和聊天 API；默认 pytest 不会执行。
+- [首次记录](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/rag_acceptance_probe.json)、[连接中断记录](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/rag_acceptance_recheck.json)、[完整复验记录](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/rag_acceptance_recheck_2.json)：保留原始结果与逐题复核。重跑时用 `--output` 选择新文件，不覆盖历史记录。
 
 ## 历史记录（history/）
 

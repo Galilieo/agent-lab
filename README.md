@@ -36,11 +36,9 @@ V1 定位为个人学习项目，本人求职时在本地使用；暂不上线�
 
 ```text
 agent-lab/
-├── app/          # 早期机制实验：原生 Agent、工具、Memory、RAG、MCP、LangChain / LangGraph 对照、SSE
-├── tests/        # 早期实验的自动化测试
 ├── jobpilot/     # 求职助手后端，独立 uv 项目
 ├── web/          # 求职助手前端，独立 pnpm 项目
-├── playground/   # Python 练习、真实模型验收脚本与结果
+├── docker/       # 本地数据库初始化脚本（配合 compose.yaml）
 ├── notes/
 │   ├── 求职助手Agent/   # 当前项目的设计文档
 │   ├── history/        # 已被取代的规划与历史记录
@@ -48,9 +46,9 @@ agent-lab/
 └── README.md
 ```
 
-求职助手的代码位于 `jobpilot/`（后端）和 `web/`（前端），与 `app/` 分开管理、依赖独立。前端启动与目录说明见 [web/README.md](web/README.md)。
+求职助手的代码位于 `jobpilot/`（后端）和 `web/`（前端），依赖各自独立。前端启动与目录说明见 [web/README.md](web/README.md)，后端测试说明见 [jobpilot/tests/README.md](jobpilot/tests/README.md)。
 
-## 早期机制实验（app/）
+## 早期机制实验（已归档）
 
 这个仓库最初是 AI 应用机制的学习实验场，按阶段手写并验证了：
 
@@ -63,27 +61,13 @@ agent-lab/
 - SSE 流式输出与浏览器消费
 - 固定合成题评测与有限重试
 
-这部分已于 2026-11-07 收口。完整的完成清单、验收记录和源码阅读顺序见[早期机制实验说明](notes/history/早期机制实验说明.md)，学习笔记见 [notes/README.md](notes/README.md)。
-
-### 运行
-
-先安装 [uv](https://docs.astral.sh/uv/)，然后在仓库根目录执行：
+这部分已于 2026-11-07 收口（离线全量测试 `174 passed`），2026-11-18 从 main 移除。代码（`app/`、`tests/`、`playground/` 及其 uv 项目）完整保留在标签 [`learning-phase-archive`](https://github.com/Galilieo/agent-lab/tree/learning-phase-archive)，可在 GitHub 上直接浏览，或在本地查看：
 
 ```bash
-uv sync --dev
-cp .env.example .env
-uv run uvicorn app.main:app --reload --env-file .env
+git checkout learning-phase-archive
 ```
 
-服务默认运行在 `http://127.0.0.1:8000`。`.env` 只用于本地配置，已被 Git 忽略；不要在 `.env.example` 或代码中写入真实 API Key。
-
-### 测试
-
-```bash
-uv run pytest
-```
-
-2026-11-07 收口时离线全量结果为 `174 passed`。默认测试使用假的模型 HTTP、临时数据库和索引，不调用真实模型。
+完成清单、验收记录和源码阅读顺序见[早期机制实验说明](notes/history/早期机制实验说明.md)，学习笔记见 [notes/README.md](notes/README.md)；笔记中的源码链接都指向这个标签。
 
 ## License
 

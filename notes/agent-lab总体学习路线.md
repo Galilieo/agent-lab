@@ -603,7 +603,7 @@ pytest 8.4.2
 - 用户明确要求参考之前风格整理提交，本次按功能、测试准备、导师提示词与路线文档分类；不推送，不纳入原有 .vscode/settings.json 与 playground/03_class.py。
 - 已本地提交：`abf48e2 feat: 新增批量记忆持久化与事务回滚`、`9e6544b test: 保存聊天记忆接线草稿与模型隔离样板`、`57ae9ae docs: 调整导师提示词为渐进自主练习`；本段路线与方案随后单独作 docs 提交，最终哈希以 Git 历史为准。
 - 归档前实际完整运行为 3 failed、62 passed：保存成功和显式失败场景缺少目标反馈，普通失败场景先遇到字典键名错误。这不是本主题已确认的正确 RED，不为整理提交代写用户的关键断言或生产实现。
-- 未完成样板保存在 [聊天接线测试（后续已恢复）](../tests/test_chat_memory.py)，核心断言原样保留；[草稿说明](../tests/drafts/README.md) 记录当前缺口与恢复方法。文件名不匹配 pytest 默认收集规则，只是保存学习现场，不是删除或跳过此前通过的测试。
+- 未完成样板保存在 [聊天接线测试（后续已恢复）](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_chat_memory.py)，核心断言原样保留；[草稿说明](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/drafts/README.md) 记录当前缺口与恢复方法。文件名不匹配 pytest 默认收集规则，只是保存学习现场，不是删除或跳过此前通过的测试。
 - 归档后实际执行默认全量离线 pytest：62 passed；显式对草稿 collect-only：3 tests collected。草稿三例不计入通过基线。批量持久化目标两例已包含在这 62 项中；主聊天接线、反馈 SQL、Agent 指令、分层读取和注入仍未实现。
 - 下次继续先核对并修正草稿断言，恢复到 tests/test_chat_memory.py，确认正确 RED 后再练一个完整核心片段；不因本次提交回到已收口主题，也不把参考辅助完成写成独立实现。
 
