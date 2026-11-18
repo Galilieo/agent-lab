@@ -2,7 +2,7 @@
 
 正式进度以[学习路线第14节](./agent-lab总体学习路线.md#14-当前下一步)为准。2026-11-06用户同意继续浏览器逐段显示和停止按钮；不扩展独立任务取消接口、取消状态入库或供应商专用取消API。
 
-最新验证：用户已补两个核心函数，Node 4 passed、Python 167 passed（2.48秒）。真实Edge浏览器配合临时Uvicorn及预设模型上游，正常/模拟超时/按钮停止三例通过，服务已退出；报告见[浏览器记录](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/results/sse_browser_probe_2026-11-06.json)。尚未请求真实模型或验证部署/业务持久化；下文保留初始设计与RED经过，提交状态见下一段。
+最新验证：用户已补两个核心函数，Node 4 passed、Python 167 passed（2.48秒）。真实Edge浏览器配合临时Uvicorn及预设模型上游，正常/模拟超时/按钮停止三例通过，服务已退出；报告见[浏览器记录](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/playground/results/sse_browser_probe_2026-11-06.json)。尚未请求真实模型或验证部署/业务持久化；下文保留初始设计与RED经过，提交状态见下一段。
 
 收口更新：用户已准确解释响应体EOF不保证SSE完整正常结束，并授权整理提交。功能提交cc19585，提交前Python167 passed（2.30秒）/Node4 passed；只清理空格与结尾换行，报告保留原验证时源码指纹。文档另作docs提交，不推送；独立文本SSE收口，接续固定评测，不能据此声称完整Agent流式已接入。
 
@@ -131,7 +131,7 @@ Node自带的test注册异步测试、assert检查结果；TextEncoder把准备�
 
 核对保存的readSseResponse/stopStream：复用解码器、双层循环、完整帧回调、终态/残片检查和finally清理正确，取消异常继续传播；未替换用户实现。Node4条全部通过、Python全量167 passed（2.48秒），本轮未新增Node/pytest用例，也未把浏览器三例混入其数量。实际Edge页面正常首段时禁用开始、启用停止；正常/超时/停止后恢复输入和开始、禁用停止。
 
-新增[显式浏览器探针](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/playground/sse_browser_probe.py)，运行命令`.venv/bin/python -m playground.sse_browser_probe`；每次输出新临时地址，不沿用报告端口。只在该显式进程挂载/__probe/state和/__probe/release/{case}，正式app/main.py没有这些控制接口。模块导入不启动服务，默认pytest不执行。
+新增[显式浏览器探针](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/playground/sse_browser_probe.py)，运行命令`.venv/bin/python -m playground.sse_browser_probe`；每次输出新临时地址，不沿用报告端口。只在该显式进程挂载/__probe/state和/__probe/release/{case}，正式app/main.py没有这些控制接口。模块导入不启动服务，默认pytest不执行。
 
 探针新增内容按执行顺序带读：
 

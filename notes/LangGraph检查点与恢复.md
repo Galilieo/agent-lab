@@ -2,7 +2,7 @@
 
 > 当前检查点（2026-11-05）：内存/SQLite存取、工具前人工确认及后续模型超时后恢复已离线验证，目标10 passed、全量159 passed。检查点/确认功能提交8876380、文档408fce3；恢复测试已本地提交38527e6，阶段总结及说明随收口docs检查点提交。以下保留概念探索、RED和修正过程，以最新核验段落为准。恢复场景仅覆盖同进程关闭/重开连接，进程重启与外部写入幂等仍未验证。
 
-本笔记承接[模型/工具图](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_agent.py)，解释跨次状态需要的概念并记录逐步验证。正式进度以[路线第14节](./agent-lab总体学习路线.md#14-当前下一步)为准；概念探索与正式离线测试分别记录。
+本笔记承接[模型/工具图](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_agent.py)，解释跨次状态需要的概念并记录逐步验证。正式进度以[路线第14节](./agent-lab总体学习路线.md#14-当前下一步)为准；概念探索与正式离线测试分别记录。
 
 2026-11-05核验本机`langgraph==1.2.19`，并阅读本机`StateGraph.compile`、`InMemorySaver.get_tuple`、`StateSnapshot`及[官方检查点文档](https://docs.langchain.com/oss/python/langgraph/checkpointers)。
 
@@ -99,7 +99,7 @@ snapshot = await graph.aget_state(config)
 
 ## 本次局部实践：传入存取组件
 
-已在[图模块](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_agent.py)准备`create_calculator_checkpointer()`。它用`JsonPlusSerializer(allowed_msgpack_modules=[LLMResult, LLMToolCall])`声明本图自定义类型，再以`InMemorySaver(serde=serializer)`创建存储。`serde`是框架接收序列化/反序列化组件的参数名。这里只配置类型转换，图运行时由框架调用，不需要业务节点自己写二进制。
+已在[图模块](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_agent.py)准备`create_calculator_checkpointer()`。它用`JsonPlusSerializer(allowed_msgpack_modules=[LLMResult, LLMToolCall])`声明本图自定义类型，再以`InMemorySaver(serde=serializer)`创建存储。`serde`是框架接收序列化/反序列化组件的参数名。这里只配置类型转换，图运行时由框架调用，不需要业务节点自己写二进制。
 
 序列化是把对象字段转为可存储的数据，反序列化是读回字段并还原对象；不是把Python对象引用直接塞入内存字典。显式支持两个类，是因为`LLMResult.tool_calls`中还嵌套`LLMToolCall`，读取后仍要支持`.answer`、`.call_id`等属性。一次性本地往返探索已确认两个类型和字段值还原相等，没有先前未注册类型提示；这不代替图接线测试。
 
@@ -130,7 +130,7 @@ snapshot = await graph.aget_state(config)
 
 ### 新模块与共用配置
 
-[langgraph_checkpoint.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_checkpoint.py)负责序列化配置和连接生命周期。`create_checkpoint_serializer()`是将原内存工厂的两类自定义记录配置原样抽出，内存工厂现在调用它；SQLite组件也使用它，避免两种存储的类型还原配置不一致。图构建与节点核心不变。
+[langgraph_checkpoint.py](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_checkpoint.py)负责序列化配置和连接生命周期。`create_checkpoint_serializer()`是将原内存工厂的两类自定义记录配置原样抽出，内存工厂现在调用它；SQLite组件也使用它，避免两种存储的类型还原配置不一致。图构建与节点核心不变。
 
 待用户补写的`open_calculator_checkpointer(database_path)`负责打开专用SQLite文件、构造saver并向调用方提供。父目录由调用方准备，图运行和读取必须发生在连接仍打开的上下文内。框架内部按需setup建表，本机aget_tuple源码已确认会调用setup，不另写业务建表SQL。
 
@@ -208,7 +208,7 @@ continued = await graph.ainvoke(Command(resume=True), config=config)
 
 用户预测暂停前不执行工具、恢复从确认节点开始，主干正确；补充恢复节点从头运行，但该interrupt取得resume值后继续，不是同一请求永久重新暂停。
 
-[langgraph_approval.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_approval.py)保留独立图，复用已有模型、工具节点与预算路由。ApprovalCalculatorState继承CalculatorState，包括原列表reducer；只新增tool_approved记录最近一次人的决定，None表示尚未决定，布尔值分别表示同意与拒绝。它不替代身份权限，也不是后续所有工具自动放行的总开关；每次进入approval都为当前最新工具请求重新调用interrupt。
+[langgraph_approval.py](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_approval.py)保留独立图，复用已有模型、工具节点与预算路由。ApprovalCalculatorState继承CalculatorState，包括原列表reducer；只新增tool_approved记录最近一次人的决定，None表示尚未决定，布尔值分别表示同意与拒绝。它不替代身份权限，也不是后续所有工具自动放行的总开关；每次进入approval都为当前最新工具请求重新调用interrupt。
 
 Codex准备build_approval_calculator_graph：必须提供checkpointer，缺失时抛ValueError；注册model/approval/tools，START进入model，原choose_next返回finish时到END、use_tools时到approval，确认路由use_tools到tools、finish到END，tools固定回model，compile时传入checkpointer。继续复用原预算检查，耗尽预算时先报错，不多做人工确认。没有新的模型/工具实现或最终结果映射函数。
 
@@ -284,7 +284,7 @@ model_calls当前记录成功且可用的模型结果；超时尝试不新增成
 
 用户确认失败节点重入范围；已解释历史重放从所选旧检查点重新执行其后节点，最新错误恢复则复用较新的已提交进度。用户认为失败也应留日志，已区分State的成功LLMResult列表与业务model_call表的成功/失败日志：当前独立图未接入原生/chat的persist_agent_run_error，不能把成功列表当完整调用尝试审计。
 
-新增[恢复测试](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langgraph_agent.py)中的`test_model_timeout_resumes_saved_tool_result_after_reopen`，不修改业务核心、State或框架接口。现有checkpointer及ainvoke(None, config)已具备目标能力，因此新增的是已有能力的回归证明，没有人为制造占位RED。
+新增[恢复测试](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_langgraph_agent.py)中的`test_model_timeout_resumes_saved_tool_result_after_reopen`，不修改业务核心、State或框架接口。现有checkpointer及ainvoke(None, config)已具备目标能力，因此新增的是已有能力的回归证明，没有人为制造占位RED。
 
 复用原offline_graph、calculator_request及pytest的tmp_path，没有新fixture/fake/辅助函数；测试内scenario仍只是把异步顺序操作放入同一事件循环。prepare依次配置工具请求、字符串timeout、最终回答；已有respond遇到timeout抛httpx.ReadTimeout，实际SDK/适配器将其转为LLMTimeoutError，实际call_model再包装AgentRunError。
 

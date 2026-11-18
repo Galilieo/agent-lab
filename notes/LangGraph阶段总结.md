@@ -4,7 +4,7 @@
 
 ## 主链和原生实现的对应关系
 
-[原生Agent](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/agent.py)用循环及条件判断编排模型和工具；[独立图](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_agent.py)把携带的数据、业务步骤和选路显式表示为State、Node、Edge。模型请求与工具执行仍由应用代码完成。
+[原生Agent](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/agent.py)用循环及条件判断编排模型和工具；[独立图](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_agent.py)把携带的数据、业务步骤和选路显式表示为State、Node、Edge。模型请求与工具执行仍由应用代码完成。
 
 ```mermaid
 flowchart LR
@@ -18,7 +18,7 @@ flowchart LR
     R -->|有请求但预算耗尽| X[抛出预算异常]
 ```
 
-不带人工确认的原独立图从预算判断直接进入tools。上图的人工确认来自[审批图](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_approval.py)，计算器用于观察执行边界，不要求普通计算都人工批准。
+不带人工确认的原独立图从预算判断直接进入tools。上图的人工确认来自[审批图](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_approval.py)，计算器用于观察执行边界，不要求普通计算都人工批准。
 
 ## 已实现与已验证
 
@@ -32,7 +32,7 @@ flowchart LR
 | 人工确认 | interrupt交出待审信息；Command(resume=bool)提供决定，条件边选执行/结束 | 暂停前零工具，重开SQLite后同意执行、拒绝结束；确认节点重入、先前模型不重跑 |
 | 失败后继续 | 原文件、原thread_id，ainvoke(None, config)继续最新未完成步骤 | 后续模型超时后累计三次HTTP尝试、两条成功记录、一次工具；恢复请求消息与超时请求一致 |
 
-基础测试位于[test_langgraph_basics.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langgraph_basics.py)，图与存取/恢复测试位于[test_langgraph_agent.py](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langgraph_agent.py)。模型HTTP预设；图、模型SDK、适配器、计算器及临时SQLite真实运行。没有为已有框架恢复能力强造新生产实现或占位RED。
+基础测试位于[test_langgraph_basics.py](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_langgraph_basics.py)，图与存取/恢复测试位于[test_langgraph_agent.py](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_langgraph_agent.py)。模型HTTP预设；图、模型SDK、适配器、计算器及临时SQLite真实运行。没有为已有框架恢复能力强造新生产实现或占位RED。
 
 收口时LangGraph相关测试11 passed（1.20秒），全量159 passed（2.11秒），diff与离线锁检查通过；失败恢复测试本地提交38527e6。模型/工具图、检查点/确认及文档历史由Git保留，本次总结随docs检查点提交，不推送。
 
@@ -60,4 +60,4 @@ flowchart LR
 
 ## 接下来：阶段10的SSE
 
-已完成的[模型文本流](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langchain_streaming.py)只供Python消费者逐块读取，真实流式探针也已有独立证据。下一步先讲清模型chunk、异步生成器、HTTP响应流与SSE事件的区别，再设计HTTP事件契约、逐步接线和取消/失败/最终保存边界。已有/chat不因阶段收口自动迁移框架；优秀产品及开源设计对照学习继续按正式路线保留，不从学习清单删去。
+已完成的[模型文本流](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langchain_streaming.py)只供Python消费者逐块读取，真实流式探针也已有独立证据。下一步先讲清模型chunk、异步生成器、HTTP响应流与SSE事件的区别，再设计HTTP事件契约、逐步接线和取消/失败/最终保存边界。已有/chat不因阶段收口自动迁移框架；优秀产品及开源设计对照学习继续按正式路线保留，不从学习清单删去。

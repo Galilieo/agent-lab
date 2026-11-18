@@ -1,7 +1,7 @@
-# agent-lab
+# JobPilot
 
-[![jobpilot CI](https://github.com/Galilieo/agent-lab/actions/workflows/jobpilot.yml/badge.svg)](https://github.com/Galilieo/agent-lab/actions/workflows/jobpilot.yml)
-[![web CI](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml/badge.svg)](https://github.com/Galilieo/agent-lab/actions/workflows/web.yml)
+[![jobpilot CI](https://github.com/Galilieo/jobpilot/actions/workflows/jobpilot.yml/badge.svg)](https://github.com/Galilieo/jobpilot/actions/workflows/jobpilot.yml)
+[![web CI](https://github.com/Galilieo/jobpilot/actions/workflows/web.yml/badge.svg)](https://github.com/Galilieo/jobpilot/actions/workflows/web.yml)
 
 面向 AI 应用 / Agent 开发实习求职的个人项目：**实习求职助手 Agent**（开发中）。
 
@@ -35,7 +35,7 @@ V1 定位为个人学习项目，本人求职时在本地使用；暂不上线�
 ## 仓库结构
 
 ```text
-agent-lab/
+./
 ├── jobpilot/     # 求职助手后端，独立 uv 项目
 ├── web/          # 求职助手前端，独立 pnpm 项目
 ├── docker/       # 本地数据库初始化脚本（配合 compose.yaml）
@@ -61,7 +61,7 @@ agent-lab/
 - SSE 流式输出与浏览器消费
 - 固定合成题评测与有限重试
 
-这部分已于 2026-11-07 收口（离线全量测试 `174 passed`），2026-11-18 从 main 移除。代码（`app/`、`tests/`、`playground/` 及其 uv 项目）完整保留在标签 [`learning-phase-archive`](https://github.com/Galilieo/agent-lab/tree/learning-phase-archive)，可在 GitHub 上直接浏览，或在本地查看：
+这部分已于 2026-11-07 收口（离线全量测试 `174 passed`），2026-11-18 从 main 移除，仓库同日由 `agent-lab` 改名为 `jobpilot`（旧笔记里的 agent-lab 指的就是这一阶段）。代码（`app/`、`tests/`、`playground/` 及其 uv 项目）完整保留在标签 [`learning-phase-archive`](https://github.com/Galilieo/jobpilot/tree/learning-phase-archive)，可在 GitHub 上直接浏览，或在本地查看：
 
 ```bash
 git checkout learning-phase-archive

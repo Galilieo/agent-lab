@@ -4,7 +4,7 @@
 
 ## 为什么从原来的Agent循环出发
 
-[原生run_agent](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/agent.py)已经包含流程：调用模型→判断工具请求→执行工具→回传结果→继续调用，或结束/报告错误。`model_calls`、`additional_messages`、`knowledge_sources`是流程携带的数据；`if`和`for`控制下一步。
+[原生run_agent](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/agent.py)已经包含流程：调用模型→判断工具请求→执行工具→回传结果→继续调用，或结束/报告错误。`model_calls`、`additional_messages`、`knowledge_sources`是流程携带的数据；`if`和`for`控制下一步。
 
 LangGraph将数据、步骤和流向显式表示为State、Node和Edge，并提供后续持久化/暂停恢复等机制。图中可以有分支和循环，不局限于只能向前的DAG。每个节点不必调用模型，纯Python计算也能成为节点。
 
@@ -115,7 +115,7 @@ Annotated给基础类型list[str]附加元数据；普通Python不会因此自�
 
 讲解已补充：START→count和count→END是两条边，count只是中间唯一业务节点；initial是自取的输入变量名，invoke才启动流程；Annotated挂合并规则，由LangGraph调用add；框架还负责调度节点与选择流向，不只是修改字典。“未更新则保留”指同次运行内的状态，跨次续接另需配置。上述补充不据一次OK宣称全部掌握，后续通过顺序图实践核对。
 
-首次顺序图实践使用[PreviewState](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_basics.py)的question/normalized_question/preview/trace；两个节点分别提交部分更新，trace声明add时只返回本步新增项，不手动带上旧轨迹，避免重复追加。
+首次顺序图实践使用[PreviewState](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_basics.py)的question/normalized_question/preview/trace；两个节点分别提交部分更新，trace声明add时只返回本步新增项，不手动带上旧轨迹，避免重复追加。
 
 
 ## 首个演示图的用途
@@ -124,11 +124,11 @@ prepare_question只做strip，render_preview只拼接预览字符串。这两步
 
 真正业务节点可以先请求模型、执行工具或完成其他处理，再把结果作为State更新交给后续节点。演示节点的工作简单，不意味着LangGraph节点只能赋值；本例跑通后回到与Agent相关的流程，不继续扩展纯预览功能。
 
-首次顺序图的预期已由[真实内存图测试](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langgraph_basics.py)验证：原问题保留，派生字段更新，下游读取上游结果，轨迹仅追加本步标签，原始调用输入未变。该结果证明本例状态协议，不等于已实现真实Agent图。
+首次顺序图的预期已由[真实内存图测试](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_langgraph_basics.py)验证：原问题保留，派生字段更新，下游读取上游结果，轨迹仅追加本步标签，原始调用输入未变。该结果证明本例状态协议，不等于已实现真实Agent图。
 
 ## 模型与工具循环怎样落到图中
 
-[计算器Agent图](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/app/services/langgraph_agent.py)将已有Agent循环拆为两个有业务动作的节点：
+[计算器Agent图](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/app/services/langgraph_agent.py)将已有Agent循环拆为两个有业务动作的节点：
 
 ```text
 START → model → 条件判断 → END
@@ -146,7 +146,7 @@ START → model → 条件判断 → END
 
 `CalculatorState`这个名字说明当前用途；问题、历史、模型记录、交互消息和预算可用于更多工具。实际的计算器限制在模型工具声明及帮助函数的分发检查。只有需要在节点之间传递新数据时才增加字段，不为每种工具自动建立一套State。
 
-[对应测试](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_langgraph_agent.py)中的`offline_graph`用HTTPX的`MockTransport`替换外部模型HTTP响应，图、SDK、适配器和计算器仍真实运行。`prepare`将预设消息变成迭代器，真实HTTP请求到来时`respond`才取下一条；列表本身不控制图执行次数。`observed_execute`记录尝试后仍调用原工具，非法参数也计入尝试。
+[对应测试](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_langgraph_agent.py)中的`offline_graph`用HTTPX的`MockTransport`替换外部模型HTTP响应，图、SDK、适配器和计算器仍真实运行。`prepare`将预设消息变成迭代器，真实HTTP请求到来时`respond`才取下一条；列表本身不控制图执行次数。`observed_execute`记录尝试后仍调用原工具，非法参数也计入尝试。
 
 两个测试函数参数化为五种场景：直接结束只请求模型一次；计算后回答请求两次且第二次携带工具结果；第二次超时只保留首次成功记录；非法参数属于工具错误；模型预算为一次且响应请求工具时，工具尝试为零。检查出站消息及调用ID可证明历史和工具结果实际传入，预设正文不能证明真实模型会正确选择工具。
 

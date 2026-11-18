@@ -603,7 +603,7 @@ pytest 8.4.2
 - 用户明确要求参考之前风格整理提交，本次按功能、测试准备、导师提示词与路线文档分类；不推送，不纳入原有 .vscode/settings.json 与 playground/03_class.py。
 - 已本地提交：`abf48e2 feat: 新增批量记忆持久化与事务回滚`、`9e6544b test: 保存聊天记忆接线草稿与模型隔离样板`、`57ae9ae docs: 调整导师提示词为渐进自主练习`；本段路线与方案随后单独作 docs 提交，最终哈希以 Git 历史为准。
 - 归档前实际完整运行为 3 failed、62 passed：保存成功和显式失败场景缺少目标反馈，普通失败场景先遇到字典键名错误。这不是本主题已确认的正确 RED，不为整理提交代写用户的关键断言或生产实现。
-- 未完成样板保存在 [聊天接线测试（后续已恢复）](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/test_chat_memory.py)，核心断言原样保留；[草稿说明](https://github.com/Galilieo/agent-lab/blob/learning-phase-archive/tests/drafts/README.md) 记录当前缺口与恢复方法。文件名不匹配 pytest 默认收集规则，只是保存学习现场，不是删除或跳过此前通过的测试。
+- 未完成样板保存在 [聊天接线测试（后续已恢复）](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/test_chat_memory.py)，核心断言原样保留；[草稿说明](https://github.com/Galilieo/jobpilot/blob/learning-phase-archive/tests/drafts/README.md) 记录当前缺口与恢复方法。文件名不匹配 pytest 默认收集规则，只是保存学习现场，不是删除或跳过此前通过的测试。
 - 归档后实际执行默认全量离线 pytest：62 passed；显式对草稿 collect-only：3 tests collected。草稿三例不计入通过基线。批量持久化目标两例已包含在这 62 项中；主聊天接线、反馈 SQL、Agent 指令、分层读取和注入仍未实现。
 - 下次继续先核对并修正草稿断言，恢复到 tests/test_chat_memory.py，确认正确 RED 后再练一个完整核心片段；不因本次提交回到已收口主题，也不把参考辅助完成写成独立实现。
 
@@ -1396,7 +1396,7 @@ agent-lab 中先理解
 
 ### 最新检查点与新会话接续（2026-11-03）
 
-- 当前在main，用户明确要求复验并整理提交。已核对工作区、HEAD 9c046f9及origin=https://github.com/Galilieo/agent-lab.git；按近期feat/docs中文提交格式分批保存：69af168（异步检索与来源转换）、bf2b3f3（严格RAG与引用校验）、ead968d（普通调用结果与异常）；README、notes/README及本路线随后作docs提交，其哈希以Git历史为准。不推送；编辑器设置、playground/03_class.py和notes/设计复核-2026-11-02.md不纳入。
+- 当前在main，用户明确要求复验并整理提交。已核对工作区、HEAD 9c046f9及origin=https://github.com/Galilieo/jobpilot.git；按近期feat/docs中文提交格式分批保存：69af168（异步检索与来源转换）、bf2b3f3（严格RAG与引用校验）、ead968d（普通调用结果与异常）；README、notes/README及本路线随后作docs提交，其哈希以Git历史为准。不推送；编辑器设置、playground/03_class.py和notes/设计复核-2026-11-02.md不纳入。
 - 最新实测：用户已修正两处response拼写和条件末尾逗号，适配目标5 passed（1.12秒），全量135 passed（1.75秒），diff检查通过。超时/连接/429/格式错误四种失败转换与正常LLMResult均通过，成功状态实际来自HTTP钩子。与前检查点124条相比，本批新增检索2例、严格RAG4例、普通适配5例；人工向量/fake聊天和Embedding隔离真实模型，没有新增云端或真实Ollama验收。
 - 限定独立只读复核：检查三份新增服务及三份对应测试，并对照原生检索/预算/引用/LLM契约与本地SDK源码，未发现当前明确契约下有意义的bug。复核者未改文件、运行测试、联网或读取真实.env；运行证据来自主流程。README与notes/README本地链接核验通过，不扩成生产就绪结论。
 - 普通适配真实调用顺序：外层创建状态观察及计时→帮助函数创建客户端并注册响应钩子→模板/ChatDeepSeek/SDK→返回AIMessage或抛异常→外层组装LLMResult或转换项目异常。异常由raise ... from exc保留原因；适配层不决定本服务HTTP状态，现有路由未切换到框架。本次不新增核心实现或改变用户逻辑，参考补写不记为独立设计。
