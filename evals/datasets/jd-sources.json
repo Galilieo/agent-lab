@@ -1,0 +1,2009 @@
+{
+  "collected_on": "2026-11-18",
+  "postings": [
+    {
+      "sample_id": "jd-001",
+      "company": "TNG Digital",
+      "title": "前端开发实习生",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业官网",
+      "source_url": "https://www.tngdigital.com.cn/tngd_career/",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "87289df016838b683d145b67b6254a26bff787879f3f2bf7bec2b67bb5665625"
+    },
+    {
+      "sample_id": "jd-002",
+      "company": "TNG Digital",
+      "title": "后端开发实习生",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业官网",
+      "source_url": "https://www.tngdigital.com.cn/tngd_career/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "620e55b8018ae3eeadfe60b1452452d57f4c4f79b68e6754860725644e893d67"
+    },
+    {
+      "sample_id": "jd-003",
+      "company": "DXC Technology",
+      "title": "AI应用开发实习生",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://dxctechnology.wd1.myworkdayjobs.com/en-US/DXCJobs/job/AI_51589643",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "651ef34b8fa6181cac70b6692dd62660f5f72693c13060ed5563b792c3999862"
+    },
+    {
+      "sample_id": "jd-004",
+      "company": "数势科技",
+      "title": "算法实习生",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业官网",
+      "source_url": "https://digitforce.com/jobinfo/12",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "a406e517b3dcf021ad7a965174b20bee9ab0732954b9abba755b3c53ecf9ef6d"
+    },
+    {
+      "sample_id": "jd-005",
+      "company": "字节跳动",
+      "title": "前端开发实习生-AI应用与创新",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7602149508893821189",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "c5f0b743fc4c36ae6456d5cc75465744d28fe96a0deb3a21c3e869eb09dc38dc"
+    },
+    {
+      "sample_id": "jd-006",
+      "company": "字节跳动",
+      "title": "前端研发实习生（企业隐私与效率）-集团信息系统",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7602537629878028549",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "c280ae64a8ed156deec6e145eab73c59470a40672612782546d366ded6d758e2"
+    },
+    {
+      "sample_id": "jd-007",
+      "company": "字节跳动",
+      "title": "前端开发实习生-搜索",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7602592122856327477",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "fc48b172962d45408bbd5da8c65a7c1ec667e335e0d320e33e150f7e8f6f14a7"
+    },
+    {
+      "sample_id": "jd-008",
+      "company": "字节跳动",
+      "title": "前端开发实习生-红果短剧",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7615214441345796405",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "ebc1bf19dfe79d7ec74f33579436e4bc230075a0a27ce5df28924b628ddda013"
+    },
+    {
+      "sample_id": "jd-009",
+      "company": "字节跳动",
+      "title": "Agent全栈开发实习生 - 数据平台",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7673799813086955829",
+      "listing_status": "archived",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "bc1143d1ba7040f7389daa534b22d0bc2ddc85c0309a50c6255f4a4ebaaa8b2e"
+    },
+    {
+      "sample_id": "jd-010",
+      "company": "字节跳动",
+      "title": "Agent开发（企业AI应用方向）后端实习生 - 集团信息系统",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7678587370842786053",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "bdf97e49b9cfa2a41a4546ed900b55c536155f3f697fdaebc5933bf53fadd34f"
+    },
+    {
+      "sample_id": "jd-011",
+      "company": "字节跳动",
+      "title": "后端开发实习生 - 国际化广告业务",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7706096470659877173",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "00f529795f1bfbe0f20ea4a18b996d0a58b174dce24d51d76d5c859d652b04ae"
+    },
+    {
+      "sample_id": "jd-012",
+      "company": "字节跳动",
+      "title": "多模态大模型后端开发实习生 - Data-抖音/直播/电商/剪映",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance_campus/7708593744442886453",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "6b30861763a13e86b92a429091003575e0569e42f38e1c912d5a18ce637d72bf"
+    },
+    {
+      "sample_id": "jd-013",
+      "company": "滴滴",
+      "title": "技术/后端研发实习生(Artificial Intelligence)-MJ020784",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "锦鲤求职",
+      "source_url": "https://jinliqiuzhi.com/jobs/1140282",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "e580a3075e06014cb0440b096bc4eee169d8eb910f6f540a38ff62402b517b6e"
+    },
+    {
+      "sample_id": "jd-014",
+      "company": "智谱AI",
+      "title": "AI应用工程师实习生",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "锦鲤求职",
+      "source_url": "https://jinliqiuzhi.com/jobs/1150195",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "bbd242788bc416013c99d8a031b4f978b4555dc2328b3f7b84763a2dc04673a7"
+    },
+    {
+      "sample_id": "jd-015",
+      "company": "深势科技（DP Technology）",
+      "title": "AI Agent 全栈研发实习生",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "锦鲤求职",
+      "source_url": "https://jinliqiuzhi.com/jobs/943731",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "d59843795dfb5beaba20c5c4a7c1562dce01e487fbde5dcf1c9ad05a2381457c"
+    },
+    {
+      "sample_id": "jd-016",
+      "company": "艾尔维汽车工程技术（上海）",
+      "title": "大模型 / AI Agent 后端研发实习生（Python）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "中国中小企业服务网",
+      "source_url": "https://zrc-sme.chinasme.cn/job/69c201ed639fcffaad1ec6c7",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "568a73f52f9b7e8840fdfa70c53a6e5fdadc602acd8b0f91697e874e41ad8274"
+    },
+    {
+      "sample_id": "jd-017",
+      "company": "百度",
+      "title": "负载均衡网关研发实习（J107246）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/be8b7f41-ceb3-4b5e-ab9b-69846babf3cf",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "7cbcfd0d24f0ddd15a357ecba4e4c2ea7c99bace0817d598d6bf92ff744c9c52"
+    },
+    {
+      "sample_id": "jd-018",
+      "company": "百度",
+      "title": "大模型平台后端实习生（J106843）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/fc9116ea-102d-48a9-9945-0bc64d362b3c",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%90%8E%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "bb7e2769d50a96e762e4e1e2f8a69ad38a7bfb429010cee35e5d8134d34e3a26"
+    },
+    {
+      "sample_id": "jd-019",
+      "company": "百度",
+      "title": "AI Infra研发实习生（J104346）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/a58cdcc1-2690-4d2d-b41c-51698d1a97f4",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "e4fb4ac4e8e804f377fc9712e2e9982bf9ce2b4630390f3233158450c7ae4c36"
+    },
+    {
+      "sample_id": "jd-020",
+      "company": "百度",
+      "title": "后端开发实习生（J105812）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/81cddbb8-2363-4306-916a-27c392b36cd2",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%90%8E%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "1ce861cfa95b847f8c63b9dd589b5495e5bda5301bd3f238c9fc838b6d97af7f"
+    },
+    {
+      "sample_id": "jd-021",
+      "company": "百度",
+      "title": "后台开发实习生（J100549）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/f80bfd25-a08a-4984-b09b-e55eb98ddf44",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Java",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "bd8b5b1acde5407f136e58129b04cace0d9eabf5744b3082ee10b1324488cfb4"
+    },
+    {
+      "sample_id": "jd-022",
+      "company": "百度",
+      "title": "Java开发工程师（J99640）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/43b42d22-86f9-486b-adf6-7ea633dd4c92",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Java",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "edae2a23dcadf81cfba5ae1244da9b3287b5ad10f66fbda09cc13caf81e88571"
+    },
+    {
+      "sample_id": "jd-023",
+      "company": "百度",
+      "title": "Agent策略实习生（J97362）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/f7c577cb-aeaf-4382-8588-1688e397e8e1",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "07c0b0c6b16a073e74f54594bb4ebdd25638e1664cc9ac3524169a5579400f6f"
+    },
+    {
+      "sample_id": "jd-024",
+      "company": "百度",
+      "title": "广告算法工程师实习生（J97403）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/17849d22-c609-40f8-8e38-488913bb6ddb",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "5d86eb63c35a60dc42d332fab542ef6b99ceb4594dcbfc6a847b263a933de4a1"
+    },
+    {
+      "sample_id": "jd-025",
+      "company": "百度",
+      "title": "文心一言前端研发实习生（J93731）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/dbfd86e3-474e-4eb7-a637-2a887421fc6a",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%89%8D%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "072fa7691431edf7e997d4690c0c8a89100543ad173c7dbfa25d50dcb4d5f8f1"
+    },
+    {
+      "sample_id": "jd-026",
+      "company": "百度",
+      "title": "前端开发实习工程师（J70322）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/db38ca89-8d7c-4781-925c-4a0c89efb9de",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%89%8D%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "cc238c15717e85b87de370bc257d76c4d97a20e0dc34949803f02382bc06d0d2"
+    },
+    {
+      "sample_id": "jd-027",
+      "company": "百度",
+      "title": "AIGC/数字人前端工程师（J68561）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/937f5874-a157-481c-86f9-ca74ae460912",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%89%8D%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "4a2b9b3b1e781f56b78a4db4888a850e1fc18af04383b53df1acc5e9354d917e"
+    },
+    {
+      "sample_id": "jd-028",
+      "company": "百度",
+      "title": "大模型应用方向实习生（J105638）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/c7c0e663-c7fb-473d-82fa-57a9717d91b2",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "69c7027e2b7e33a35e112927c34cb6fc7a8f34ac06edf579e8d67b0a6a0c7238"
+    },
+    {
+      "sample_id": "jd-029",
+      "company": "百度",
+      "title": "Dumate Agent研发实习生（J105734）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/9463a5ea-b9e5-46ec-b112-be5807a9463e",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "a3f60eda9bf2146d02ab1f8919c0cd65e23b37f9ac5a828a9f48c75d3259b6e2"
+    },
+    {
+      "sample_id": "jd-030",
+      "company": "百度",
+      "title": "AI研发实习生（J97336）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/46efcb09-9461-4401-925f-8aaf611994d8",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "a6c86f65b023098d301a17aeb03b8b3b8e27a662555a30dcc2324bef4ea90570"
+    },
+    {
+      "sample_id": "jd-031",
+      "company": "百度",
+      "title": "大模型应用策略实习生（J103129）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/7ef435eb-b1f2-4d34-991f-cd3fe424e6d2",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "f48e5a31fb6b9360e5fcc2e12b2ea25196b48d72f6cb6ae630ab0b8a6a1859b4"
+    },
+    {
+      "sample_id": "jd-032",
+      "company": "百度",
+      "title": "Architect 实习生（J107069）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/c000a01c-004f-4130-b4e2-83920c582cea",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Prompt",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "9670d32a451bca088a6e1440051fd203e62c118aa7c75fde5b03e3baefb883b9"
+    },
+    {
+      "sample_id": "jd-033",
+      "company": "百度",
+      "title": "大模型应用后端研发实习生（GO/Python方向）（J101073）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/15f123ac-2755-4324-b5ba-25682d0f9b40",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "da896a9c47758b1623c7776c9078d68e3afd7070f290889553ebd56ae2bfb192"
+    },
+    {
+      "sample_id": "jd-034",
+      "company": "百度",
+      "title": "萝卜快跑供给系统前端开发实习（J98297）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/ff1a63a8-6093-4a06-8b30-6ab32cc12fab",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%AE%A2%E6%88%B7%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "6f92a6c61d448778df63ac616e00d06146c7761deedb45aeeb8e48ece628adac"
+    },
+    {
+      "sample_id": "jd-035",
+      "company": "百度",
+      "title": "前端实习岗（J72414）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/139e3bea-1454-4991-88b4-6e8e14958db9",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%89%8D%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "167c7068f2064d63bd61cc8f8917a2ae9ded05529c8d5bbef5ca28de59817c23"
+    },
+    {
+      "sample_id": "jd-036",
+      "company": "百度",
+      "title": "移动客户端安卓研发工程师（实习）（J97787）",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/2359e64b-7e1f-44ab-9c67-179e9d3fd36a",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%AE%A2%E6%88%B7%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "721a2ee425672280c59d3107302c8fe5ddbcdbce67840f711fa08628f92b2c79"
+    },
+    {
+      "sample_id": "jd-037",
+      "company": "百度",
+      "title": "后端研发（Python）方向实习生（J89661）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/166d8095-9be0-4080-ac93-d902d4dc988f",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%90%8E%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "4c11d97db88c1fea23f05a2367993edd57cf4431c2177c5ce522b0a665994ab3"
+    },
+    {
+      "sample_id": "jd-038",
+      "company": "百度",
+      "title": "Java研发实习生（J105948）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/f947e5ce-4b77-4c50-97be-91494d38a500",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "cd13f428eda567c7f0a52cd79936272511930b6309a6aa2ed042b1fa368b5ac2"
+    },
+    {
+      "sample_id": "jd-039",
+      "company": "百度",
+      "title": "golang实习开发工程师（J72787）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/13c8f6e4-d211-4e7c-84ae-f6ad6da40b62",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "6dece45e687908ad145f912d8ada03ce7c15a41de30945fb8fa48fd16a5a18aa"
+    },
+    {
+      "sample_id": "jd-040",
+      "company": "百度",
+      "title": "Java研发工程师（J105839）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/db9ca469-d086-4a66-b6f1-4c8f2b9b804e",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Java",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "f1ea0ec548159e1c564c475935e084838180a89808cd62a639543318fda92181"
+    },
+    {
+      "sample_id": "jd-041",
+      "company": "百度",
+      "title": "后端开发工程师（J106514）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/fcb7adf1-599e-4646-90cb-2ab5898c6442",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%90%8E%E7%AB%AF",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "4f4f9cd36e1927a7f3187c02ef263012dd205ff2b6c8f3fbc31278709581dba7"
+    },
+    {
+      "sample_id": "jd-042",
+      "company": "百度",
+      "title": "AI Infra研发工程师（J99641）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/3edba1e5-73f5-4dc3-b71f-5d831301bb2e",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "7c4a5ab386381a62356b8553eb5a6a07b1502475e79397352d2cb6bbccb54bb0"
+    },
+    {
+      "sample_id": "jd-043",
+      "company": "百度",
+      "title": "搜索架构部实习生（J107374）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/7b94536c-d95b-47ce-8ba1-dd5d54d038b7",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "628fcd3a53346e4e02e12239219e4aa8af35ced9facec5ce7ec57fca45927a23"
+    },
+    {
+      "sample_id": "jd-044",
+      "company": "百度",
+      "title": "golang实习研发工程师（J99145）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/79c456fb-9d97-418a-b570-d9a7c2fff8b0",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "e988226f47ad1cbca95a9ee1b27597dca5c18f8a620ab97ba3912c4d46503440"
+    },
+    {
+      "sample_id": "jd-045",
+      "company": "百度",
+      "title": "多模态策略算法实习生（J104589）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/3db22f1f-bd6d-4981-9a5c-b967a7a6095c",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "39221dcd8af1f7d2c0e07420eae6fa098ac7fcc1359768e577563f718a01fbf7"
+    },
+    {
+      "sample_id": "jd-046",
+      "company": "百度",
+      "title": "Agent策略算法实习生（J98721）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/6f85641f-2a8e-4806-bbb5-4bbbf4705741",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "a9baa315078670030c81a9dc4c6e0c1793e43c313b33c719bcfae1bdc4eccf89"
+    },
+    {
+      "sample_id": "jd-047",
+      "company": "百度",
+      "title": "推荐算法实习生（J94247）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/1b07b015-2c1a-4940-ba6d-9b3c1da71173",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%8E%A8%E8%8D%90",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "522ffb66ca65625d350c132b0e1660cd11b8b25d63ee2f31b9bdf94b03d98473"
+    },
+    {
+      "sample_id": "jd-048",
+      "company": "百度",
+      "title": "推荐算法实习生（J106143）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/3f8ba5cb-16be-4ad5-860c-338235036845",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "891d098de2e57195aaa7d8d3703db97b8d2777219e1f8c5e73eff62deda237c6"
+    },
+    {
+      "sample_id": "jd-049",
+      "company": "百度",
+      "title": "推荐算法工程师（J98213）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/86b48594-41aa-4391-99dc-2d73dad8fa62",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "eade4f6750694d0c73e8ad4be8bfe802656808ef947bca9a62f5fcdcf91f909a"
+    },
+    {
+      "sample_id": "jd-050",
+      "company": "百度",
+      "title": "推荐广告算法实习生（J107453）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/f2a5e7e7-c9d2-4fb6-aec0-3ac79bb56582",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%8E%A8%E8%8D%90",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "cacb5c02d64ab72eccba2d46b1f5637c5ee83e7d10679913b0d435c642b28a7f"
+    },
+    {
+      "sample_id": "jd-051",
+      "company": "百度",
+      "title": "AIGC算法实习生 - 多模态理解方向（J98723）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/423331b1-ca12-4c53-985b-23db0fc7d363",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "407ec148280881faff73b7dc50f4649876dd44b9765aaccb59cc72028089c64e"
+    },
+    {
+      "sample_id": "jd-052",
+      "company": "百度",
+      "title": "大模型算法实习生（J99230）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/f8a467f0-2a4a-4238-a21c-412408f85c2e",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "8f5104b9884128fc19273c5de4cb4c633921f7be1811faf2ed2ddd38367d09c6"
+    },
+    {
+      "sample_id": "jd-053",
+      "company": "百度",
+      "title": "AIGC算法实习生（J85433）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/fec2f413-3a8e-4385-a86f-169fe7089c7f",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "a30893e210e32e863ea9126d550a44fb742088c2b81676f8599681a82d05ba59"
+    },
+    {
+      "sample_id": "jd-054",
+      "company": "百度",
+      "title": "Agent算法实习生（J97505）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/cd423c1c-7a35-4672-b0a7-2857308efe43",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Agent",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "01043ade3e2da0cdf60893bfc5b5d0df7479ed7411aeda5ba4fb6a7f18d51fe8"
+    },
+    {
+      "sample_id": "jd-055",
+      "company": "百度",
+      "title": "因果推断实习生（J106719）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/02f56865-61df-43dd-a358-87e8d4bbddb0",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "c05bc0b419077dad5a9c08ef74e605732237ad915911fa327b8d64c148919076"
+    },
+    {
+      "sample_id": "jd-056",
+      "company": "百度",
+      "title": "秒哒大模型算法实习生（J93721）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/320200cd-893d-4076-b39d-1f77f7a79948",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "8dd77a2770e16ac014d6a0dfe68a1c64754147ff339ea9430895e44e7e764756"
+    },
+    {
+      "sample_id": "jd-057",
+      "company": "百度",
+      "title": "多模态内容理解算法工程师（J104282）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/83581500-b97e-49d4-bdc0-37a7928a5806",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "c1b40cfc9918946560d77becd8e54d7e7470851e0fef2fa27da6fd50c546f611"
+    },
+    {
+      "sample_id": "jd-058",
+      "company": "百度",
+      "title": "搜索推荐策略实习生（J107261）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/61a385b2-bdc6-4009-a41b-83180f645a16",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "bf80e3b2deb5e45413d701c7b5335380aeecd6d5dc6bef7a53190461827a97f5"
+    },
+    {
+      "sample_id": "jd-059",
+      "company": "百度",
+      "title": "AI Agent研究&开发 实习生（J107330）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/8d2918ff-2a7e-4721-b94a-947d73d18bd9",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "80b662d33415c84d2e9c2ea74efc22e7f7e8d5e27abe6df2a5b3d5dd651463c5"
+    },
+    {
+      "sample_id": "jd-060",
+      "company": "百度",
+      "title": "多模态算法实习生（J107216）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/9d6b19c0-378c-4c1a-8271-a8362fd1e26d",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E5%A4%9A%E6%A8%A1%E6%80%81",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "833f70b48abd87ab5d5d8020973444faf68e1f5d34b9bef5e4fd401cbb2acd8a"
+    },
+    {
+      "sample_id": "jd-061",
+      "company": "百度",
+      "title": "AI内化研发实习生（J107163）",
+      "category": "ai_application",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/df6115d7-eb36-488f-a8c1-310724cac16e",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E7%A0%94%E5%8F%91",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "557945f3146377bbc59416c26e33dfb36fc7069138ed2381aa3104c608b56197"
+    },
+    {
+      "sample_id": "jd-062",
+      "company": "百度",
+      "title": "全栈开发实习生（J107162）",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/2b49154c-b738-475e-80a7-536d7c6b88c3",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=Prompt",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "e1ba56ee39503b856cfd7b3d2082acf971ca966f1f8e5cecec4c2f42801c7456"
+    },
+    {
+      "sample_id": "jd-063",
+      "company": "百度",
+      "title": "Agent算法工程师（J106948）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/e38165a4-d8d0-4afe-bc70-2088f42c21c6",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=RAG",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "542b9e56f4b207cea5d6201f3a5966214f2253b9e25d257717e9f9434343b52f"
+    },
+    {
+      "sample_id": "jd-064",
+      "company": "百度",
+      "title": "推荐算法工程师（J106848）",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://talent.baidu.com/jobs/detail/INTERN/e6b24cb5-6d5f-43f7-8ba0-dfbf4ade16ba",
+      "source_page_url": "https://talent.baidu.com/jobs/list?recruitType=INTERN&search=%E6%8E%A8%E8%8D%90",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "2740ddcc40c8f788dbe63bf2503760a0d17881009c555a2203e383e2b8a60f80"
+    },
+    {
+      "sample_id": "jd-065",
+      "company": "汝原科技",
+      "title": "图像算法工程师（AI方向）",
+      "category": "algorithm",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://careers.zuvi.cn/api/jobs/46",
+      "source_page_url": "https://careers.zuvi.cn/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "a0511a24f826aa1482ca5181bc18b53429ee0d77e279897ff5a626aa19fdac64"
+    },
+    {
+      "sample_id": "jd-066",
+      "company": "汝原科技",
+      "title": "机械结构工程师",
+      "category": "hardware",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://careers.zuvi.cn/api/jobs/50",
+      "source_page_url": "https://careers.zuvi.cn/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "e48e16589740359c19cad220a7377298f87beeaf8b8ff62697b9b4a327d363b7"
+    },
+    {
+      "sample_id": "jd-067",
+      "company": "汝原科技",
+      "title": "前端开发工程师",
+      "category": "frontend",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://careers.zuvi.cn/api/jobs/52",
+      "source_page_url": "https://careers.zuvi.cn/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "37a3ae393a542698789fdb62a626de951001c58894ff727f225664c31e7f0cca"
+    },
+    {
+      "sample_id": "jd-068",
+      "company": "汝原科技",
+      "title": "后端开发工程师",
+      "category": "backend",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "企业招聘官网",
+      "source_url": "https://careers.zuvi.cn/api/jobs/53",
+      "source_page_url": "https://careers.zuvi.cn/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "b9b7ec18e8b74686b5a87ff8769c6d86e545d5ce3f7e8fb34274f62e32f6a31e"
+    },
+    {
+      "sample_id": "jd-069",
+      "company": "汝原科技",
+      "title": "AI 应用开发工程师",
+      "category": "ai_application",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "企业招聘官网",
+      "source_url": "https://careers.zuvi.cn/api/jobs/54",
+      "source_page_url": "https://careers.zuvi.cn/",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "a9604299a66c1eedddb69a8495423e96d2607c5d140a714f3da7cba219244a50"
+    },
+    {
+      "sample_id": "jd-070",
+      "company": "阿里巴巴",
+      "title": "前端开发工程师",
+      "category": "frontend",
+      "level": "entry",
+      "level_basis": "campus_hiring",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/alibaba_campus/campus%3A199907720100",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "429225cfa743a5b312b2175e1043a1e68184eb8772e850f492cac3ead754545c"
+    },
+    {
+      "sample_id": "jd-071",
+      "company": "悦芯科技",
+      "title": "初级软件工程师",
+      "category": "backend",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "锦鲤求职",
+      "source_url": "https://jinliqiuzhi.com/jobs/224366",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "1b1541cbfe7a4ab5b45ebbd04ee960b4ffd17ec5c46ce2a07e9384769393c09c"
+    },
+    {
+      "sample_id": "jd-072",
+      "company": "金山云",
+      "title": "27届校招-平台 / Agent 研发工程师(J19205)",
+      "category": "ai_application",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "锦鲤求职",
+      "source_url": "https://jinliqiuzhi.com/jobs/748216",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "8e3755e5916a13d5fa81c560727062ae83bd91abd7263dd064961c6f4a2ffbd5"
+    },
+    {
+      "sample_id": "jd-073",
+      "company": "Stripe",
+      "title": "Software Engineer, New Grad - Frontend",
+      "category": "frontend",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://stripe.com/jobs/search?gh_jid=8130927",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "7e7724a26fe548dbd20e510c5282311346d5f0db2c1bc770216b9ab73cff824c"
+    },
+    {
+      "sample_id": "jd-074",
+      "company": "Databricks",
+      "title": "Software Engineer - New Grad, Distributed Data Systems (2027 Start)",
+      "category": "infrastructure",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=6865704002",
+      "missing_field_candidates": [],
+      "text_sha256": "f2198df66dd1c38e883090f258eb75f4104fc740ab8b5a7152f2f0b38f50e0d2"
+    },
+    {
+      "sample_id": "jd-075",
+      "company": "Databricks",
+      "title": "Product Manager, New Grad (2027) - Berlin",
+      "category": "product_design",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8145800002",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "8d201fa7c9b44ffb0c38ce3e43d74f9b9eda8e73a339c7f2db186140e81c1d2a"
+    },
+    {
+      "sample_id": "jd-076",
+      "company": "Duolingo",
+      "title": "QA Specialist I, Recent Graduate",
+      "category": "qa",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.duolingo.com/jobs/8927565002?gh_jid=8927565002",
+      "missing_field_candidates": [],
+      "text_sha256": "6f0d37d2e74741185b8e17a388e5cf22b1a098f92964f20577c184600f8cd946"
+    },
+    {
+      "sample_id": "jd-077",
+      "company": "Duolingo",
+      "title": "AI Research Engineer, New PhD Graduate",
+      "category": "algorithm",
+      "level": "entry",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.duolingo.com/jobs/8881612002?gh_jid=8881612002",
+      "missing_field_candidates": [],
+      "text_sha256": "2cc1a5bbcebb03a79cf64e4691a946479420a401ac63931e414a12d06c041f54"
+    },
+    {
+      "sample_id": "jd-078",
+      "company": "钉钉",
+      "title": "千问办公-MaaS 平台研发工程师-全球化",
+      "category": "ai_application",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/dingtalk/100053600009",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "2dc9461b849ff26617fd601c7c47670253b35dab9670fbb367b4bd79d011f381"
+    },
+    {
+      "sample_id": "jd-079",
+      "company": "蚂蚁国际",
+      "title": "蚂蚁国际-算法工程师-全球技术",
+      "category": "algorithm",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/ant/260806011288568",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "f2f22a1d491e106a566d1ad1a0ad39d6f3edfec7deb1048f5709c3b1b8bfc66d"
+    },
+    {
+      "sample_id": "jd-080",
+      "company": "腾讯",
+      "title": "AI Infra SRE 工程师-存储方向(Agent沙箱)",
+      "category": "infrastructure",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/tencent/2113177003082559488",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "31b2260513a1ffa487611f8912a3d7006f9fec22275874dee2ec67473507f6a4"
+    },
+    {
+      "sample_id": "jd-081",
+      "company": "字节跳动",
+      "title": "大模型应用开发工程师（AI Coding方向）-产品研发和工程架构",
+      "category": "ai_application",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance/7633462660424354053",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "48fdcf537a937c8e99f8dc3f3d50b08f69c0f1d68526edf280c8b8430d04ad98"
+    },
+    {
+      "sample_id": "jd-082",
+      "company": "网易",
+      "title": "服务端开发工程师（上海）",
+      "category": "backend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/netease/79516",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "46f084551041d7b47eaf40fce35fcad237d6472f06dad612ec34ae2f1c996d57"
+    },
+    {
+      "sample_id": "jd-083",
+      "company": "蚂蚁集团",
+      "title": "蚂蚁集团-AI数据工程师-杭州",
+      "category": "data_engineering",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/ant/26032609326162",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "dc673f31f00e8a28465f11f7e6abda5aeb39d0609ab3b3894a5d80295bd1cce4"
+    },
+    {
+      "sample_id": "jd-084",
+      "company": "Figma",
+      "title": "Software Engineer - AI Product (London, United Kingdom)",
+      "category": "ai_application",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/figma/jobs/5551697004?gh_jid=5551697004",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "0b0fd7cc6bd8f514260ca50a2d27a0f5de37700a5af78ec0d768f483d80de7cb"
+    },
+    {
+      "sample_id": "jd-085",
+      "company": "Brex",
+      "title": "Software Engineer II, Frontend (Banking)",
+      "category": "frontend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://www.brex.com/careers/8928935002?gh_jid=8928935002",
+      "missing_field_candidates": [],
+      "text_sha256": "6693d7dca8a920dca4173b1092aad1b961efd757722ff7e052b8eae3c3cc2fab"
+    },
+    {
+      "sample_id": "jd-086",
+      "company": "Cloudflare",
+      "title": "Software Engineer, R2 Gateway",
+      "category": "infrastructure",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/cloudflare/jobs/8155463?gh_jid=8155463",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "02c6a3187d3390fa245a56cedbb37d95eb47d6a29db77addc367da46a5fe52cf"
+    },
+    {
+      "sample_id": "jd-087",
+      "company": "GitLab",
+      "title": "Data Scientist, Enterprise Analytics",
+      "category": "data_engineering",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/gitlab/jobs/8922013002",
+      "missing_field_candidates": [],
+      "text_sha256": "84bb83499266763515e714f380f31cc71ff28b221509d88e168788805105614e"
+    },
+    {
+      "sample_id": "jd-088",
+      "company": "Mozilla",
+      "title": "iOS Software Engineer",
+      "category": "frontend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/mozilla/jobs/8302305",
+      "missing_field_candidates": [],
+      "text_sha256": "7cc6705d4b6f1bfe2ad7f9b6e6b0ea12cf67197c54ef4df349ec284d4fc6c206"
+    },
+    {
+      "sample_id": "jd-089",
+      "company": "Elastic",
+      "title": "Full Stack Technical Developer",
+      "category": "backend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://jobs.elastic.co/jobs?gh_jid=8281841&gh_jid=8281841",
+      "missing_field_candidates": [],
+      "text_sha256": "6a154d4d5a38441f79626d2b5f02dabf503232f0e3cef3864566aee7f7274cd7"
+    },
+    {
+      "sample_id": "jd-090",
+      "company": "MongoDB",
+      "title": "Software Engineer 3, Identity and Access Management",
+      "category": "backend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://www.mongodb.com/careers/job/?gh_jid=8313374",
+      "missing_field_candidates": [],
+      "text_sha256": "fabee0c58db714b55e77dc74aac7581253e83ab60a1b494269751007350a81d0"
+    },
+    {
+      "sample_id": "jd-091",
+      "company": "Reddit",
+      "title": "Frontend Engineer, Ads",
+      "category": "frontend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/reddit/jobs/8194576",
+      "missing_field_candidates": [],
+      "text_sha256": "82a457704dc67c98ff68e5be531a39a04e44ab87bdc39d310e0203616ed5333d"
+    },
+    {
+      "sample_id": "jd-092",
+      "company": "Vercel",
+      "title": "Software Engineer, Agentic Infrastructure",
+      "category": "ai_application",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/vercel/jobs/6199608004",
+      "missing_field_candidates": [],
+      "text_sha256": "25133e5ebc5ceef859d9ad1ac4564af2f13dc6a2f7fb992a86f7d1e72b5ad3ab"
+    },
+    {
+      "sample_id": "jd-093",
+      "company": "Stripe",
+      "title": "Backend Engineer, UI Platform",
+      "category": "backend",
+      "level": "experienced",
+      "level_basis": "experience_requirements",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://stripe.com/jobs/search?gh_jid=8212319",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "ea49d088dae44121f63faad63a79b1597a1b0a2a2b80f6f6ec45dff80884d841"
+    },
+    {
+      "sample_id": "jd-094",
+      "company": "字节跳动",
+      "title": "资深后端开发工程师（飞书项目） - Seed 产品研发",
+      "category": "backend",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/bytedance/7516495199666342152",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "7ac78d75ecb4377d9a8612bd1f3947ea3b1c1b610f2d9ea5c1789025803de24a"
+    },
+    {
+      "sample_id": "jd-095",
+      "company": "网易",
+      "title": "资深全栈开发工程师（营收域）",
+      "category": "backend",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "detailed",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/netease/79970",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "909f960b10df2dc3e2a0b6f3b224473365923ecb5602b2a2193b9bb6f6c4c238"
+    },
+    {
+      "sample_id": "jd-096",
+      "company": "快手",
+      "title": "资深C++开发工程师（电商）-算法引擎部",
+      "category": "infrastructure",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "brief",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/kuaishou/24347",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "dd4372f66d5ace8718e1afa6f2709db4aa15fd5b00e66e1725d130a8cfd8bad2"
+    },
+    {
+      "sample_id": "jd-097",
+      "company": "携程",
+      "title": "资深前端开发工程师(MJ036647)",
+      "category": "frontend",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "zh",
+      "detail_level": "standard",
+      "source": "职先机",
+      "source_url": "https://jobs.ultraai.site/jobs/ctrip/43d6f5c6-7cdf-4a21-ad3a-e6d46987ae14",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "eeb1c193717e2c52bb470d924dc977e933d4004926d48815ca1c737e20b55bae"
+    },
+    {
+      "sample_id": "jd-098",
+      "company": "GitLab",
+      "title": "Senior Backend Engineer, AI Engineering: Chat",
+      "category": "ai_application",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/gitlab/jobs/8621733002",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "d7bd1fa76b602af8db5efb70e14c213b40da68cb023d45e2fa3c41ae24b1e92b"
+    },
+    {
+      "sample_id": "jd-099",
+      "company": "Elastic",
+      "title": "Senior Java Software Engineer - Search Inference - Platform",
+      "category": "algorithm",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://jobs.elastic.co/jobs?gh_jid=8259063&gh_jid=8259063",
+      "missing_field_candidates": [],
+      "text_sha256": "5c5a39bef0d7d643bf7d416c902b78f8839c7e8e31f48c5a0a7a8346262c72d2"
+    },
+    {
+      "sample_id": "jd-100",
+      "company": "Anthropic",
+      "title": "Senior Software Engineer, Full-stack",
+      "category": "backend",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/anthropic/jobs/5174743008",
+      "missing_field_candidates": [],
+      "text_sha256": "ee95408cec9a4cfe6c5e3d1f0eb4fcfcc7364821365f99c34ea7b4764d902e1c"
+    },
+    {
+      "sample_id": "jd-101",
+      "company": "Grafana Labs",
+      "title": "Senior Backend Engineer - Databases - Analytics | Canada | Remote",
+      "category": "infrastructure",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/grafanalabs/jobs/6209461004",
+      "missing_field_candidates": [],
+      "text_sha256": "aa3f7c344a9f821f3f311859bf0e2527b8975afc12330e7af53678fc9d8b5740"
+    },
+    {
+      "sample_id": "jd-102",
+      "company": "Airbnb",
+      "title": "Senior Data Engineer Tech Foundations",
+      "category": "data_engineering",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.airbnb.com/positions/8396777?gh_jid=8396777",
+      "missing_field_candidates": [],
+      "text_sha256": "8dffac3adcbe65297adb14bc3dde2aaf9e266d29ffaaddeba6f01ae0f6330dac"
+    },
+    {
+      "sample_id": "jd-103",
+      "company": "Databricks",
+      "title": "Senior Applied ML Engineer - ML4Sys",
+      "category": "algorithm",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8656900002",
+      "missing_field_candidates": [],
+      "text_sha256": "2fa676b2cbf10853edea9e64575e4dcf46b1055849f822101c4d7c8ba39298d1"
+    },
+    {
+      "sample_id": "jd-104",
+      "company": "Robinhood",
+      "title": "Senior Data Scientist, Product",
+      "category": "data_engineering",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/robinhood/jobs/8080893?t=gh_src=&gh_jid=8080893",
+      "missing_field_candidates": [],
+      "text_sha256": "ca861ff835b32c10c21266c8e67bd28162583e22df04f1ac6d0b4783100df956"
+    },
+    {
+      "sample_id": "jd-105",
+      "company": "Reddit",
+      "title": "Senior Android Software Engineer, Consumer Engineering",
+      "category": "frontend",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://job-boards.greenhouse.io/reddit/jobs/8263407",
+      "missing_field_candidates": [],
+      "text_sha256": "9759bfe5e15dbf5f9b5e4b8f126674feff491975ef4996352272c7ef731e3d17"
+    },
+    {
+      "sample_id": "jd-106",
+      "company": "MongoDB",
+      "title": "Senior Platform Engineer",
+      "category": "infrastructure",
+      "level": "senior",
+      "level_basis": "explicit_title",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://www.mongodb.com/careers/job/?gh_jid=8071475",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "0f64a7f8db6d72a21f7ddebe3ea0ecfb9dd315c8c0c625f4ee787d63f2975db8"
+    },
+    {
+      "sample_id": "jd-107",
+      "company": "Airbnb",
+      "title": "Software Engineering Intern (BS/MS)",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.airbnb.com/positions/8360478?gh_jid=8360478",
+      "missing_field_candidates": [
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "8e5d82a10682185f60281e41f3830c456c33732028f08b7fa34db050e8549ad4"
+    },
+    {
+      "sample_id": "jd-108",
+      "company": "Brex",
+      "title": "Software Engineer, Internship - 2027",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://www.brex.com/careers/8935242002?gh_jid=8935242002",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "cdb1d6681b0c09a291bda79a794f92be87f52f207cf4e06e2da819b189772599"
+    },
+    {
+      "sample_id": "jd-109",
+      "company": "Cloudflare",
+      "title": "Software Engineer Intern (2027) - London, UK",
+      "category": "infrastructure",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/cloudflare/jobs/8245211?gh_jid=8245211",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "97c11dce5091b8854353cad49190790a40acc6e386a0b983eab83d171adfeef4"
+    },
+    {
+      "sample_id": "jd-110",
+      "company": "Cloudflare",
+      "title": "Product Manager Intern (2027) - Lisbon, PT",
+      "category": "product_design",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/cloudflare/jobs/8332008?gh_jid=8332008",
+      "missing_field_candidates": [],
+      "text_sha256": "3891707c1907dbd2e20353aa1cd56a9402cfca677bd3be84af16ec400b7d40f4"
+    },
+    {
+      "sample_id": "jd-111",
+      "company": "Databricks",
+      "title": "Product Design Intern (2027 Start)",
+      "category": "product_design",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8787352002",
+      "missing_field_candidates": [
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "ffd51d20cccffeeaff2f86cbc9efe9d448b9bfac88f9c9b34200476de898eb2a"
+    },
+    {
+      "sample_id": "jd-112",
+      "company": "Duolingo",
+      "title": "AI Research Intern (PhD)",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.duolingo.com/jobs/8928712002?gh_jid=8928712002",
+      "missing_field_candidates": [
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "ef7c93c488f7180113004869dbf192af6e7b866e32c118694e3149ee2510ee55"
+    },
+    {
+      "sample_id": "jd-113",
+      "company": "Duolingo",
+      "title": "Data Scientist, Intern (PhD)",
+      "category": "data_engineering",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://careers.duolingo.com/jobs/8888848002?gh_jid=8888848002",
+      "missing_field_candidates": [
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "95485d984294070d41e127a63b058c98673a7db5e405d9e92e84cbd0f1cb0467"
+    },
+    {
+      "sample_id": "jd-114",
+      "company": "Figma",
+      "title": "Data Engineer Intern (2027)",
+      "category": "data_engineering",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/figma/jobs/6178851004?gh_jid=6178851004",
+      "missing_field_candidates": [
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "393ef9deff4173218f33bd7c0440654d8c003f96c4b30d611040d07a5481cebd"
+    },
+    {
+      "sample_id": "jd-115",
+      "company": "Figma",
+      "title": "PhD Intern, Software Engineer - Interaction Design (2027)",
+      "category": "frontend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://boards.greenhouse.io/figma/jobs/6241542004?gh_jid=6241542004",
+      "missing_field_candidates": [
+        "onsite_days_per_week"
+      ],
+      "text_sha256": "02b7032818db92b9fd0f61596a89a67a2a15ffef9f309f405791461f7cca6d20"
+    },
+    {
+      "sample_id": "jd-116",
+      "company": "MongoDB",
+      "title": "2027 - Software Engineer Intern, Dublin - 6 Month Internship",
+      "category": "backend",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "standard",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://www.mongodb.com/careers/job/?gh_jid=8258279",
+      "missing_field_candidates": [
+        "salary"
+      ],
+      "text_sha256": "2e6bd00df7e8c85b1f81e88ef7bcab53a246fd810ca0e1c1548d65b8d4abd815"
+    },
+    {
+      "sample_id": "jd-117",
+      "company": "Stripe",
+      "title": "Master's Machine Learning Engineer, Intern",
+      "category": "algorithm",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://stripe.com/jobs/search?gh_jid=8333074",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "6a6762396876a33372147d418c037d6062dfe5cd2a0150e796de792b7b299587"
+    },
+    {
+      "sample_id": "jd-118",
+      "company": "Stripe",
+      "title": "Integration Reliability Engineer Intern, Technical Operations",
+      "category": "infrastructure",
+      "level": "intern",
+      "level_basis": "intern_posting",
+      "language": "en",
+      "detail_level": "detailed",
+      "source": "企业官方职位板（Greenhouse）",
+      "source_url": "https://stripe.com/jobs/search?gh_jid=8186367",
+      "missing_field_candidates": [
+        "salary",
+        "onsite_days_per_week",
+        "internship_duration"
+      ],
+      "text_sha256": "9c4497f3c2777d3eb0a5af07052c16204e10bb42814d15b6c909abe131217644"
+    }
+  ]
+}

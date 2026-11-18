@@ -1,0 +1,26 @@
+{
+  "sample_id": "jd-example-001",
+  "source_url": null,
+  "basic_fields": {
+    "company": "岚纸实验室",
+    "title": "AI 应用开发实习生",
+    "location": "杭州",
+    "salary": null,
+    "onsite_days_per_week": "至少 4 天",
+    "internship_duration": "至少 3 个月",
+    "education": null,
+    "graduation_window": null,
+    "application_deadline": null
+  },
+  "hard_requirements": [
+    "熟悉 Python",
+    "能用 FastAPI 开发 HTTP 接口",
+    "每周至少到岗 4 天",
+    "实习时长至少 3 个月"
+  ],
+  "preferred_requirements": [
+    "具备 RAG 项目经验",
+    "了解 pgvector"
+  ],
+  "keywords": ["Python", "FastAPI", "RAG", "pgvector"]
+}

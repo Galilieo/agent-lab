@@ -18,5 +18,8 @@ htmlcov/
 # Local vector index (vectors, original text and metadata)
 .cache/chroma/
 
+# Local evaluation sources, including original job descriptions and real resumes
+/evals/private/
+
 # macOS
 .DS_Store

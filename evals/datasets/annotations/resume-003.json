@@ -1,0 +1,41 @@
+{
+  "sample_id": "resume-003",
+  "facts": [
+    {
+      "experience": "课程排班面板",
+      "kind": "action",
+      "responsibility": "own",
+      "text": "实现按周次筛选课程的功能",
+      "has_number": false,
+      "source_quote": "负责实现按周次筛选课程的功能。",
+      "needs_confirmation": false
+    },
+    {
+      "experience": "课程排班面板",
+      "kind": "technology",
+      "responsibility": "own",
+      "text": "使用 React 搭建排班面板页面",
+      "has_number": false,
+      "source_quote": "负责用 React 搭建排班面板页面。",
+      "needs_confirmation": false
+    },
+    {
+      "experience": "课程排班面板",
+      "kind": "action",
+      "responsibility": "participate",
+      "text": "添加接口请求失败时的重试按钮",
+      "has_number": false,
+      "source_quote": "做了接口请求失败时的重试按钮。",
+      "needs_confirmation": true
+    },
+    {
+      "experience": "课程排班面板",
+      "kind": "action",
+      "responsibility": "participate",
+      "text": "编写了 6 条组件测试用例",
+      "has_number": true,
+      "source_quote": "参与组件测试，编写了 6 条用例。",
+      "needs_confirmation": false
+    }
+  ]
+}
