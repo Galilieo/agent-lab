@@ -48,6 +48,16 @@ V1 定位为个人学习项目，本人求职时在本地使用；暂不上线�
 
 求职助手的代码位于 `jobpilot/`（后端）和 `web/`（前端），依赖各自独立。前端启动与目录说明见 [web/README.md](web/README.md)，后端测试说明见 [jobpilot/tests/README.md](jobpilot/tests/README.md)。
 
+## 本地启动
+
+配置好仓库根目录的 `.env`（参照 `.env.example`），按 [前端说明](web/README.md#运行)安装依赖，并启动 Colima。然后从仓库根目录执行：
+
+```bash
+./scripts/dev.sh
+```
+
+打开 [JobPilot](http://127.0.0.1:5174)，岗位库会显示服务和数据库状态。按 Ctrl+C 停止前后端，PostgreSQL 容器继续运行。
+
 ## 早期机制实验（已归档）
 
 这个仓库最初是 AI 应用机制的学习实验场，按阶段手写并验证了：
