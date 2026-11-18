@@ -21,27 +21,32 @@ pnpm dev
 5174 避开本机心屿占用的 5173；`strictPort` 防止静默换端口。
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm build
 ```
 
+`format:check` 用 Prettier 检查格式（配置在 `.prettierrc.json`），`pnpm format` 直接改写；
 `lint` 用 ESLint 检查 TypeScript、React Hooks 和热更新约束；`build` 先运行 TypeScript
 项目检查，再由 Vite 打包到已忽略的 `dist/`。`pnpm preview` 只预览静态产物，
 当前的 API 代理只属于 `pnpm dev`，不代表生产部署已配置。
 
+GitHub Actions（`.github/workflows/web.yml`）在 `web/` 有改动时，按顺序运行上面三条命令；
+只做检查，不部署。
+
 ## 文件职责
 
-| 文件 | 作用 |
-| --- | --- |
-| `vite.config.ts` | 本机开发端口、`/api` 到 FastAPI 的代理 |
-| `src/main.tsx` | 主题、Ant Design App、查询缓存、浏览器路由四层上下文 |
-| `src/theme.ts` | 全局 token 与 Layout、Menu 的组件 token，统一极简雾蓝配色 |
-| `src/App.tsx` | 路由表；默认跳转 `/jobs`，共同外壳下切换页面 |
-| `src/layouts/` | 232px 侧栏、账号菜单、窄屏导航抽屉，以及主区 `Outlet` |
-| `src/pages/` | 岗位库、对话欢迎区、其他页面占位 |
-| `src/api/health.ts` | HTTP 状态及响应结构校验、取消信号传递 |
+| 文件                                  | 作用                                                       |
+| ------------------------------------- | ---------------------------------------------------------- |
+| `vite.config.ts`                      | 本机开发端口、`/api` 到 FastAPI 的代理                     |
+| `src/main.tsx`                        | 主题、Ant Design App、查询缓存、浏览器路由四层上下文       |
+| `src/theme.ts`                        | 全局 token 与 Layout、Menu 的组件 token，统一极简雾蓝配色  |
+| `src/App.tsx`                         | 路由表；默认跳转 `/jobs`，共同外壳下切换页面               |
+| `src/layouts/`                        | 232px 侧栏、账号菜单、窄屏导航抽屉，以及主区 `Outlet`      |
+| `src/pages/`                          | 岗位库、对话欢迎区、其他页面占位                           |
+| `src/api/health.ts`                   | HTTP 状态及响应结构校验、取消信号传递                      |
 | `src/components/HealthStatusCard.tsx` | 查询加载、成功、错误与手动重试；缓存 30 秒，失败不自动重试 |
-| `src/index.css` | 结构和间距；颜色通过 `theme.useToken()` 或主题组件样式获得 |
+| `src/index.css`                       | 结构和间距；颜色通过 `theme.useToken()` 或主题组件样式获得 |
 
 页面路由：`/jobs`、`/jobs/:jobId`、`/conversations/new`、`/conversations/:conversationId`、
 `/me`、`/account`，以及 P1 占位 `/workspace`。

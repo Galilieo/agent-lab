@@ -1,36 +1,210 @@
-/* 这里只管结构与间距；颜色、字体和组件外观由 theme.ts 提供。 */
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-button, input, textarea { font: inherit; }
-#root { min-height: 100dvh; }
-.app-shell { height: 100dvh; }
-.app-main, .app-content { min-width: 0; min-height: 0; }
-.app-content { overflow: auto; }
-.sidebar { display: flex; flex-direction: column; height: 100%; padding: 20px 12px 12px; gap: 16px; }
-.brand { padding: 0 12px; font-size: 20px; font-weight: 650; letter-spacing: -0.5px; }
-.sidebar-menu { border-inline-end: none !important; }
-.recent-conversations { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px; }
-.recent-conversations .ant-empty { margin: 24px 0; }
-.account-menu { display: flex; align-items: center; gap: 10px; width: 100%; height: auto; padding: 10px; text-align: left; }
-.account-copy { flex: 1; display: flex; flex-direction: column; }
-.mobile-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
-.mobile-header .brand { padding: 0; font-size: 18px; }
-.page { width: 100%; max-width: 1100px; margin: 0 auto; padding: 32px; }
-.page-heading { margin-bottom: 28px; }
-.page-heading h1 { margin: 0 0 8px; }
-.page-empty { padding: 32px 0; }
-.health-status { margin-top: 28px; font-variant-numeric: tabular-nums; }
-.conversation-page { display: flex; flex-direction: column; height: 100%; }
-.conversation-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 24px; }
-.conversation-body { display: flex; flex: 1; min-height: 0; overflow-y: auto; align-items: center; justify-content: center; padding: 32px 24px; }
-.conversation-welcome { width: 100%; max-width: 600px; }
-.conversation-welcome .ant-welcome { padding: 0; }
-.conversation-composer { width: 100%; max-width: 860px; margin: 0 auto; padding: 16px 24px 24px; }
-.conversation-composer .ant-sender { border-radius: 16px; }
-.composer-note { display: block; margin-top: 10px; text-align: center; font-size: 12px; }
+/*
+ * 全局结构与间距。颜色、字体族和 antd 组件的默认外观由 theme.ts 提供；
+ * 这里只放布局，以及少量 token 覆盖不到的尺寸。
+ * 按区块组织：基础重置 → 应用外壳 → 侧栏 → 通用页面 → 对话页 → 窄屏。
+ */
+
+/* ---------- 基础重置 ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+/* 表单控件默认不继承字体，统一跟随页面。 */
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+/* ---------- 应用外壳（AppShell） ---------- */
+
+#root {
+  min-height: 100dvh;
+}
+
+.app-shell {
+  height: 100dvh;
+}
+
+/* flex 子项默认 min-size 为 auto，会被长内容撑开；归零后内部滚动才生效。 */
+.app-main,
+.app-content {
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-content {
+  overflow: auto;
+}
+
+.mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.mobile-header .brand {
+  padding: 0;
+  font-size: 18px;
+}
+
+/* ---------- 侧栏（SideNavigation） ---------- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 20px 12px 12px;
+}
+
+.brand {
+  padding: 0 12px;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+}
+
+/* antd 的 inline Menu 自带右边框，且选择器优先级较高，只能用 !important 去掉。 */
+.sidebar-menu {
+  border-inline-end: none !important;
+}
+
+/* 占满中间剩余高度，对话变多时只滚动这一段。 */
+.recent-conversations {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 12px;
+}
+
+.recent-conversations .ant-empty {
+  margin: 24px 0;
+}
+
+.account-menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  padding: 10px;
+  text-align: left;
+}
+
+.account-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* ---------- 通用页面（岗位库、占位页） ---------- */
+
+.page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.page-heading {
+  margin-bottom: 28px;
+}
+
+.page-heading h1 {
+  margin: 0 0 8px;
+}
+
+.page-empty {
+  padding: 32px 0;
+}
+
+.health-status {
+  margin-top: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 对话页（ConversationPage） ---------- */
+
+/* 纵向三段：标题栏、可滚动的消息区、固定在底部的输入框。 */
+.conversation-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.conversation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+}
+
+.conversation-body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 32px 24px;
+}
+
+.conversation-welcome {
+  width: 100%;
+  max-width: 600px;
+}
+
+.conversation-welcome .ant-welcome {
+  padding: 0;
+}
+
+.conversation-composer {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px 24px 24px;
+}
+
+.conversation-composer .ant-sender {
+  border-radius: 16px;
+}
+
+.composer-note {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- 窄屏 ---------- */
+
+/*
+ * 991px 对应 antd 的 lg 断点（≥992px）。AppShell 用 Grid.useBreakpoint() 的 lg
+ * 决定是否折叠侧栏，两处必须一起改。
+ */
 @media (max-width: 991px) {
-  .page { padding: 24px 16px; }
-  .conversation-heading { padding: 12px 16px; }
-  .conversation-body { padding: 24px 16px; }
-  .conversation-composer { padding: 12px 16px 20px; }
+  .page {
+    padding: 24px 16px;
+  }
+
+  .conversation-heading {
+    padding: 12px 16px;
+  }
+
+  .conversation-body {
+    padding: 24px 16px;
+  }
+
+  .conversation-composer {
+    padding: 12px 16px 20px;
+  }
 }

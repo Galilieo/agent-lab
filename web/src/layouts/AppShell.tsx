@@ -8,6 +8,7 @@ import { SideNavigation } from './SideNavigation'
 export function AppShell(): ReactElement {
   const { token } = theme.useToken()
   const screens = Grid.useBreakpoint()
+  // 与 index.css 里的 @media (max-width: 991px) 对应，改断点时两处一起改。
   const isNarrow = screens.lg === false
   const [navigationOpen, setNavigationOpen] = useState(false)
 
@@ -20,14 +21,19 @@ export function AppShell(): ReactElement {
       )}
       <Layout className="app-main">
         {isNarrow && (
-          <header className="mobile-header" style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+          <header
+            className="mobile-header"
+            style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+          >
             <Button
               type="text"
               icon={<MenuOutlined />}
               aria-label="打开导航"
               onClick={() => setNavigationOpen(true)}
             />
-            <span className="brand">Job<span style={{ color: token.colorPrimary }}>Pilot</span></span>
+            <span className="brand">
+              Job<span style={{ color: token.colorPrimary }}>Pilot</span>
+            </span>
           </header>
         )}
         <Layout.Content className="app-content">

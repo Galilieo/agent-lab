@@ -10,7 +10,10 @@ export function ConversationPage(): ReactElement {
 
   return (
     <section className="conversation-page">
-      <header className="conversation-heading" style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+      <header
+        className="conversation-heading"
+        style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+      >
         <Typography.Text strong>{conversationId ? '对话' : '新对话'}</Typography.Text>
         <Tag>未关联岗位</Tag>
       </header>
@@ -24,7 +27,9 @@ export function ConversationPage(): ReactElement {
           <Space wrap style={{ marginTop: token.marginLG }}>
             <Button disabled>上传简历</Button>
             <Button disabled>发 JD 或截图</Button>
-            <Link to="/jobs"><Button>从岗位库选一个</Button></Link>
+            <Link to="/jobs">
+              <Button>从岗位库选一个</Button>
+            </Link>
             <Button disabled>补充经历</Button>
           </Space>
         </div>

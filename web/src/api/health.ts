@@ -15,9 +15,12 @@ export async function fetchHealth(signal: AbortSignal): Promise<HealthStatus> {
 
   const health: unknown = await response.json()
   if (
-    typeof health !== 'object' || health === null ||
-    !('status' in health) || health.status !== 'ok' ||
-    !('database' in health) || health.database !== 'ok'
+    typeof health !== 'object' ||
+    health === null ||
+    !('status' in health) ||
+    health.status !== 'ok' ||
+    !('database' in health) ||
+    health.database !== 'ok'
   ) {
     throw new Error('服务状态暂时无法确认，请稍后重试。')
   }

@@ -36,7 +36,9 @@ export function SideNavigation({ onNavigate }: SideNavigationProps): ReactElemen
 
   return (
     <nav className="sidebar" aria-label="主导航">
-      <div className="brand">Job<span style={{ color: token.colorPrimary }}>Pilot</span></div>
+      <div className="brand">
+        Job<span style={{ color: token.colorPrimary }}>Pilot</span>
+      </div>
       <Button icon={<PlusOutlined />} block onClick={() => openPage('/conversations/new')}>
         新对话
       </Button>

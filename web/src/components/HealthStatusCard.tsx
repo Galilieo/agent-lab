@@ -20,30 +20,38 @@ export function HealthStatusCard(): ReactElement {
       title="服务状态"
       className="health-status"
       size="small"
-      extra={(
+      extra={
         <Button
           type="text"
           icon={<ReloadOutlined />}
           loading={healthQuery.isFetching}
-          onClick={() => { void healthQuery.refetch() }}
+          onClick={() => {
+            void healthQuery.refetch()
+          }}
         >
           重新检查
         </Button>
-      )}
+      }
     >
       <div role="status" aria-live="polite">
-        {healthQuery.isPending ? <Skeleton active paragraph={{ rows: 1 }} title={false} /> :
-          healthQuery.isError ? (
-            <Alert type="error" title="暂时无法确认服务状态" description="请确认本地服务已启动，再点重新检查。" showIcon />
-          ) : (
-            <Space wrap>
-              <Tag color="success">服务正常</Tag>
-              <Tag color="success">数据库正常</Tag>
-              <Typography.Text type="secondary">
-                status: {healthQuery.data.status} · database: {healthQuery.data.database}
-              </Typography.Text>
-            </Space>
-          )}
+        {healthQuery.isPending ? (
+          <Skeleton active paragraph={{ rows: 1 }} title={false} />
+        ) : healthQuery.isError ? (
+          <Alert
+            type="error"
+            title="暂时无法确认服务状态"
+            description="请确认本地服务已启动，再点重新检查。"
+            showIcon
+          />
+        ) : (
+          <Space wrap>
+            <Tag color="success">服务正常</Tag>
+            <Tag color="success">数据库正常</Tag>
+            <Typography.Text type="secondary">
+              status: {healthQuery.data.status} · database: {healthQuery.data.database}
+            </Typography.Text>
+          </Space>
+        )}
       </div>
     </Card>
   )

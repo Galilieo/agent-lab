@@ -22,7 +22,8 @@ export const jobpilotTheme: ThemeConfig = {
     colorSuccess: '#5B8A4A',
     colorWarning: '#B9842F',
     colorError: '#B5534A',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
     fontSize: 14,
     lineHeight: 1.75,
     borderRadius: 10,
