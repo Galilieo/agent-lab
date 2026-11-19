@@ -1,5 +1,6 @@
 """读取仓库根目录配置，提供数据库连接信息和各用途的模型参数。"""
 
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, Field, SecretStr
@@ -9,14 +10,29 @@ from sqlalchemy import URL
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+class ModelPurpose(StrEnum):
+    """声明网关支持的调用用途，枚举值与 Settings 的配置字段名一致。"""
+
+    EXTRACT_FACTS = "extract_facts"
+    PARSE_JD = "parse_jd"
+    ORDER_OCR = "order_ocr"
+    MATCH = "match"
+    PLAN = "plan"
+    REWRITE = "rewrite"
+    GROUND_CHECK = "ground_check"
+    AGENT = "agent"
+
+
 class ModelSettings(BaseModel):
-    """声明一次模型调用的参数；由后续网关按用途读取。"""
+    """声明可由环境变量调整的模型参数；网关按用途读取。
+
+    输出格式等与提示词、解析器绑定的约定不在此处，由调用方传给网关。
+    """
 
     model_name: str = "deepseek-flash"
     thinking: bool = False
     temperature: float = Field(default=0, ge=0, le=2)
     max_tokens: int = Field(default=2048, gt=0)
-    json_output: bool = True
 
 
 class Settings(BaseSettings):
@@ -57,6 +73,12 @@ class Settings(BaseSettings):
     plan: ModelSettings = Field(default_factory=ModelSettings)
     rewrite: ModelSettings = Field(default_factory=ModelSettings)
     ground_check: ModelSettings = Field(default_factory=ModelSettings)
+    order_ocr: ModelSettings = Field(default_factory=ModelSettings)
+    agent: ModelSettings = Field(default_factory=ModelSettings)
+
+    def model_for_purpose(self, purpose: str) -> ModelSettings:
+        """按用途查找模型配置，未知用途立即报错。"""
+        return getattr(self, ModelPurpose(purpose).value)
 
     @property
     def database_url(self) -> URL:
