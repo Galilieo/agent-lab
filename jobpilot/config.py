@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     )
     cookie_name: str = "jobpilot_session"
     cookie_max_age_seconds: int = Field(default=604800, gt=0)
+    # 为 True 时浏览器只在 HTTPS 下发送 Cookie；本地 http 开发保持 False。
+    cookie_secure: bool = False
     database_connect_timeout_seconds: int = Field(default=5, gt=0)
 
     extract_facts: ModelSettings = Field(default_factory=ModelSettings)
