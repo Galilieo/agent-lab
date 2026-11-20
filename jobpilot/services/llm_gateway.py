@@ -22,10 +22,9 @@ from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from jobpilot.config import REPO_ROOT, ModelSettings, settings
+from jobpilot.config import ModelSettings, settings
 from jobpilot.db.models import CallOutcome, ModelCall
-
-REPAIR_PROMPT_PATH = REPO_ROOT / "jobpilot" / "prompts" / "repair_json.txt"
+from jobpilot.services.prompts import Prompt, load_prompt
 
 _DATA_LABEL_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
 # 只匹配 untrusted_data 标签的开头，放过 List<String> 这类正常尖括号。
@@ -102,6 +101,7 @@ async def request_completion(
     *,
     client: AsyncOpenAI,
     purpose: str,
+    prompt_version: str,
     messages: Sequence[ChatCompletionMessageParam],
     json_output: bool,
     budget: ModelBudget,
@@ -114,10 +114,12 @@ async def request_completion(
     - JSON 输出未通过 Pydantic 校验：附上错误类型重发一次，不占上面的次数。
     - 4xx（含 429）、额度不足、其他异常：直接抛给调用方。
     每次重发都重新扣额度、另记一行 model_call。
+    prompt_version 写入每行调用记录；修复重发时追加修复提示词的版本。
     json_output 与提示词和 validate 绑定，由调用方声明，不允许被环境变量改写。
     调用前需已提交所属 ai_run。
     """
     request_messages = list(messages)
+    call_prompt_version = prompt_version
     upstream_attempts = 1
     repair_used = False
 
@@ -129,6 +131,7 @@ async def request_completion(
                 run_id,
                 client=client,
                 purpose=purpose,
+                prompt_version=call_prompt_version,
                 messages=request_messages,
                 json_output=json_output,
                 budget=budget,
@@ -138,8 +141,11 @@ async def request_completion(
         except ValidationError as error:
             if not json_output or repair_used:
                 raise
+
             repair_used = True
-            request_messages.append(_repair_message(error))
+            repair_prompt = load_prompt("repair_json")
+            request_messages.append(_repair_message(error, repair_prompt))
+            call_prompt_version = f"{prompt_version}+{repair_prompt.label}"
 
         except (APIStatusError, APIConnectionError) as error:
             if not _is_retryable(error):
@@ -161,12 +167,14 @@ def _is_retryable(error: APIStatusError | APIConnectionError) -> bool:
     return 500 <= error.status_code < 600
 
 
-def _repair_message(error: ValidationError) -> ChatCompletionMessageParam:
+def _repair_message(
+    error: ValidationError, repair_prompt: Prompt
+) -> ChatCompletionMessageParam:
     """生成修复请求：只告诉模型错误类型，不回传原始输入和校验详情。"""
     issues = error.errors(include_input=False, include_context=False, include_url=False)
     error_types = ",".join(sorted({issue["type"] for issue in issues}))
-    template = REPAIR_PROMPT_PATH.read_text(encoding="utf-8").strip()
-    return {"role": "user", "content": template.format(error_types=error_types)}
+    content = repair_prompt.text.format(error_types=error_types)
+    return {"role": "user", "content": content}
 
 
 async def _send_once(
@@ -176,6 +184,7 @@ async def _send_once(
     *,
     client: AsyncOpenAI,
     purpose: str,
+    prompt_version: str,
     messages: Sequence[ChatCompletionMessageParam],
     json_output: bool,
     budget: ModelBudget,
@@ -191,7 +200,12 @@ async def _send_once(
     sanitized_messages = _sanitize_messages(messages)
     budget.reserve(_estimate_tokens(sanitized_messages, model_settings.max_tokens))
     call_id = await _register_call(
-        session_factory, user_id, run_id, purpose, model_settings.model_name
+        session_factory,
+        user_id,
+        run_id,
+        purpose,
+        prompt_version,
+        model_settings.model_name,
     )
 
     started = monotonic()
@@ -287,6 +301,7 @@ async def _register_call(
     user_id: UUID,
     run_id: UUID,
     purpose: str,
+    prompt_version: str,
     model_name: str,
 ) -> UUID:
     """发送前用独立事务登记一行 unknown，返回供结算使用的 call_id。"""
@@ -298,6 +313,7 @@ async def _register_call(
                 user_id=user_id,
                 run_id=run_id,
                 purpose=purpose,
+                prompt_version=prompt_version,
                 model=model_name,
                 outcome=CallOutcome.UNKNOWN,
             )

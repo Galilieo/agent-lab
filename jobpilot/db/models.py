@@ -154,6 +154,8 @@ class ModelCall(Base):
     user_id: Mapped[UUID | None] = mapped_column(Uuid)
     purpose: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(Text)
+    # 如 parse_jd@3；修复重发记为 parse_jd@3+repair_json@1。旧记录为空。
+    prompt_version: Mapped[str | None] = mapped_column(Text)
     outcome: Mapped[str] = mapped_column(String(32))
     latency_ms: Mapped[int | None]
     prompt_tokens: Mapped[int | None]

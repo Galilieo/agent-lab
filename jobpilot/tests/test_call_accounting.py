@@ -100,6 +100,7 @@ async def send(
     """用常用默认参数调用网关，测试只写出与自己相关的参数。"""
     arguments: dict[str, Any] = {
         "purpose": "rewrite",
+        "prompt_version": "rewrite@1",
         "messages": [{"role": "user", "content": "test"}],
         "json_output": False,
         "budget": ModelBudget(remaining_calls=10, remaining_tokens=100_000),
@@ -177,6 +178,8 @@ async def test_each_request_has_a_durable_call(
             (current,) = [row for row in records if row.call_id not in seen_ids]
             assert current.run_id == run.run_id and current.user_id == run.user_id
             assert current.purpose == "rewrite" and current.model == body["model"]
+            # 版本在登记时写入：即使随后超时，也知道这次用的是哪版提示词
+            assert current.prompt_version == "rewrite@1"
             assert current.outcome == "unknown" and current.latency_ms is None
             assert current.prompt_tokens is None and current.completion_tokens is None
             seen_ids.append(current.call_id)
@@ -236,6 +239,7 @@ async def test_unknown_purpose_is_rejected_before_registration_and_send() -> Non
             uuid4(),
             client=client,
             purpose="parse_jdd",
+            prompt_version="parse_jd@1",
             messages=[{"role": "user", "content": "test"}],
             json_output=True,
             budget=ModelBudget(remaining_calls=1, remaining_tokens=1024),
@@ -422,6 +426,7 @@ async def test_invalid_json_output_is_repaired_and_accounted_for(
             run,
             client,
             purpose="parse_jd",
+            prompt_version="parse_jd@2",
             messages=messages,
             json_output=True,
             budget=budget,
@@ -432,7 +437,14 @@ async def test_invalid_json_output_is_repaired_and_accounted_for(
     first_messages, retry_messages = sent_messages
     assert len(messages) == 1  # 网关没有改动调用方传入的列表
     assert first_messages == retry_messages[:-1] == messages
-    assert "list_type" in retry_messages[-1]["content"]
+    repair_content = retry_messages[-1]["content"]
+    assert "list_type" in repair_content
+    assert repair_content.startswith("上一次输出")  # 版本头没有被当成正文发出
     assert budget.remaining_calls == 0
     calls = await calls_of(session_factory, run)
     assert outcomes_and_usage(calls) == {("invalid_output", 12, 3), ("success", 26, 5)}
+    # 修复重发多带了一份提示词，两份的版本都要记下
+    assert {(call.outcome, call.prompt_version) for call in calls} == {
+        ("invalid_output", "parse_jd@2"),
+        ("success", "parse_jd@2+repair_json@1"),
+    }

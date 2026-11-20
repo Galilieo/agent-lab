@@ -109,6 +109,7 @@ async def main(thinking: bool) -> int:
                 run.run_id,
                 client=client,
                 purpose="parse_jd",
+                prompt_version="smoke_inline@1",  # 冒烟提示词写在脚本里，不进 prompts/
                 messages=messages,
                 json_output=True,
                 budget=ModelBudget(remaining_calls=3, remaining_tokens=20_000),
