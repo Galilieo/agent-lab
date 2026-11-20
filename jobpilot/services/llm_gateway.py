@@ -3,13 +3,16 @@
 request_completion 负责一次逻辑请求：有限重试上游临时错误、JSON 校验失败时修复一次。
 其中每次实际发送都先扣减运行额度，再在 model_call 表登记一行；
 登记和结算各用一个独立短事务，业务事务回滚也不会丢失调用记录。
+同时提供不可信文本的数据区块包装，并在每次外发前统一遮蔽联系方式和证件号。
 """
 
+import re
 from asyncio import sleep
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from json import dumps
 from time import monotonic
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from openai import APIConnectionError, APIStatusError, AsyncOpenAI, omit
@@ -23,6 +26,51 @@ from jobpilot.config import REPO_ROOT, ModelSettings, settings
 from jobpilot.db.models import CallOutcome, ModelCall
 
 REPAIR_PROMPT_PATH = REPO_ROOT / "jobpilot" / "prompts" / "repair_json.txt"
+
+_DATA_LABEL_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
+# 只匹配 untrusted_data 标签的开头，放过 List<String> 这类正常尖括号。
+_DATA_TAG_PATTERN = re.compile(r"<(\s*/?\s*untrusted_data)\b", re.IGNORECASE)
+
+_ID_CARD_PATTERN = re.compile(
+    r"(?<!\d)[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])"
+    r"\d{3}[\dXx](?![\dXx])"
+)
+# 不用 \w 做边界：Python 3 中 \w 会匹配中文，导致「邮箱a@b.com」漏匹配。
+_EMAIL_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    r"(?![A-Za-z0-9.-])"
+)
+_MOBILE_PATTERN = re.compile(
+    r"(?<!\d)(?:\+?86[\s-]?)?1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}(?!\d)"
+)
+# 座机必须带区号和连字符，避免误伤「2025-2026」这类年份区间。
+_LANDLINE_PATTERN = re.compile(r"(?<!\d)0\d{2,3}-\d{7,8}(?!\d)")
+
+# 身份证号先于手机号替换，避免 18 位号码中的 11 位子串被误拆。
+_PII_RULES: tuple[tuple[re.Pattern[str], str], ...] = (
+    (_ID_CARD_PATTERN, "[ID_CARD]"),
+    (_EMAIL_PATTERN, "[EMAIL]"),
+    (_MOBILE_PATTERN, "[PHONE]"),
+    (_LANDLINE_PATTERN, "[PHONE]"),
+)
+
+
+def wrap_untrusted_text(label: str, text: str) -> str:
+    """把不可信文本包进数据区块，并转义正文中伪造的区块标签。
+
+    label 只允许字母、数字、下划线和连字符，防止破坏属性引号。
+    """
+    if not _DATA_LABEL_PATTERN.fullmatch(label):
+        raise ValueError(f"非法的不可信数据区块标签: {label!r}")
+    escaped = _DATA_TAG_PATTERN.sub(r"&lt;\1", text)
+    return f'<untrusted_data label="{label}">\n{escaped}\n</untrusted_data>'
+
+
+def redact_pii(text: str) -> str:
+    """用占位符遮蔽文本中的身份证号、邮箱、手机号和座机号。"""
+    for pattern, placeholder in _PII_RULES:
+        text = pattern.sub(placeholder, text)
+    return text
 
 
 class BudgetExhaustedError(RuntimeError):
@@ -133,13 +181,15 @@ async def _send_once(
     budget: ModelBudget,
     validate: Callable[[ChatCompletion], None] | None,
 ) -> ChatCompletion:
-    """实际发送一次：扣额度 → 登记 unknown → 发送并校验 → 结算。
+    """实际发送一次：查配置并脱敏 → 扣额度 → 登记 unknown → 发送并校验 → 结算。
 
+    这里是所有用途、首次发送与重发通往上游的唯一入口，脱敏放在这里不会漏。
     用途未知或额度不足时在登记前抛出，不会留下调用记录。
     上游错误和校验错误在结算后原样抛出，由 request_completion 决定是否重发。
     """
     model_settings = settings.model_for_purpose(purpose)
-    budget.reserve(_estimate_tokens(messages, model_settings.max_tokens))
+    sanitized_messages = _sanitize_messages(messages)
+    budget.reserve(_estimate_tokens(sanitized_messages, model_settings.max_tokens))
     call_id = await _register_call(
         session_factory, user_id, run_id, purpose, model_settings.model_name
     )
@@ -151,7 +201,7 @@ async def _send_once(
     usage: CompletionUsage | None = None
     try:
         response = await _create_completion(
-            client, model_settings, messages, json_output
+            client, model_settings, sanitized_messages, json_output
         )
         usage = response.usage
         # 先记为 invalid_output：validate 抛出任何异常都按校验失败结算。
@@ -167,6 +217,36 @@ async def _send_once(
         # 进程被杀时 finally 可能不执行，登记行仍保留 unknown 和空用量。
         latency_ms = int((monotonic() - started) * 1000)
         await _settle_call(session_factory, call_id, outcome, latency_ms, usage)
+
+
+def _sanitize_messages(
+    messages: Sequence[ChatCompletionMessageParam],
+) -> list[ChatCompletionMessageParam]:
+    """返回脱敏后的消息副本，不改动调用方传入的列表和字典。"""
+    return [_sanitize_message(message) for message in messages]
+
+
+def _sanitize_message(
+    message: ChatCompletionMessageParam,
+) -> ChatCompletionMessageParam:
+    """复制单条消息并遮蔽其中的文本，兼容字符串和分段 content 两种形式。"""
+    copied: dict[str, Any] = dict(message)
+    content = copied.get("content")
+    if isinstance(content, str):
+        copied["content"] = redact_pii(content)
+    elif isinstance(content, list):
+        copied["content"] = [_sanitize_part(part) for part in content]
+    return cast(ChatCompletionMessageParam, copied)
+
+
+def _sanitize_part(part: Any) -> Any:
+    """分段 content 中只有 type 为 text 的段落有文本，其余（如图片）原样复制。"""
+    if not isinstance(part, dict):
+        return part
+    copied = dict(part)
+    if copied.get("type") == "text" and isinstance(copied.get("text"), str):
+        copied["text"] = redact_pii(copied["text"])
+    return copied
 
 
 def _estimate_tokens(
