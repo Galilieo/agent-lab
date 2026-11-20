@@ -78,6 +78,15 @@ class RunStatus(StrEnum):
     BUDGET_EXHAUSTED = "budget_exhausted"
 
 
+class CallOutcome(StrEnum):
+    """一次模型发送的结果；unknown 表示没拿到响应，用量也无从得知。"""
+
+    UNKNOWN = "unknown"
+    SUCCESS = "success"
+    INVALID_OUTPUT = "invalid_output"
+    HTTP_ERROR = "http_error"
+
+
 class AiRun(Base):
     """记录一次业务运行，供产物、模型请求和检查点关联。"""
 

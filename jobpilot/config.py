@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     order_ocr: ModelSettings = Field(default_factory=ModelSettings)
     agent: ModelSettings = Field(default_factory=ModelSettings)
 
+    model_max_attempts: int = Field(default=2, ge=1)
+    model_retry_delay_seconds: float = Field(default=0.5, ge=0)
+
     def model_for_purpose(self, purpose: str) -> ModelSettings:
         """按用途查找模型配置，未知用途立即报错。"""
         return getattr(self, ModelPurpose(purpose).value)

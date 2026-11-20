@@ -1,16 +1,50 @@
-"""为网关的一次模型请求记账，发送前和结束后各用一个独立短事务。"""
+"""模型网关：业务代码调用模型的唯一入口。
 
+request_completion 负责一次逻辑请求：有限重试上游临时错误、JSON 校验失败时修复一次。
+其中每次实际发送都先扣减运行额度，再在 model_call 表登记一行；
+登记和结算各用一个独立短事务，业务事务回滚也不会丢失调用记录。
+"""
+
+from asyncio import sleep
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from json import dumps
 from time import monotonic
 from uuid import UUID, uuid4
 
-from openai import APIStatusError, AsyncOpenAI, omit
+from openai import APIConnectionError, APIStatusError, AsyncOpenAI, omit
+from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
+from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from jobpilot.config import settings
-from jobpilot.db.models import ModelCall
+from jobpilot.config import REPO_ROOT, ModelSettings, settings
+from jobpilot.db.models import CallOutcome, ModelCall
+
+REPAIR_PROMPT_PATH = REPO_ROOT / "jobpilot" / "prompts" / "repair_json.txt"
+
+
+class BudgetExhaustedError(RuntimeError):
+    """剩余额度不足以发送下一次模型请求。"""
+
+
+@dataclass
+class ModelBudget:
+    """保存同一次业务运行共享的剩余调用次数和 token 额度。"""
+
+    remaining_calls: int
+    remaining_tokens: int
+
+    def reserve(self, estimated_tokens: int) -> None:
+        """检查两项额度，通过后一起扣减。"""
+        if self.remaining_calls < 1:
+            raise BudgetExhaustedError("模型调用次数已用完")
+        if estimated_tokens > self.remaining_tokens:
+            raise BudgetExhaustedError("模型 token 额度不足")
+
+        self.remaining_calls -= 1
+        self.remaining_tokens -= estimated_tokens
 
 
 async def request_completion(
@@ -22,16 +56,160 @@ async def request_completion(
     purpose: str,
     messages: Sequence[ChatCompletionMessageParam],
     json_output: bool,
+    budget: ModelBudget,
     validate: Callable[[ChatCompletion], None] | None = None,
 ) -> ChatCompletion:
-    """发送一次请求并返回已校验的响应；上游或校验异常继续交给调用方。
+    """完成一次逻辑请求，返回通过 validate 的响应。
 
-    模型与采样参数按用途从配置读取；json_output 与提示词和 validate 绑定，
-    由调用方声明，不允许被环境变量改写。
-    调用前需提交所属运行。每次重试重新进入本函数，SDK 不自行重试。
-    在响应到达前退出时，已提交的 unknown 行仍能区分未知用量与零用量。
+    失败时按错误种类处理（规则见 02 第 7 节「重试」「记录」）：
+    - 超时、连接错误、5xx：等待后原样重发，总发送次数不超过 model_max_attempts。
+    - JSON 输出未通过 Pydantic 校验：附上错误类型重发一次，不占上面的次数。
+    - 4xx（含 429）、额度不足、其他异常：直接抛给调用方。
+    每次重发都重新扣额度、另记一行 model_call。
+    json_output 与提示词和 validate 绑定，由调用方声明，不允许被环境变量改写。
+    调用前需已提交所属 ai_run。
+    """
+    request_messages = list(messages)
+    upstream_attempts = 1
+    repair_used = False
+
+    while True:
+        try:
+            return await _send_once(
+                session_factory,
+                user_id,
+                run_id,
+                client=client,
+                purpose=purpose,
+                messages=request_messages,
+                json_output=json_output,
+                budget=budget,
+                validate=validate,
+            )
+
+        except ValidationError as error:
+            if not json_output or repair_used:
+                raise
+            repair_used = True
+            request_messages.append(_repair_message(error))
+
+        except (APIStatusError, APIConnectionError) as error:
+            if not _is_retryable(error):
+                raise
+            if upstream_attempts >= settings.model_max_attempts:
+                raise
+            upstream_attempts += 1
+            await sleep(settings.model_retry_delay_seconds)
+
+
+def _is_retryable(error: APIStatusError | APIConnectionError) -> bool:
+    """超时、连接错误和 5xx 可能是上游临时故障，重发有机会成功。
+
+    APITimeoutError 是 APIConnectionError 的子类，这里一并处理。
+    4xx 说明请求本身有问题，重发也不会变好。
+    """
+    if isinstance(error, APIConnectionError):
+        return True
+    return 500 <= error.status_code < 600
+
+
+def _repair_message(error: ValidationError) -> ChatCompletionMessageParam:
+    """生成修复请求：只告诉模型错误类型，不回传原始输入和校验详情。"""
+    issues = error.errors(include_input=False, include_context=False, include_url=False)
+    error_types = ",".join(sorted({issue["type"] for issue in issues}))
+    template = REPAIR_PROMPT_PATH.read_text(encoding="utf-8").strip()
+    return {"role": "user", "content": template.format(error_types=error_types)}
+
+
+async def _send_once(
+    session_factory: async_sessionmaker[AsyncSession],
+    user_id: UUID,
+    run_id: UUID,
+    *,
+    client: AsyncOpenAI,
+    purpose: str,
+    messages: Sequence[ChatCompletionMessageParam],
+    json_output: bool,
+    budget: ModelBudget,
+    validate: Callable[[ChatCompletion], None] | None,
+) -> ChatCompletion:
+    """实际发送一次：扣额度 → 登记 unknown → 发送并校验 → 结算。
+
+    用途未知或额度不足时在登记前抛出，不会留下调用记录。
+    上游错误和校验错误在结算后原样抛出，由 request_completion 决定是否重发。
     """
     model_settings = settings.model_for_purpose(purpose)
+    budget.reserve(_estimate_tokens(messages, model_settings.max_tokens))
+    call_id = await _register_call(
+        session_factory, user_id, run_id, purpose, model_settings.model_name
+    )
+
+    started = monotonic()
+    # 超时、连接错误时 outcome 保持 unknown：请求可能已被上游处理并计费，
+    # 但我们拿不到用量，不能记成 0。
+    outcome = CallOutcome.UNKNOWN
+    usage: CompletionUsage | None = None
+    try:
+        response = await _create_completion(
+            client, model_settings, messages, json_output
+        )
+        usage = response.usage
+        # 先记为 invalid_output：validate 抛出任何异常都按校验失败结算。
+        outcome = CallOutcome.INVALID_OUTPUT
+        if validate is not None:
+            validate(response)
+        outcome = CallOutcome.SUCCESS
+        return response
+    except APIStatusError:
+        outcome = CallOutcome.HTTP_ERROR
+        raise
+    finally:
+        # 进程被杀时 finally 可能不执行，登记行仍保留 unknown 和空用量。
+        latency_ms = int((monotonic() - started) * 1000)
+        await _settle_call(session_factory, call_id, outcome, latency_ms, usage)
+
+
+def _estimate_tokens(
+    messages: Sequence[ChatCompletionMessageParam], max_output_tokens: int
+) -> int:
+    """估算一次发送最多消耗的 token，用于发送前扣额度。
+
+    手头没有 DeepSeek 的分词器，输入部分用序列化后的 UTF-8 字节数代替：
+    一个 token 至少对应一个字节，所以字节数只会多估、不会少估。
+    输出部分按 max_tokens 上限计算。
+    """
+    serialized = dumps(list(messages), ensure_ascii=False)
+    return len(serialized.encode("utf-8")) + max_output_tokens
+
+
+async def _create_completion(
+    client: AsyncOpenAI,
+    model_settings: ModelSettings,
+    messages: Sequence[ChatCompletionMessageParam],
+    json_output: bool,
+) -> ChatCompletion:
+    """按用途配置组装参数并发送；关闭 SDK 自带重试，重试只由网关负责。"""
+    return await client.with_options(max_retries=0).chat.completions.create(
+        model=model_settings.model_name,
+        messages=messages,
+        max_tokens=model_settings.max_tokens,
+        # DeepSeek 思考模式下 temperature 不生效，干脆不传。
+        temperature=omit if model_settings.thinking else model_settings.temperature,
+        response_format={"type": "json_object"} if json_output else omit,
+        extra_body={
+            "thinking": {"type": "enabled" if model_settings.thinking else "disabled"}
+        },
+    )
+
+
+async def _register_call(
+    session_factory: async_sessionmaker[AsyncSession],
+    user_id: UUID,
+    run_id: UUID,
+    purpose: str,
+    model_name: str,
+) -> UUID:
+    """发送前用独立事务登记一行 unknown，返回供结算使用的 call_id。"""
     call_id = uuid4()
     async with session_factory.begin() as session:
         session.add(
@@ -40,49 +218,29 @@ async def request_completion(
                 user_id=user_id,
                 run_id=run_id,
                 purpose=purpose,
-                model=model_settings.model_name,
-                outcome="unknown",
+                model=model_name,
+                outcome=CallOutcome.UNKNOWN,
             )
         )
+    return call_id
 
-    started = monotonic()
-    outcome = "unknown"
-    prompt_tokens = completion_tokens = None
-    try:
-        response = await client.with_options(max_retries=0).chat.completions.create(
-            model=model_settings.model_name,
-            messages=messages,
-            max_tokens=model_settings.max_tokens,
-            temperature=omit if model_settings.thinking else model_settings.temperature,
-            response_format={"type": "json_object"} if json_output else omit,
-            extra_body={
-                "thinking": {
-                    "type": "enabled" if model_settings.thinking else "disabled"
-                }
-            },
-        )
-        if response.usage is not None:
-            prompt_tokens = response.usage.prompt_tokens
-            completion_tokens = response.usage.completion_tokens
-        outcome = "invalid_output"
-        if validate is not None:
-            validate(response)
-        outcome = "success"
-        return response
-    except APIStatusError:
-        outcome = "http_error"
-        raise
-    finally:
-        # 进程被杀时 finally 可能不执行，登记行仍保留 unknown 和空用量。
-        elapsed_ms = int((monotonic() - started) * 1000)
-        async with session_factory.begin() as session:
-            await session.execute(
-                update(ModelCall)
-                .where(ModelCall.call_id == call_id)
-                .values(
-                    outcome=outcome,
-                    latency_ms=elapsed_ms,
-                    prompt_tokens=prompt_tokens,
-                    completion_tokens=completion_tokens,
-                )
+
+async def _settle_call(
+    session_factory: async_sessionmaker[AsyncSession],
+    call_id: UUID,
+    outcome: CallOutcome,
+    latency_ms: int,
+    usage: CompletionUsage | None,
+) -> None:
+    """用另一个独立事务回填结果、耗时和用量；没收到响应时用量留空。"""
+    async with session_factory.begin() as session:
+        await session.execute(
+            update(ModelCall)
+            .where(ModelCall.call_id == call_id)
+            .values(
+                outcome=outcome,
+                latency_ms=latency_ms,
+                prompt_tokens=usage.prompt_tokens if usage else None,
+                completion_tokens=usage.completion_tokens if usage else None,
             )
+        )
